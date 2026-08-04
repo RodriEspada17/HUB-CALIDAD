@@ -7,9 +7,9 @@ aplicar_estilo_neon()
 # Título principal replicando el diseño de la imagen de referencia
 st.markdown("""
     <div style="margin-top: 4rem; margin-bottom: 4rem;">
-        <p style="color: #a3ff00; font-weight: 600; letter-spacing: 2px; margin-bottom: 0;">BBO HUB PRESENTATION</p>
+        <p style="color: #a3ff00; font-weight: 600; letter-spacing: 2px; margin-bottom: 0;">HUB BBO</p>
         <h1 style="font-size: 5rem; font-weight: 700; margin-bottom: 0; line-height: 1.1; color: #ffffff;">
-            Strategic Quality<br><span style="color: #a3ff00;">Control Business.</span>
+            Seguridad Primero<br><span style="color: #a3ff00;">Calidad Siempre.</span>
         </h1>
         <p style="color: #888888; font-size: 1.1rem; margin-top: 1.5rem; max-width: 600px; line-height: 1.6;">
             Plataforma integral para el monitoreo de calidad, análisis de parámetros críticos y visualización de datos gerenciales de la planta.
