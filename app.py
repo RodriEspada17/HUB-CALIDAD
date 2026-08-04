@@ -1,7 +1,7 @@
 import streamlit as st
 from utils.core import aplicar_estilo_neon
 
-st.set_page_config(page_title="BBO N30N HUB", layout="wide", page_icon="⚡")
+st.set_page_config(page_title="BBO HUB", layout="wide", page_icon="⚡")
 aplicar_estilo_neon()
 
 st.markdown("<h1 style='text-align: center; font-size: 4rem; margin-top: 20px;'>⚡ BBO N30N HUB ⚡</h1>", unsafe_allow_html=True)
