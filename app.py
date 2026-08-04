@@ -2,17 +2,26 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import plotly.express as px
-import plotly.graph_objects as go
+import re
 
 # Configuración del HUB
 st.set_page_config(page_title="HUB Calidad BBO", layout="wide", page_icon="🍺")
 
 st.title("🍺 HUB de Control de Calidad")
 
-# ID de tu documento de Google Sheets
-SHEET_ID = "1YYwKl7sR7vBrJcQBbGxVxITQE8RlV7EezlyQK3Yw"
+# -----------------------------------------------------------------------------
+# 🔗 PEGA AQUÍ LA URL COMPLETA DE TU GOOGLE SHEETS (la de la barra del navegador)
+# -----------------------------------------------------------------------------
+URL_GOOGLE_SHEETS = "https://docs.google.com/spreadsheets/d/1YYwKl7sR7vBrJcQBbGxVxITQE8RlV7EezlyQK3Yw/edit"
 
-# Diccionario con las pestañas y sus GIDs
+# Extractor automático del ID
+def extraer_sheet_id(url):
+    match = re.search(r"/d/([a-zA-Z0-9-_]+)", url)
+    return match.group(1) if match else url
+
+SHEET_ID = extraer_sheet_id(URL_GOOGLE_SHEETS)
+
+# Diccionario con las pestañas y sus GIDs exactos
 PESTANAS = {
     "Cocimiento": "1587615990",
     "Fin de Reposo": "79058483",
@@ -28,22 +37,20 @@ gid = PESTANAS[etapa_seleccionada]
 URL_CSV = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/export?format=csv&gid={gid}"
 
 # --- FUNCIÓN PARA CARGAR Y LIMPIAR DATOS ---
-@st.cache_data(ttl=60)
+@st.cache_data(ttl=30)
 def cargar_y_limpiar_datos(url):
     try:
-        # Leemos el CSV
         df_raw = pd.read_csv(url)
         
-        # Buscamos la fila donde realmente empiezan los encabezados (donde dice 'Producto' o 'Fecha')
+        # Buscar la fila donde están los nombres reales de las columnas
         header_row_idx = None
         for i, row in df_raw.iterrows():
             row_str = row.astype(str).str.upper().values
-            if any("PRODUCTO" in item or "FECHA" in item or "PH" in item for item in row_str):
+            if any("PRODUCTO" in item or "FECHA" in item or "PH" in item or "LOTE" in item for item in row_str):
                 header_row_idx = i
                 break
         
         if header_row_idx is not None:
-            # Reasignamos los encabezados
             df = pd.read_csv(url, skiprows=header_row_idx + 1)
             df.columns = [str(col).strip() for col in df.columns]
             return df
@@ -55,7 +62,7 @@ def cargar_y_limpiar_datos(url):
 df = cargar_y_limpiar_datos(URL_CSV)
 
 if df is not None and not df.empty:
-    # Filtro por Producto si la columna existe
+    # Filtro dinámico por cerveza / producto si existe la columna
     col_producto = [c for c in df.columns if "PRODUCTO" in c.upper()]
     if col_producto:
         productos = ["Todos"] + list(df[col_producto[0]].dropna().unique())
@@ -63,7 +70,7 @@ if df is not None and not df.empty:
         if prod_selected != "Todos":
             df = df[df[col_producto[0]] == prod_selected]
 
-    # --- PESTAÑAS PRINCIPALES DEL DASHBOARD ---
+    # --- PESTAÑAS DEL DASHBOARD ---
     tab_datos, tab_spc = st.tabs(["📋 Datos Brutos", "📊 Control Estadístico (Cp & Cpk)"])
 
     with tab_datos:
@@ -73,25 +80,23 @@ if df is not None and not df.empty:
     with tab_spc:
         st.subheader("Cálculo de Capacidad de Proceso ($C_p$ y $C_{pk}$)")
         
-        # Filtrar solo columnas numéricas para análisis
+        # Identificar columnas numéricas
         cols_numericas = []
         for col in df.columns:
-            # Intentar convertir a número
             converted = pd.to_numeric(df[col].astype(str).str.replace(',', '.'), errors='coerce')
-            if converted.notna().sum() > 5: # Si tiene al menos 5 valores numéricos válidos
+            if converted.notna().sum() > 3:
                 cols_numericas.append(col)
 
         if cols_numericas:
-            col_analizar = st.selectbox("Selecciona la variable a analizar (ej. pH, Amargo, Extracto):", cols_numericas)
+            col_analizar = st.selectbox("Selecciona la variable a analizar:", cols_numericas)
             
-            # Limpieza de valores numéricos
             serie_datos = pd.to_numeric(df[col_analizar].astype(str).str.replace(',', '.'), errors='coerce').dropna()
 
             col_input1, col_input2 = st.columns(2)
             with col_input1:
-                lsl = st.number_input("Límite Inferior de Especificación (LSL):", value=float(serie_datos.min()))
+                lsl = st.number_input("Límite Inferior (LSL):", value=float(serie_datos.min()))
             with col_input2:
-                usl = st.number_input("Límite Superior de Especificación (USL):", value=float(serie_datos.max()))
+                usl = st.number_input("Límite Superior (USL):", value=float(serie_datos.max()))
 
             if lsl < usl and len(serie_datos) > 0:
                 media = serie_datos.mean()
@@ -103,23 +108,23 @@ if df is not None and not df.empty:
                     cpk_upper = (usl - media) / (3 * sigma)
                     cpk = min(cpk_lower, cpk_upper)
 
-                    # Mostrar Métricas en Cajas
+                    # Indicadores
                     m1, m2, m3, m4 = st.columns(4)
-                    m1.metric("Media ($\mu$)", f"{media:.3f}")
-                    m2.metric("Desv. Estándar ($\sigma$)", f"{sigma:.3f}")
-                    m3.metric("Índice $C_p$", f"{cp:.2f}")
-                    m4.metric("Índice $C_{pk}$", f"{cpk:.2f}", delta="OK" if cpk >= 1.33 else "Bajo Proceso", delta_color="normal" if cpk >= 1.33 else "inverse")
+                    m1.metric("Media", f"{media:.3f}")
+                    m2.metric("Desv. Estándar", f"{sigma:.3f}")
+                    m3.metric("Índice Cp", f"{cp:.2f}")
+                    m4.metric("Índice Cpk", f"{cpk:.2f}", delta="OK" if cpk >= 1.33 else "Revisar", delta_color="normal" if cpk >= 1.33 else "inverse")
 
-                    # Gráfico de Histogramas y Límites
-                    fig = px.histogram(serie_datos, x=col_analizar, nbins=20, title=f"Distribución y Control de {col_analizar}", marginal="box")
+                    # Gráfica interactiva
+                    fig = px.histogram(serie_datos, x=col_analizar, nbins=20, title=f"Distribución de {col_analizar}", marginal="box")
                     fig.add_vline(x=lsl, line_dash="dash", line_color="red", annotation_text="LSL")
                     fig.add_vline(x=usl, line_dash="dash", line_color="red", annotation_text="USL")
                     fig.add_vline(x=media, line_color="green", annotation_text="Media")
                     st.plotly_chart(fig, use_container_width=True)
                 else:
-                    st.warning("La desviación estándar es 0. No se pueden calcular Cp y Cpk.")
+                    st.warning("Desviación estándar es 0.")
         else:
-            st.info("No se detectaron columnas numéricas continuas en esta sección.")
+            st.info("No hay columnas numéricas detectadas en esta vista.")
 
 else:
-    st.error("No se pudieron extraer datos de la hoja seleccionada.")
+    st.error("No se pudieron extraer datos de la hoja seleccionada. Verifica el enlace del Google Sheet.")
