@@ -3,7 +3,6 @@ import pandas as pd
 import plotly.express as px
 from utils.core import aplicar_estilo_neon, obtener_limites, generar_url_csv, cargar_datos
 
-# Fuera emojis en la pestaña del navegador, usamos un vector limpio
 st.set_page_config(page_title="Parámetros Críticos", layout="wide", page_icon="▪️")
 aplicar_estilo_neon()
 
@@ -11,7 +10,6 @@ aplicar_estilo_neon()
 st.sidebar.markdown("<h3 style='color: #a3ff00; font-size: 1.1rem; letter-spacing: 1px;'>⯈ FILTROS DE DATOS</h3>", unsafe_allow_html=True)
 st.sidebar.markdown("<hr style='border: 1px solid #1a1a1a; margin-top: 0.5rem; margin-bottom: 1.5rem;'>", unsafe_allow_html=True)
 
-# El enlace de Google Sheets ahora está escondido y hardcodeado en el backend
 URL_BASE = "https://docs.google.com/spreadsheets/d/1YiYwKJZsR7vBrLjCQBbGxzVxlTQEBRJVZEezJyQK3Yw/edit?pli=1&gid="
 
 PESTANAS = {"Cocimiento": "1587615990", "Fin de Reposo": "79058483", "Filtración": "343087732", "Producto Terminado": "181144280"}
@@ -19,7 +17,6 @@ etapa_seleccionada = st.sidebar.selectbox("Etapa del Proceso", list(PESTANAS.key
 gid_actual = PESTANAS[etapa_seleccionada]
 url_completa = URL_BASE + gid_actual
 
-# Título de la página con estética de ruta de sistema
 st.markdown(f"<h2 style='text-transform: uppercase; font-size: 1.8rem;'>MODULE / PARÁMETROS CRÍTICOS / <span style='color: #a3ff00;'>{etapa_seleccionada}</span></h2>", unsafe_allow_html=True)
 st.markdown("<br>", unsafe_allow_html=True)
 
@@ -29,10 +26,29 @@ producto_actual = "Todos"
 if df is not None and not df.empty:
     col_prod = [c for c in df.columns if "PRODUCTO" in str(c).upper()]
     if col_prod:
-        lista_productos = ["Todos"] + list(df[col_prod[0]].dropna().astype(str).unique())
+        # Lógica de Limpieza (Lavadora de datos): quita espacios extras y normaliza a mayúsculas
+        productos_limpios = df[col_prod[0]].astype(str).str.strip().str.upper()
+        
+        # Opciones dinámicas para el desplegable
+        if etapa_seleccionada == "Cocimiento":
+            lista_productos = ["Todos", "Amstel", "Schneider", "Capital", "Malta Real"]
+        else:
+            # Para otras etapas, elimina duplicados por culpa de mayúsculas/minúsculas
+            raw_unique = productos_limpios.unique()
+            formatted_unique = sorted(list(set([p.title() for p in raw_unique])))
+            lista_productos = ["Todos"] + formatted_unique
+
         prod_sel = st.sidebar.selectbox("Filtrar Producto", lista_productos)
+        
         if prod_sel != "Todos":
-            df = df[df[col_prod[0]].astype(str) == prod_sel]
+            # Agrupación Inteligente: Si elige Capital, jala Cordillera y Real
+            if prod_sel.upper() == "CAPITAL":
+                df = df[productos_limpios.isin(["CAPITAL", "CORDILLERA", "REAL"])]
+            elif prod_sel.upper() in ["MALTA REAL", "MALTA"]:
+                df = df[productos_limpios.isin(["MALTA REAL", "MALTA"])]
+            else:
+                df = df[productos_limpios == prod_sel.upper()]
+                
             producto_actual = prod_sel
 
     # --- SEMAFORIZACIÓN ELEGANTE (DARK PASTELS) ---
@@ -41,14 +57,11 @@ if df is not None and not df.empty:
             v = float(str(val).replace(',', '.'))
             if lsl is not None and usl is not None:
                 if v < lsl or v > usl: 
-                    # ROJO: Fondo oscuro, texto pastel
                     return 'background-color: #3b181a; color: #f87171;' 
                 elif std_l is not None and std_u is not None:
                     if std_l <= v <= std_u: 
-                        # VERDE: Fondo oscuro, texto pastel
                         return 'background-color: #143324; color: #4ade80;' 
                     else: 
-                        # AMARILLO: Fondo oscuro, texto pastel
                         return 'background-color: #332d14; color: #facc15;' 
                 else: 
                     return 'background-color: #332d14; color: #facc15;'
@@ -60,19 +73,20 @@ if df is not None and not df.empty:
         prod_fila = producto_actual
         if prod_fila == "Todos":
             col_p = next((c for c in row.index if "PRODUCTO" in str(c).upper()), None)
-            if col_p: prod_fila = str(row[col_p])
-            else: return estilos
+            if col_p: 
+                # Asegurarse de limpiar el nombre de la fila al pintar en modo "Todos"
+                prod_fila = str(row[col_p]).strip().upper()
+            else: 
+                return estilos
         for i, col in enumerate(row.index):
             lsl, usl, std_l, std_u = obtener_limites(etapa_seleccionada, prod_fila, col)
             if lsl is not None: estilos[i] = pintar_celdas(row[col], lsl, usl, std_l, std_u)
         return estilos
 
-    # Nombres de pestañas más limpios y sin emojis
     tab_datos, tab_spc, tab_tendencias = st.tabs(["DATASET", "SPC ANALYSIS", "TRENDS"])
 
     with tab_datos:
         st.dataframe(df.style.apply(aplicar_semaforo, axis=1), use_container_width=True)
-        # Leyenda minimalista
         st.markdown("""
             <p style='font-size: 0.85rem; color: #888888; font-family: "Space Grotesk", sans-serif;'>
                 <span style="color: #4ade80;">■</span> Estándar &nbsp;&nbsp;&nbsp; 
@@ -126,7 +140,6 @@ if df is not None and not df.empty:
             if len(df_trend) > 0:
                 fig_trend = px.line(df_trend, x=eje_x, y=var_tend, markers=True, template="plotly_dark", color_discrete_sequence=['#a3ff00'])
                 if lsl_auto is not None and usl_auto is not None:
-                    # Líneas sutiles
                     fig_trend.add_hline(y=usl_auto, line_dash="solid", line_color="#f87171")
                     fig_trend.add_hline(y=lsl_auto, line_dash="solid", line_color="#f87171")
                     if std_u is not None and std_l is not None:
