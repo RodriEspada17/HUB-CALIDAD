@@ -1,13 +1,21 @@
 import streamlit as st
+import base64
+import os
 from utils.core import aplicar_estilo_neon
 
 st.set_page_config(page_title="BBO HUB", layout="wide", page_icon="🟢")
 aplicar_estilo_neon()
 
-# Título principal replicando el diseño de la imagen de referencia
+# Función para leer la imagen y convertirla a código para inyectarla en CSS
+def obtener_imagen_base64(ruta_archivo):
+    if os.path.exists(ruta_archivo):
+        with open(ruta_archivo, "rb") as img_file:
+            return base64.b64encode(img_file.read()).decode()
+    return None
+
 st.markdown("""
-    <div style="margin-top: 4rem; margin-bottom: 4rem;">
-        <p style="color: #a3ff00; font-weight: 600; letter-spacing: 2px; margin-bottom: 0;">HUB BBO</p>
+    <div style="margin-top: 2rem; margin-bottom: 2rem;">
+        <p style="color: #a3ff00; font-weight: 600; letter-spacing: 2px; margin-bottom: 0;">BBO HUB PRESENTATION</p>
         <h1 style="font-size: 5rem; font-weight: 700; margin-bottom: 0; line-height: 1.1; color: #ffffff;">
             Seguridad Primero<br><span style="color: #a3ff00;">Calidad Siempre.</span>
         </h1>
@@ -17,14 +25,25 @@ st.markdown("""
     </div>
 """, unsafe_allow_html=True)
 
-st.info("💡 Utiliza el menú lateral izquierdo para acceder a los módulos activos. Haz clic en **1 Parametros** para comenzar.")
+# Integración de la Imagen con efecto de desvanecimiento (Vignette Fade)
+img_b64 = obtener_imagen_base64("BBO.jpeg")
 
-st.markdown("<hr style='border: 1px solid #1a1a1a; margin-top: 3rem; margin-bottom: 3rem;'>", unsafe_allow_html=True)
-
-col1, col2 = st.columns(2)
-with col1:
-    st.markdown("<h3 style='color: #ffffff;'>📈 Waterfall Charts</h3>", unsafe_allow_html=True)
-    st.markdown("<p style='color: #888888;'>Control de mermas y balances de volumen a lo largo del proceso. <i>(Próximamente)</i></p>", unsafe_allow_html=True)
-with col2:
-    st.markdown("<h3 style='color: #ffffff;'>📊 Dashboards Gerenciales</h3>", unsafe_allow_html=True)
-    st.markdown("<p style='color: #888888;'>Resumen consolidado de KPIs para toma de decisiones directivas. <i>(Próximamente)</i></p>", unsafe_allow_html=True)
+if img_b64:
+    st.markdown(f"""
+        <div style="
+            width: 100%;
+            height: 450px;
+            margin-top: 3rem;
+            border-radius: 12px;
+            background-image: 
+                linear-gradient(to bottom, #050505 0%, rgba(5,5,5,0) 20%, rgba(5,5,5,0) 80%, #050505 100%),
+                linear-gradient(to right, #050505 0%, rgba(5,5,5,0) 15%, rgba(5,5,5,0) 85%, #050505 100%),
+                url('data:image/jpeg;base64,{img_b64}');
+            background-size: cover;
+            background-position: center;
+            opacity: 0.85;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+        "></div>
+    """, unsafe_allow_html=True)
+else:
+    st.warning("⚠️ No se encontró la foto. Asegúrate de que 'image_aec8a5.jpg' esté subida a la carpeta principal de tu GitHub.")
