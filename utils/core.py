@@ -37,12 +37,12 @@ def aplicar_estilo_neon():
             text-shadow: 0 0 8px #a3ff00;
         }
 
-        /* Hack CSS para renombrar 'app' a '🏠 Home' */
+        /* Hack CSS para renombrar 'app' a 'Home' */
         [data-testid="stSidebarNav"] ul li:first-child span {
             font-size: 0px; /* Oculta el texto original */
         }
         [data-testid="stSidebarNav"] ul li:first-child span::before {
-            content: "🏠 Home";
+            content: "Home";
             font-size: 1.1rem; /* Restaura el tamaño para el texto nuevo */
             color: #a3ff00;
         }
