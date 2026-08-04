@@ -25,17 +25,24 @@ producto_actual = "Todos"
 
 if df is not None and not df.empty:
 
-    # --- FILTRO Y PURGA DE COLUMNAS INNECESARIAS / VACÍAS ---
+    # 1. ORDENAR DATOS: Voltear la tabla para ver lo más reciente arriba
+    df = df.iloc[::-1].reset_index(drop=True)
+
+    # 2. PURGA GENERAL: Destruir columnas basura "Unnamed" de Pandas
+    cols_unnamed = [c for c in df.columns if "UNNAMED" in str(c).upper()]
+    df = df.drop(columns=cols_unnamed, errors='ignore')
+
+    # 3. PURGA ESPECÍFICA: Filtro de Cocimiento
     if etapa_seleccionada == "Cocimiento":
         cols_blacklist = [
             "EXTRACTO ORIGINAL FT A LAS 3HRS", "SO2", "FAN", "CALCIO",
-            "YODO MACERADO", "YODO MOSTO FRIO", "TBZ CALDERA LENA",
-            "TBZ FIN DE HERVIDO", "TBZ MOSTO FRIO"
+            "YODO MACERADO", "YODO MOSTO FRIO", "TBZ CALDERA LENA", "TBZ CALDERA LLENA",
+            "TBZ FIN DE HERVIDO", "TBZ MOSTO FRIO", "ATENUACION"
         ]
         cols_a_borrar = [c for c in df.columns if any(b in c.upper() for b in cols_blacklist)]
         df = df.drop(columns=cols_a_borrar, errors='ignore')
 
-    # Purga automática de cualquier columna que solo contenga valores 'None', 'NaN' o vacíos
+    # 4. PURGA AUTOMÁTICA: Eliminar columnas 100% vacías o llenas de 'None'
     cols_validas = []
     for col in df.columns:
         vals_check = df[col].astype(str).str.strip().str.upper()
@@ -148,6 +155,10 @@ if df is not None and not df.empty:
             eje_x = st.selectbox("Eje Temporal:", posibles_x if posibles_x else df.columns, index=0)
 
             df_trend = df.copy()
+            
+            # Para el gráfico de líneas de tiempo invertimos de nuevo para que cronológicamente vaya de izquierda a derecha
+            df_trend = df_trend.iloc[::-1].reset_index(drop=True)
+            
             df_trend[var_tend] = pd.to_numeric(df_trend[var_tend].astype(str).str.replace(',', '.'), errors='coerce')
             df_trend = df_trend.dropna(subset=[var_tend])
             lsl_auto, usl_auto, std_l, std_u = obtener_limites(etapa_seleccionada, producto_actual, var_tend) if producto_actual != "Todos" else (None, None, None, None)
