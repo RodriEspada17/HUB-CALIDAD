@@ -37,7 +37,7 @@ if df is not None and not df.empty:
         cols_blacklist = [
             "EXTRACTO ORIGINAL FT A LAS 3HRS", "SO2", "FAN", "CALCIO",
             "YODO MACERADO", "YODO MOSTO FRIO", "TBZ CALDERA LENA", "TBZ CALDERA LLENA",
-            "TBZ FIN DE HERVIDO", "TBZ MOSTO FRIO", "ATENUACION"
+            "TBZ FIN DE HERVIDO", "TBZ MOSTO FRIO", "ATENUACION LIMITE"
         ]
         cols_a_borrar = [c for c in df.columns if any(b in c.upper() for b in cols_blacklist)]
         df = df.drop(columns=cols_a_borrar, errors='ignore')
@@ -55,7 +55,8 @@ if df is not None and not df.empty:
     if col_prod:
         productos_limpios = df[col_prod[0]].astype(str).str.strip().str.upper()
         
-        if etapa_seleccionada == "Cocimiento":
+        # Unificamos el filtro para Cocimiento Y Fin de Reposo
+        if etapa_seleccionada in ["Cocimiento", "Fin de Reposo"]:
             lista_productos = ["Todos", "Amstel", "Schneider", "Capital", "Malta Real"]
         else:
             raw_unique = productos_limpios.unique()
@@ -76,6 +77,10 @@ if df is not None and not df.empty:
 
     # --- SEMAFORIZACIÓN ELEGANTE (DARK PASTELS) ---
     def pintar_celdas(val, lsl, usl, std_l, std_u):
+        # Seguro contra celdas vacías o "None"
+        if pd.isna(val) or str(val).strip().upper() in ['NONE', 'NAN', 'N/A', '']:
+            return ''
+            
         try:
             v = float(str(val).replace(',', '.'))
             if lsl is not None and usl is not None:
@@ -100,9 +105,17 @@ if df is not None and not df.empty:
                 prod_fila = str(row[col_p]).strip().upper()
             else: 
                 return estilos
+                
         for i, col in enumerate(row.index):
+            # Excepción: No pintar ciertas columnas si estamos en Cocimiento
+            if etapa_seleccionada == "Cocimiento":
+                cols_excluidas = ["ATENUACION", "EXTRACTO ORIGINAL AT", "EXTRACTO APARENTE", "EXTRACTO REAL", "ALCOHOL"]
+                if any(ex in str(col).upper() for ex in cols_excluidas):
+                    continue # Salta esta columna y la deja sin color
+            
             lsl, usl, std_l, std_u = obtener_limites(etapa_seleccionada, prod_fila, col)
-            if lsl is not None: estilos[i] = pintar_celdas(row[col], lsl, usl, std_l, std_u)
+            if lsl is not None: 
+                estilos[i] = pintar_celdas(row[col], lsl, usl, std_l, std_u)
         return estilos
 
     tab_datos, tab_spc, tab_tendencias = st.tabs(["DATASET", "SPC ANALYSIS", "TRENDS"])
@@ -155,10 +168,7 @@ if df is not None and not df.empty:
             eje_x = st.selectbox("Eje Temporal:", posibles_x if posibles_x else df.columns, index=0)
 
             df_trend = df.copy()
-            
-            # Para el gráfico de líneas de tiempo invertimos de nuevo para que cronológicamente vaya de izquierda a derecha
             df_trend = df_trend.iloc[::-1].reset_index(drop=True)
-            
             df_trend[var_tend] = pd.to_numeric(df_trend[var_tend].astype(str).str.replace(',', '.'), errors='coerce')
             df_trend = df_trend.dropna(subset=[var_tend])
             lsl_auto, usl_auto, std_l, std_u = obtener_limites(etapa_seleccionada, producto_actual, var_tend) if producto_actual != "Todos" else (None, None, None, None)
