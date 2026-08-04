@@ -14,7 +14,7 @@ st.sidebar.header("⚙️ Configuración y Filtros")
 
 url_ingresada = st.sidebar.text_input(
     "Enlace de Google Sheets:",
-    value="https://docs.google.com/spreadsheets/d/1YYwKl7sR7vBrJcQBbGxVxITQE8RlV7EezlyQK3Yw/edit"
+    value="https://docs.google.com/spreadsheets/d/1YiYwKJZsR7vBrLjCQBbGxzVxlTQEBRJVZEezJyQK3Yw/edit?pli=1&gid=1587615990#gid=1587615990"
 )
 
 PESTANAS = {
