@@ -118,7 +118,8 @@ if df is not None and not df.empty:
                 estilos[i] = pintar_celdas(row[col], lsl, usl, std_l, std_u)
         return estilos
 
-    tab_datos, tab_spc, tab_tendencias = st.tabs(["DATASET", "SPC ANALYSIS", "TRENDS"])
+    # AQUI ESTÁN TUS NUEVOS NOMBRES DE PESTAÑAS
+    tab_datos, tab_spc, tab_tendencias = st.tabs(["DATOS", "SPC ANALYTICS", "TENDENCIAS"])
 
     with tab_datos:
         st.dataframe(df.style.apply(aplicar_semaforo, axis=1), use_container_width=True)
