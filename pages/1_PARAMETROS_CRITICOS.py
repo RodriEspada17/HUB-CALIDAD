@@ -24,16 +24,33 @@ df, _ = cargar_datos(generar_url_csv(url_completa, gid_actual))
 producto_actual = "Todos"
 
 if df is not None and not df.empty:
+
+    # --- FILTRO Y PURGA DE COLUMNAS INNECESARIAS / VACÍAS ---
+    if etapa_seleccionada == "Cocimiento":
+        cols_blacklist = [
+            "EXTRACTO ORIGINAL FT A LAS 3HRS", "SO2", "FAN", "CALCIO",
+            "YODO MACERADO", "YODO MOSTO FRIO", "TBZ CALDERA LENA",
+            "TBZ FIN DE HERVIDO", "TBZ MOSTO FRIO"
+        ]
+        cols_a_borrar = [c for c in df.columns if any(b in c.upper() for b in cols_blacklist)]
+        df = df.drop(columns=cols_a_borrar, errors='ignore')
+
+    # Purga automática de cualquier columna que solo contenga valores 'None', 'NaN' o vacíos
+    cols_validas = []
+    for col in df.columns:
+        vals_check = df[col].astype(str).str.strip().str.upper()
+        if not vals_check.isin(['NONE', 'NAN', 'N/A', '', 'NONE.1']).all():
+            cols_validas.append(col)
+    df = df[cols_validas]
+
+    # --- FILTRADO DE PRODUCTO Y GRUPOS ---
     col_prod = [c for c in df.columns if "PRODUCTO" in str(c).upper()]
     if col_prod:
-        # Lógica de Limpieza (Lavadora de datos): quita espacios extras y normaliza a mayúsculas
         productos_limpios = df[col_prod[0]].astype(str).str.strip().str.upper()
         
-        # Opciones dinámicas para el desplegable
         if etapa_seleccionada == "Cocimiento":
             lista_productos = ["Todos", "Amstel", "Schneider", "Capital", "Malta Real"]
         else:
-            # Para otras etapas, elimina duplicados por culpa de mayúsculas/minúsculas
             raw_unique = productos_limpios.unique()
             formatted_unique = sorted(list(set([p.title() for p in raw_unique])))
             lista_productos = ["Todos"] + formatted_unique
@@ -41,7 +58,6 @@ if df is not None and not df.empty:
         prod_sel = st.sidebar.selectbox("Filtrar Producto", lista_productos)
         
         if prod_sel != "Todos":
-            # Agrupación Inteligente: Si elige Capital, jala Cordillera y Real
             if prod_sel.upper() == "CAPITAL":
                 df = df[productos_limpios.isin(["CAPITAL", "CORDILLERA", "REAL"])]
             elif prod_sel.upper() in ["MALTA REAL", "MALTA"]:
@@ -74,7 +90,6 @@ if df is not None and not df.empty:
         if prod_fila == "Todos":
             col_p = next((c for c in row.index if "PRODUCTO" in str(c).upper()), None)
             if col_p: 
-                # Asegurarse de limpiar el nombre de la fila al pintar en modo "Todos"
                 prod_fila = str(row[col_p]).strip().upper()
             else: 
                 return estilos
