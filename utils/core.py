@@ -5,28 +5,49 @@ import unicodedata
 
 # 1. DISEÑO CORPORATIVO TECH (Dark + Lime Green)
 def aplicar_estilo_neon():
+    import streamlit as st
     st.markdown("""
     <style>
-        /* Importar fuente moderna corporativa */
         @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&display=swap');
 
-        /* Fondo general ultra oscuro */
-        .stApp { 
-            background-color: #050505; 
-            color: #e0e0e0; 
-            font-family: 'Space Grotesk', sans-serif;
-        }
+        .stApp { background-color: #050505; color: #e0e0e0; font-family: 'Space Grotesk', sans-serif; }
         
-        /* Tipografías limpias y sin sombras exageradas */
         h1, h2, h3, h4, h5, h6 {
             color: #ffffff !important;
             font-family: 'Space Grotesk', sans-serif !important;
             text-shadow: none !important;
             text-transform: none !important;
-            letter-spacing: normal !important;
         }
 
-        /* Botones estilo "Get Started" de tu imagen */
+        /* --- MENÚ LATERAL (NEON GREEN) --- */
+        [data-testid="stSidebar"] {
+            background-color: #0a0a0a;
+            border-right: 1px solid #1a1a1a;
+        }
+        
+        /* Enlaces del menú en verde neón */
+        [data-testid="stSidebarNav"] a {
+            color: #a3ff00 !important;
+            font-weight: 700;
+            font-size: 1.1rem;
+            transition: all 0.3s ease;
+        }
+        [data-testid="stSidebarNav"] a:hover {
+            background-color: rgba(163, 255, 0, 0.15) !important;
+            text-shadow: 0 0 8px #a3ff00;
+        }
+
+        /* Hack CSS para renombrar 'app' a '🏠 Home' */
+        [data-testid="stSidebarNav"] ul li:first-child span {
+            font-size: 0px; /* Oculta el texto original */
+        }
+        [data-testid="stSidebarNav"] ul li:first-child span::before {
+            content: "🏠 Home";
+            font-size: 1.1rem; /* Restaura el tamaño para el texto nuevo */
+            color: #a3ff00;
+        }
+        /* --------------------------------- */
+
         div.stButton > button:first-child {
             background-color: #050505;
             color: #a3ff00;
@@ -35,42 +56,16 @@ def aplicar_estilo_neon():
             font-weight: 600;
             transition: all 0.3s ease;
             padding: 10px 24px;
-            box-shadow: none;
         }
         div.stButton > button:first-child:hover {
             background-color: #a3ff00;
             color: #050505;
             box-shadow: 0 0 15px rgba(163, 255, 0, 0.2);
             transform: translateY(-2px);
-            border-color: #a3ff00;
         }
-
-        /* Menú lateral elegante */
-        [data-testid="stSidebar"] {
-            background-color: #0a0a0a;
-            border-right: 1px solid #1a1a1a;
-        }
-
-        /* Cajas de Información / Alertas (estilo Glassmorphism ligero) */
-        div.stInfo {
-            background-color: rgba(163, 255, 0, 0.05);
-            border-left: 4px solid #a3ff00;
-            color: #e0e0e0;
-        }
-
-        /* Tablas de datos oscuras con bordes sutiles */
-        [data-testid="stDataFrame"] { 
-            background-color: #0f0f0f;
-            border-radius: 8px;
-            border: 1px solid #1a1a1a;
-        }
-
-        /* Textos pequeños y etiquetas */
-        label, .st-emotion-cache-1y4p8pa { 
-            color: #888888 !important; 
-            font-weight: 600; 
-            font-family: 'Space Grotesk', sans-serif;
-        }
+        
+        [data-testid="stDataFrame"] { background-color: #0f0f0f; border-radius: 8px; border: 1px solid #1a1a1a; }
+        label, .st-emotion-cache-1y4p8pa { color: #888888 !important; font-weight: 600; font-family: 'Space Grotesk', sans-serif; }
     </style>
     """, unsafe_allow_html=True)
 
