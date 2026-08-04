@@ -3,25 +3,74 @@ import pandas as pd
 import re
 import unicodedata
 
-# 1. DISEÑO NEON
+# 1. DISEÑO CORPORATIVO TECH (Dark + Lime Green)
 def aplicar_estilo_neon():
     st.markdown("""
     <style>
-        .stApp { background-color: #0a0b10; color: #e0e0e0; }
-        h1, h2, h3 {
-            color: #00f3ff !important;
-            text-shadow: 0 0 5px #00f3ff, 0 0 15px #00f3ff;
-            font-family: 'Courier New', Courier, monospace;
-            text-transform: uppercase;
-            letter-spacing: 2px;
+        /* Importar fuente moderna corporativa */
+        @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&display=swap');
+
+        /* Fondo general ultra oscuro */
+        .stApp { 
+            background-color: #050505; 
+            color: #e0e0e0; 
+            font-family: 'Space Grotesk', sans-serif;
         }
+        
+        /* Tipografías limpias y sin sombras exageradas */
+        h1, h2, h3, h4, h5, h6 {
+            color: #ffffff !important;
+            font-family: 'Space Grotesk', sans-serif !important;
+            text-shadow: none !important;
+            text-transform: none !important;
+            letter-spacing: normal !important;
+        }
+
+        /* Botones estilo "Get Started" de tu imagen */
+        div.stButton > button:first-child {
+            background-color: #050505;
+            color: #a3ff00;
+            border: 1px solid #a3ff00;
+            border-radius: 6px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            padding: 10px 24px;
+            box-shadow: none;
+        }
+        div.stButton > button:first-child:hover {
+            background-color: #a3ff00;
+            color: #050505;
+            box-shadow: 0 0 15px rgba(163, 255, 0, 0.2);
+            transform: translateY(-2px);
+            border-color: #a3ff00;
+        }
+
+        /* Menú lateral elegante */
         [data-testid="stSidebar"] {
-            background-color: #050508;
-            border-right: 1px solid #ff00ff;
-            box-shadow: 2px 0 15px #ff00ff44;
+            background-color: #0a0a0a;
+            border-right: 1px solid #1a1a1a;
         }
-        [data-testid="stDataFrame"] { background-color: #11141c; }
-        label, .st-emotion-cache-1y4p8pa { color: #ff00ff !important; font-weight: bold; }
+
+        /* Cajas de Información / Alertas (estilo Glassmorphism ligero) */
+        div.stInfo {
+            background-color: rgba(163, 255, 0, 0.05);
+            border-left: 4px solid #a3ff00;
+            color: #e0e0e0;
+        }
+
+        /* Tablas de datos oscuras con bordes sutiles */
+        [data-testid="stDataFrame"] { 
+            background-color: #0f0f0f;
+            border-radius: 8px;
+            border: 1px solid #1a1a1a;
+        }
+
+        /* Textos pequeños y etiquetas */
+        label, .st-emotion-cache-1y4p8pa { 
+            color: #888888 !important; 
+            font-weight: 600; 
+            font-family: 'Space Grotesk', sans-serif;
+        }
     </style>
     """, unsafe_allow_html=True)
 
