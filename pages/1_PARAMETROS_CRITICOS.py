@@ -8,7 +8,6 @@ st.set_page_config(page_title="Parámetros Críticos", layout="wide", page_icon=
 aplicar_estilo_neon()
 
 # --- SIDEBAR: NAVEGACIÓN Y FILTROS ---
-# Botón vectorizado, cero emojis
 st.sidebar.page_link("app.py", label="◀ VOLVER AL INICIO")
 
 st.sidebar.markdown("<br>", unsafe_allow_html=True)
@@ -120,6 +119,7 @@ if df is not None and not df.empty:
             </p>
         """, unsafe_allow_html=True)
 
+    # --- LÓGICA DE COLUMNAS (SEPARACIÓN SPC vs TENDENCIAS) ---
     cols_num_raw = [col for col in df.columns if pd.to_numeric(df[col].astype(str).str.replace(',', '.'), errors='coerce').notna().sum() > 3]
     
     idx_corte = len(df.columns)
@@ -127,15 +127,41 @@ if df is not None and not df.empty:
         if "EXTRACTO ORIGINAL AT" in str(col).upper() or "ATENUACION" in str(col).upper():
             idx_corte = min(idx_corte, i)
 
-    palabras_prohibidas_spc = ["DIAS", "LOTE", "FT", "VOLUMEN", "CANTIDAD", "COCIMIENTO"]
-    cols_spc_limpias = []
+    palabras_prohibidas_base = ["DIAS", "LOTE", "FT", "VOLUMEN", "CANTIDAD", "COCIMIENTO"]
+    cols_base = []
     
     for col in df.columns[:idx_corte]:
         if col in cols_num_raw:
             col_upper = str(col).upper()
-            if not any(prohibida in col_upper for prohibida in palabras_prohibidas_spc):
+            if not any(prohibida in col_upper for prohibida in palabras_prohibidas_base):
                 if col_upper != "FT":
-                    cols_spc_limpias.append(col)
+                    cols_base.append(col)
+
+    # Filtros avanzados específicos
+    cols_spc_limpias = []
+    cols_tend_limpias = []
+    
+    for col in cols_base:
+        col_upper = str(col).upper()
+        
+        # 1. Reglas para SPC
+        omitir_spc = False
+        if etapa_seleccionada == "Filtración":
+            if "CDGM" in col_upper:
+                omitir_spc = True
+                
+        if not omitir_spc:
+            cols_spc_limpias.append(col)
+            
+        # 2. Reglas para Tendencias
+        omitir_tend = False
+        if etapa_seleccionada == "Filtración":
+            if "CDGM" in col_upper or col_upper == "TP" or " TP " in f" {col_upper} ":
+                omitir_tend = True
+                
+        if not omitir_tend:
+            cols_tend_limpias.append(col)
+    # --------------------------------------------------------
 
     with tab_spc:
         if cols_spc_limpias:
@@ -168,8 +194,9 @@ if df is not None and not df.empty:
             st.info("No hay métricas de calidad disponibles para análisis SPC con los filtros actuales.")
 
     with tab_tendencias:
-        if cols_spc_limpias:
-            var_tend = st.selectbox("Parámetro de Seguimiento:", cols_spc_limpias, key="tend_var")
+        if cols_tend_limpias:
+            # AHORA USA LA LISTA EXCLUSIVA DE TENDENCIAS
+            var_tend = st.selectbox("Parámetro de Seguimiento:", cols_tend_limpias, key="tend_var")
             posibles_x = [c for c in df.columns if "FECHA DE AN" in str(c).upper() or "FECHA" in str(c).upper()]
             if not posibles_x: posibles_x = [c for c in df.columns if "LOTE" in str(c).upper()]
             eje_x = st.selectbox("Eje Temporal:", posibles_x if posibles_x else df.columns, index=0)
