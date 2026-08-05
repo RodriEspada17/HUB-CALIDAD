@@ -19,34 +19,17 @@ def aplicar_estilo_neon():
             text-transform: none !important;
         }
 
-        /* --- MENÚ LATERAL (NEON GREEN) --- */
+        /* --- MENÚ LATERAL (FONDO Y APAGADO DEL MENÚ AUTOMÁTICO) --- */
         [data-testid="stSidebar"] {
             background-color: #0a0a0a;
             border-right: 1px solid #1a1a1a;
         }
         
-        /* Enlaces del menú en verde neón */
-        [data-testid="stSidebarNav"] a {
-            color: #a3ff00 !important;
-            font-weight: 700;
-            font-size: 1.1rem;
-            transition: all 0.3s ease;
+        /* Apagamos el menú por defecto de Streamlit */
+        [data-testid="stSidebarNav"] {
+            display: none !important; 
         }
-        [data-testid="stSidebarNav"] a:hover {
-            background-color: rgba(163, 255, 0, 0.15) !important;
-            text-shadow: 0 0 8px #a3ff00;
-        }
-
-        /* Hack CSS para renombrar 'app' a 'Home' */
-        [data-testid="stSidebarNav"] ul li:first-child span {
-            font-size: 0px; /* Oculta el texto original */
-        }
-        [data-testid="stSidebarNav"] ul li:first-child span::before {
-            content: "Home";
-            font-size: 1.1rem; /* Restaura el tamaño para el texto nuevo */
-            color: #a3ff00;
-        }
-        /* --------------------------------- */
+        /* -------------------------------------------------------- */
 
         div.stButton > button:first-child {
             background-color: #050505;
