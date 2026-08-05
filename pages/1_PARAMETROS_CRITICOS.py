@@ -58,7 +58,8 @@ if df is not None and not df.empty:
             lista_productos = ["Todos", "Amstel", "Schneider", "Capital", "Malta Real"]
         else:
             raw_unique = productos_limpios.unique()
-            formatted_unique = sorted(list(set([p.title() for p in raw_unique])))
+            # ESCUDO PROTECTOR APLICADO AQUÍ: str(p) y filtro de basura
+            formatted_unique = sorted(list(set([str(p).title() for p in raw_unique if str(p).upper() not in ['NAN', 'NONE', 'N/A', '']])))
             lista_productos = ["Todos"] + formatted_unique
 
         prod_sel = st.sidebar.selectbox("Filtrar Producto", lista_productos)
@@ -132,7 +133,7 @@ if df is not None and not df.empty:
     
     for col in df.columns[:idx_corte]:
         if col in cols_num_raw:
-            col_upper = str(col).upper().strip() # <--- El eliminador de espacios fantasma
+            col_upper = str(col).upper().strip() 
             if not any(prohibida in col_upper for prohibida in palabras_prohibidas_base):
                 if col_upper != "FT":
                     cols_base.append(col)
@@ -146,7 +147,6 @@ if df is not None and not df.empty:
         
         omitir = False
         if etapa_seleccionada == "Filtración":
-            # Si se llama exactamente TP o contiene CDGM o TEMP en cualquier parte del nombre, MUERE.
             if col_upper == "TP" or "CDGM" in col_upper or "TEMP" in col_upper:
                 omitir = True
                 
