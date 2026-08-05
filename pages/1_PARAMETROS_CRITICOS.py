@@ -29,8 +29,16 @@ producto_actual = "Todos"
 
 if df is not None and not df.empty:
 
+    # --- 1. PURGA DE FILAS FANTASMA (El Terminator) ---
+    # Si la fila no tiene producto (ej. filas vacías del final de Google Sheets con fecha 1900), la aniquilamos antes de voltear la tabla
+    col_prod_temp = [c for c in df.columns if "PRODUCTO" in str(c).upper()]
+    if col_prod_temp:
+        df = df[~df[col_prod_temp[0]].astype(str).str.strip().str.upper().isin(['NAN', 'NONE', 'N/A', ''])]
+
+    # --- 2. ORDENAR DATOS ---
     df = df.iloc[::-1].reset_index(drop=True)
 
+    # --- 3. PURGA DE COLUMNAS BASURA ---
     cols_unnamed = [c for c in df.columns if "UNNAMED" in str(c).upper()]
     df = df.drop(columns=cols_unnamed, errors='ignore')
 
@@ -50,6 +58,7 @@ if df is not None and not df.empty:
             cols_validas.append(col)
     df = df[cols_validas]
 
+    # --- 4. FILTRADO POR PRODUCTO ---
     col_prod = [c for c in df.columns if "PRODUCTO" in str(c).upper()]
     if col_prod:
         productos_limpios = df[col_prod[0]].astype(str).str.strip().str.upper()
@@ -58,7 +67,6 @@ if df is not None and not df.empty:
             lista_productos = ["Todos", "Amstel", "Schneider", "Capital", "Malta Real"]
         else:
             raw_unique = productos_limpios.unique()
-            # ESCUDO PROTECTOR APLICADO AQUÍ: str(p) y filtro de basura
             formatted_unique = sorted(list(set([str(p).title() for p in raw_unique if str(p).upper() not in ['NAN', 'NONE', 'N/A', '']])))
             lista_productos = ["Todos"] + formatted_unique
 
