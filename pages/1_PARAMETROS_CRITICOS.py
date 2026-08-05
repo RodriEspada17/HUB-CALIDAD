@@ -3,12 +3,13 @@ import pandas as pd
 import plotly.express as px
 from utils.core import aplicar_estilo_neon, obtener_limites, generar_url_csv, cargar_datos
 
-st.set_page_config(page_title="Parámetros Críticos", layout="wide", page_icon="▪️")
+# Forzamos que la barra lateral empiece EXPANDIDA
+st.set_page_config(page_title="Parámetros Críticos", layout="wide", page_icon="▪️", initial_sidebar_state="expanded")
 aplicar_estilo_neon()
 
 # --- SIDEBAR: NAVEGACIÓN Y FILTROS ---
-# Este es el botón mágico para volver al Home
-st.sidebar.page_link("app.py", label="Volver al Home", icon="⬅️")
+# Botón vectorizado, cero emojis
+st.sidebar.page_link("app.py", label="◀ VOLVER AL INICIO")
 
 st.sidebar.markdown("<br>", unsafe_allow_html=True)
 st.sidebar.markdown("<h3 style='color: #a3ff00; font-size: 1.1rem; letter-spacing: 1px;'>⯈ FILTROS DE DATOS</h3>", unsafe_allow_html=True)
@@ -29,14 +30,11 @@ producto_actual = "Todos"
 
 if df is not None and not df.empty:
 
-    # 1. ORDENAR DATOS
     df = df.iloc[::-1].reset_index(drop=True)
 
-    # 2. PURGA GENERAL: "Unnamed"
     cols_unnamed = [c for c in df.columns if "UNNAMED" in str(c).upper()]
     df = df.drop(columns=cols_unnamed, errors='ignore')
 
-    # 3. PURGA ESPECÍFICA DE COCIMIENTO
     if etapa_seleccionada == "Cocimiento":
         cols_blacklist = [
             "EXTRACTO ORIGINAL FT A LAS 3HRS", "SO2", "FAN", "CALCIO",
@@ -46,7 +44,6 @@ if df is not None and not df.empty:
         cols_a_borrar = [c for c in df.columns if any(b in c.upper() for b in cols_blacklist)]
         df = df.drop(columns=cols_a_borrar, errors='ignore')
 
-    # 4. PURGA AUTOMÁTICA: Columnas vacías
     cols_validas = []
     for col in df.columns:
         vals_check = df[col].astype(str).str.strip().str.upper()
@@ -54,7 +51,6 @@ if df is not None and not df.empty:
             cols_validas.append(col)
     df = df[cols_validas]
 
-    # --- FILTRADO DE PRODUCTO Y GRUPOS ---
     col_prod = [c for c in df.columns if "PRODUCTO" in str(c).upper()]
     if col_prod:
         productos_limpios = df[col_prod[0]].astype(str).str.strip().str.upper()
@@ -78,7 +74,6 @@ if df is not None and not df.empty:
                 
             producto_actual = prod_sel
 
-    # --- SEMAFORIZACIÓN ELEGANTE ---
     def pintar_celdas(val, lsl, usl, std_l, std_u):
         if pd.isna(val) or str(val).strip().upper() in ['NONE', 'NAN', 'N/A', '']:
             return ''
@@ -110,8 +105,6 @@ if df is not None and not df.empty:
             if lsl is not None: estilos[i] = pintar_celdas(row[col], lsl, usl, std_l, std_u)
         return estilos
 
-    # --- RENDERIZADO DE PESTAÑAS DINÁMICO ---
-    # Solo mostrar Producción si estamos en Cocimiento
     if etapa_seleccionada == "Cocimiento":
         tab_datos, tab_spc, tab_tendencias, tab_prod = st.tabs(["DATOS", "ANÁLISIS SPC", "TENDENCIAS", "PRODUCCIÓN"])
     else:
@@ -127,7 +120,6 @@ if df is not None and not df.empty:
             </p>
         """, unsafe_allow_html=True)
 
-    # Lógica estricta para seleccionar columnas del SPC
     cols_num_raw = [col for col in df.columns if pd.to_numeric(df[col].astype(str).str.replace(',', '.'), errors='coerce').notna().sum() > 3]
     
     idx_corte = len(df.columns)
@@ -184,21 +176,16 @@ if df is not None and not df.empty:
 
             df_trend = df.copy()
             
-            # --- UNIFICACIÓN DE FAMILIAS PARA EL GRÁFICO ---
             if col_prod:
                 p_col = col_prod[0]
                 df_trend[p_col] = df_trend[p_col].astype(str).str.strip().str.title()
-                # Unificar familia CCR
                 df_trend.loc[df_trend[p_col].str.upper().isin(["CAPITAL", "CORDILLERA", "REAL"]), p_col] = "Capital (CCR)"
-                # Unificar Malta (por si acaso escriben "Malta" a secas)
                 df_trend.loc[df_trend[p_col].str.upper().isin(["MALTA REAL", "MALTA"]), p_col] = "Malta Real"
-            # -----------------------------------------------
             
-            # 1. PARSEO DE FECHAS Y ORDEN CRONOLÓGICO ESTRICTO
             if "FECHA" in eje_x.upper():
                 df_trend[eje_x] = pd.to_datetime(df_trend[eje_x], errors='coerce', dayfirst=True)
                 df_trend = df_trend.dropna(subset=[eje_x])
-                df_trend = df_trend.sort_values(by=eje_x) # Ordenar de pasado a futuro
+                df_trend = df_trend.sort_values(by=eje_x)
             else:
                 df_trend = df_trend.iloc[::-1].reset_index(drop=True)
                 
@@ -208,7 +195,6 @@ if df is not None and not df.empty:
             lsl_auto, usl_auto, std_l, std_u = obtener_limites(etapa_seleccionada, producto_actual, var_tend) if producto_actual != "Todos" else (None, None, None, None)
 
             if len(df_trend) > 0:
-                # 2. SEPARACIÓN INTELIGENTE DE LÍNEAS SI ESTÁ EN "TODOS"
                 if producto_actual == "Todos" and col_prod:
                     fig_trend = px.line(df_trend, x=eje_x, y=var_tend, color=col_prod[0], markers=True, template="plotly_dark")
                 else:
@@ -226,22 +212,17 @@ if df is not None and not df.empty:
                 
                 fig_trend.update_traces(line=dict(width=2), marker=dict(size=6))
                 
-                # Formatear el eje X para que muestre la fecha bonita
                 if "FECHA" in eje_x.upper():
                     fig_trend.update_xaxes(dtick="M1", tickformat="%b\n%Y")
                     
                 st.plotly_chart(fig_trend, use_container_width=True)
 
-    # --- PESTAÑA DE PRODUCCIÓN (SOLO COCIMIENTO) ---
     if etapa_seleccionada == "Cocimiento":
         with tab_prod:
             st.markdown("<h3 style='color: #a3ff00; font-size: 1.2rem;'>RESUMEN DE PRODUCCIÓN MENSUAL</h3>", unsafe_allow_html=True)
             
-            # Detectar columnas clave
             col_fecha = next((c for c in df.columns if "FECHA" in str(c).upper()), None)
             col_volumen = next((c for c in df.columns if "VOLUMEN" in str(c).upper()), None)
-            
-            # Ajuste de francotirador: Buscar explícitamente "CANT" de cocimientos, no "#" que es texto.
             col_coc = next((c for c in df.columns if "CANT" in str(c).upper() and "COCIMIENTO" in str(c).upper()), None)
 
             if col_fecha and (col_volumen or col_coc):
@@ -250,7 +231,6 @@ if df is not None and not df.empty:
                 df_prod = df_prod.dropna(subset=['FECHA_PARSEADA'])
                 
                 if not df_prod.empty:
-                    # Agrupar por Periodo (Año-Mes) para mantener orden cronológico
                     df_prod['Periodo'] = df_prod['FECHA_PARSEADA'].dt.to_period('M')
                     
                     agg_dict = {}
@@ -261,15 +241,11 @@ if df is not None and not df.empty:
                         df_prod[col_coc] = pd.to_numeric(df_prod[col_coc].astype(str).str.replace(',', '.'), errors='coerce').fillna(0)
                         agg_dict[col_coc] = 'sum'
                         
-                    # Agrupar y ordenar
                     df_resumen = df_prod.groupby('Periodo').agg(agg_dict).reset_index()
                     df_resumen = df_resumen.sort_values('Periodo')
                     
-                    # Diccionario traductor de meses a Español
                     meses_es = {"Jan": "Ene", "Feb": "Feb", "Mar": "Mar", "Apr": "Abr", "May": "May", "Jun": "Jun", 
                                 "Jul": "Jul", "Aug": "Ago", "Sep": "Sep", "Oct": "Oct", "Nov": "Nov", "Dec": "Dic"}
-                    
-                    # Crear columna 'Mes' formateada y traducida para el eje X
                     df_resumen['Mes'] = df_resumen['Periodo'].dt.strftime('%b %Y').replace(meses_es, regex=True)
                     
                     col1, col2 = st.columns(2)
