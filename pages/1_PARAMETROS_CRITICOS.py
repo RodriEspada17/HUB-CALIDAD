@@ -180,6 +180,16 @@ if df is not None and not df.empty:
 
             df_trend = df.copy()
             
+            # --- UNIFICACIÓN DE FAMILIAS PARA EL GRÁFICO ---
+            if col_prod:
+                p_col = col_prod[0]
+                df_trend[p_col] = df_trend[p_col].astype(str).str.strip().str.title()
+                # Unificar familia CCR
+                df_trend.loc[df_trend[p_col].str.upper().isin(["CAPITAL", "CORDILLERA", "REAL"]), p_col] = "Capital (CCR)"
+                # Unificar Malta (por si acaso escriben "Malta" a secas)
+                df_trend.loc[df_trend[p_col].str.upper().isin(["MALTA REAL", "MALTA"]), p_col] = "Malta Real"
+            # -----------------------------------------------
+            
             # 1. PARSEO DE FECHAS Y ORDEN CRONOLÓGICO ESTRICTO
             if "FECHA" in eje_x.upper():
                 df_trend[eje_x] = pd.to_datetime(df_trend[eje_x], errors='coerce', dayfirst=True)
@@ -212,7 +222,7 @@ if df is not None and not df.empty:
                 
                 fig_trend.update_traces(line=dict(width=2), marker=dict(size=6))
                 
-                # Formatear el eje X para que muestre la fecha bonita si es datetime
+                # Formatear el eje X para que muestre la fecha bonita
                 if "FECHA" in eje_x.upper():
                     fig_trend.update_xaxes(dtick="M1", tickformat="%b\n%Y")
                     
