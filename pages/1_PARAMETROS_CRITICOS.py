@@ -29,8 +29,7 @@ producto_actual = "Todos"
 
 if df is not None and not df.empty:
 
-    # --- 1. PURGA DE FILAS FANTASMA (El Terminator) ---
-    # Si la fila no tiene producto (ej. filas vacías del final de Google Sheets con fecha 1900), la aniquilamos antes de voltear la tabla
+    # --- 1. PURGA DE FILAS FANTASMA ---
     col_prod_temp = [c for c in df.columns if "PRODUCTO" in str(c).upper()]
     if col_prod_temp:
         df = df[~df[col_prod_temp[0]].astype(str).str.strip().str.upper().isin(['NAN', 'NONE', 'N/A', ''])]
@@ -154,8 +153,14 @@ if df is not None and not df.empty:
         col_upper = str(col).upper().strip()
         
         omitir = False
+        
+        # 1. Bloqueo GLOBAL (Desaparece "TP" en cualquier etapa)
+        if col_upper == "TP":
+            omitir = True
+            
+        # 2. Bloqueo ESPECÍFICO de Filtración
         if etapa_seleccionada == "Filtración":
-            if col_upper == "TP" or "CDGM" in col_upper or "TEMP" in col_upper:
+            if "CDGM" in col_upper or "TEMP" in col_upper:
                 omitir = True
                 
         if not omitir:
