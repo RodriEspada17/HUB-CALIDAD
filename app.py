@@ -66,7 +66,7 @@ st.markdown("""
     </div>
 """, unsafe_allow_html=True)
 
-img_b64 = obtener_imagen_base64("image_aec8a5.jpg")
+img_b64 = obtener_imagen_base64("BBO.jpeg")
 
 if img_b64:
     st.markdown(f"""
