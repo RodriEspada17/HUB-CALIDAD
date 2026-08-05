@@ -179,13 +179,27 @@ if df is not None and not df.empty:
             eje_x = st.selectbox("Eje Temporal:", posibles_x if posibles_x else df.columns, index=0)
 
             df_trend = df.copy()
-            df_trend = df_trend.iloc[::-1].reset_index(drop=True)
+            
+            # 1. PARSEO DE FECHAS Y ORDEN CRONOLÓGICO ESTRICTO
+            if "FECHA" in eje_x.upper():
+                df_trend[eje_x] = pd.to_datetime(df_trend[eje_x], errors='coerce', dayfirst=True)
+                df_trend = df_trend.dropna(subset=[eje_x])
+                df_trend = df_trend.sort_values(by=eje_x) # Ordenar de pasado a futuro
+            else:
+                df_trend = df_trend.iloc[::-1].reset_index(drop=True)
+                
             df_trend[var_tend] = pd.to_numeric(df_trend[var_tend].astype(str).str.replace(',', '.'), errors='coerce')
             df_trend = df_trend.dropna(subset=[var_tend])
+            
             lsl_auto, usl_auto, std_l, std_u = obtener_limites(etapa_seleccionada, producto_actual, var_tend) if producto_actual != "Todos" else (None, None, None, None)
 
             if len(df_trend) > 0:
-                fig_trend = px.line(df_trend, x=eje_x, y=var_tend, markers=True, template="plotly_dark", color_discrete_sequence=['#a3ff00'])
+                # 2. SEPARACIÓN INTELIGENTE DE LÍNEAS SI ESTÁ EN "TODOS"
+                if producto_actual == "Todos" and col_prod:
+                    fig_trend = px.line(df_trend, x=eje_x, y=var_tend, color=col_prod[0], markers=True, template="plotly_dark")
+                else:
+                    fig_trend = px.line(df_trend, x=eje_x, y=var_tend, markers=True, template="plotly_dark", color_discrete_sequence=['#a3ff00'])
+                
                 if lsl_auto is not None and usl_auto is not None:
                     fig_trend.add_hline(y=usl_auto, line_dash="solid", line_color="#f87171")
                     fig_trend.add_hline(y=lsl_auto, line_dash="solid", line_color="#f87171")
@@ -196,7 +210,12 @@ if df is not None and not df.empty:
                     texto_info = f"<b>{producto_actual}</b><br>TOL: {lsl_auto} - {usl_auto}<br>STD: {std_l} - {std_u}"
                     fig_trend.add_annotation(x=0.01, y=0.99, xref="paper", yref="paper", text=texto_info, showarrow=False, align="left", bgcolor="#0f0f0f", bordercolor="#333", borderwidth=1)
                 
-                fig_trend.update_traces(line=dict(width=2), marker=dict(size=6, color="#a3ff00"))
+                fig_trend.update_traces(line=dict(width=2), marker=dict(size=6))
+                
+                # Formatear el eje X para que muestre la fecha bonita si es datetime
+                if "FECHA" in eje_x.upper():
+                    fig_trend.update_xaxes(dtick="M1", tickformat="%b\n%Y")
+                    
                 st.plotly_chart(fig_trend, use_container_width=True)
 
     # --- PESTAÑA DE PRODUCCIÓN (SOLO COCIMIENTO) ---
