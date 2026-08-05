@@ -17,7 +17,7 @@ etapa_seleccionada = st.sidebar.selectbox("Etapa del Proceso", list(PESTANAS.key
 gid_actual = PESTANAS[etapa_seleccionada]
 url_completa = URL_BASE + gid_actual
 
-st.markdown(f"<h2 style='text-transform: uppercase; font-size: 1.8rem;'>MODULE / PARÁMETROS CRÍTICOS / <span style='color: #a3ff00;'>{etapa_seleccionada}</span></h2>", unsafe_allow_html=True)
+st.markdown(f"<h2 style='text-transform: uppercase; font-size: 1.8rem;'>MÓDULO / PARÁMETROS CRÍTICOS / <span style='color: #a3ff00;'>{etapa_seleccionada}</span></h2>", unsafe_allow_html=True)
 st.markdown("<br>", unsafe_allow_html=True)
 
 df, _ = cargar_datos(generar_url_csv(url_completa, gid_actual))
@@ -106,8 +106,12 @@ if df is not None and not df.empty:
             if lsl is not None: estilos[i] = pintar_celdas(row[col], lsl, usl, std_l, std_u)
         return estilos
 
-    # --- RENDERIZADO DE PESTAÑAS (4 TABS AHORA) ---
-    tab_datos, tab_spc, tab_tendencias, tab_prod = st.tabs(["DATOS", "SPC ANALYTICS", "TENDENCIAS", "PRODUCCIÓN"])
+    # --- RENDERIZADO DE PESTAÑAS DINÁMICO ---
+    # Solo mostrar Producción si estamos en Cocimiento
+    if etapa_seleccionada == "Cocimiento":
+        tab_datos, tab_spc, tab_tendencias, tab_prod = st.tabs(["DATOS", "ANÁLISIS SPC", "TENDENCIAS", "PRODUCCIÓN"])
+    else:
+        tab_datos, tab_spc, tab_tendencias = st.tabs(["DATOS", "ANÁLISIS SPC", "TENDENCIAS"])
 
     with tab_datos:
         st.dataframe(df.style.apply(aplicar_semaforo, axis=1), use_container_width=True)
@@ -122,13 +126,11 @@ if df is not None and not df.empty:
     # Lógica estricta para seleccionar columnas del SPC
     cols_num_raw = [col for col in df.columns if pd.to_numeric(df[col].astype(str).str.replace(',', '.'), errors='coerce').notna().sum() > 3]
     
-    # 1. Encontrar el índice de "Extracto Original AT" para cortar a la derecha
     idx_corte = len(df.columns)
     for i, col in enumerate(df.columns):
         if "EXTRACTO ORIGINAL AT" in str(col).upper() or "ATENUACION" in str(col).upper():
             idx_corte = min(idx_corte, i)
 
-    # 2. Filtrar columnas operativas de la lista
     palabras_prohibidas_spc = ["DIAS", "LOTE", "FT", "VOLUMEN", "CANTIDAD", "COCIMIENTO"]
     cols_spc_limpias = []
     
@@ -136,7 +138,6 @@ if df is not None and not df.empty:
         if col in cols_num_raw:
             col_upper = str(col).upper()
             if not any(prohibida in col_upper for prohibida in palabras_prohibidas_spc):
-                # Filtro extra estricto para aislar la palabra "FT" exacta si se coló
                 if col_upper != "FT":
                     cols_spc_limpias.append(col)
 
@@ -198,53 +199,63 @@ if df is not None and not df.empty:
                 fig_trend.update_traces(line=dict(width=2), marker=dict(size=6, color="#a3ff00"))
                 st.plotly_chart(fig_trend, use_container_width=True)
 
-    # --- NUEVA PESTAÑA DE PRODUCCIÓN ---
-    with tab_prod:
-        st.markdown("<h3 style='color: #a3ff00; font-size: 1.2rem;'>RESUMEN DE PRODUCCIÓN MENSUAL</h3>", unsafe_allow_html=True)
-        
-        # Detectar columnas clave de forma dinámica
-        col_fecha = next((c for c in df.columns if "FECHA" in str(c).upper()), None)
-        col_volumen = next((c for c in df.columns if "VOLUMEN" in str(c).upper()), None)
-        col_coc = next((c for c in df.columns if "COCIMIENTO" in str(c).upper() and ("CANT" in str(c).upper() or "#" in str(c).upper())), None)
-
-        if col_fecha and (col_volumen or col_coc):
-            df_prod = df.copy()
-            # Convertir fechas asegurando formato día-mes-año
-            df_prod['FECHA_PARSEADA'] = pd.to_datetime(df_prod[col_fecha], errors='coerce', dayfirst=True)
-            df_prod = df_prod.dropna(subset=['FECHA_PARSEADA'])
+    # --- PESTAÑA DE PRODUCCIÓN (SOLO COCIMIENTO) ---
+    if etapa_seleccionada == "Cocimiento":
+        with tab_prod:
+            st.markdown("<h3 style='color: #a3ff00; font-size: 1.2rem;'>RESUMEN DE PRODUCCIÓN MENSUAL</h3>", unsafe_allow_html=True)
             
-            if not df_prod.empty:
-                # Extraer Mes y Año
-                df_prod['Mes'] = df_prod['FECHA_PARSEADA'].dt.to_period('M').astype(str)
+            # Detectar columnas clave
+            col_fecha = next((c for c in df.columns if "FECHA" in str(c).upper()), None)
+            col_volumen = next((c for c in df.columns if "VOLUMEN" in str(c).upper()), None)
+            
+            # Ajuste de francotirador: Buscar explícitamente "CANT" de cocimientos, no "#" que es texto.
+            col_coc = next((c for c in df.columns if "CANT" in str(c).upper() and "COCIMIENTO" in str(c).upper()), None)
+
+            if col_fecha and (col_volumen or col_coc):
+                df_prod = df.copy()
+                df_prod['FECHA_PARSEADA'] = pd.to_datetime(df_prod[col_fecha], errors='coerce', dayfirst=True)
+                df_prod = df_prod.dropna(subset=['FECHA_PARSEADA'])
                 
-                agg_dict = {}
-                if col_volumen:
-                    df_prod[col_volumen] = pd.to_numeric(df_prod[col_volumen].astype(str).str.replace(',', '.'), errors='coerce').fillna(0)
-                    agg_dict[col_volumen] = 'sum'
-                if col_coc:
-                    df_prod[col_coc] = pd.to_numeric(df_prod[col_coc].astype(str).str.replace(',', '.'), errors='coerce').fillna(0)
-                    agg_dict[col_coc] = 'sum'
+                if not df_prod.empty:
+                    # Agrupar por Periodo (Año-Mes) para mantener orden cronológico
+                    df_prod['Periodo'] = df_prod['FECHA_PARSEADA'].dt.to_period('M')
                     
-                # Agrupar por mes sumando los totales
-                df_resumen = df_prod.groupby('Mes').agg(agg_dict).reset_index()
-                
-                col1, col2 = st.columns(2)
-                
-                if col_volumen:
-                    with col1:
-                        fig_vol = px.bar(df_resumen, x='Mes', y=col_volumen, title=f"Total {col_volumen}", text_auto='.2s', template="plotly_dark", color_discrete_sequence=['#143324'])
-                        fig_vol.update_traces(marker=dict(line=dict(width=1, color='#4ade80')))
-                        st.plotly_chart(fig_vol, use_container_width=True)
+                    agg_dict = {}
+                    if col_volumen:
+                        df_prod[col_volumen] = pd.to_numeric(df_prod[col_volumen].astype(str).str.replace(',', '.'), errors='coerce').fillna(0)
+                        agg_dict[col_volumen] = 'sum'
+                    if col_coc:
+                        df_prod[col_coc] = pd.to_numeric(df_prod[col_coc].astype(str).str.replace(',', '.'), errors='coerce').fillna(0)
+                        agg_dict[col_coc] = 'sum'
                         
-                if col_coc:
-                    with col2:
-                        fig_coc = px.bar(df_resumen, x='Mes', y=col_coc, title=f"Total {col_coc}", text_auto=True, template="plotly_dark", color_discrete_sequence=['#3b181a'])
-                        fig_coc.update_traces(marker=dict(line=dict(width=1, color='#f87171')))
-                        st.plotly_chart(fig_coc, use_container_width=True)
+                    # Agrupar y ordenar
+                    df_resumen = df_prod.groupby('Periodo').agg(agg_dict).reset_index()
+                    df_resumen = df_resumen.sort_values('Periodo')
+                    
+                    # Diccionario traductor de meses a Español
+                    meses_es = {"Jan": "Ene", "Feb": "Feb", "Mar": "Mar", "Apr": "Abr", "May": "May", "Jun": "Jun", 
+                                "Jul": "Jul", "Aug": "Ago", "Sep": "Sep", "Oct": "Oct", "Nov": "Nov", "Dec": "Dic"}
+                    
+                    # Crear columna 'Mes' formateada y traducida para el eje X
+                    df_resumen['Mes'] = df_resumen['Periodo'].dt.strftime('%b %Y').replace(meses_es, regex=True)
+                    
+                    col1, col2 = st.columns(2)
+                    
+                    if col_volumen:
+                        with col1:
+                            fig_vol = px.bar(df_resumen, x='Mes', y=col_volumen, title=f"Total {col_volumen}", text_auto='.2s', template="plotly_dark", color_discrete_sequence=['#143324'])
+                            fig_vol.update_traces(marker=dict(line=dict(width=1, color='#4ade80')))
+                            st.plotly_chart(fig_vol, use_container_width=True)
+                            
+                    if col_coc:
+                        with col2:
+                            fig_coc = px.bar(df_resumen, x='Mes', y=col_coc, title=f"Total {col_coc}", text_auto=True, template="plotly_dark", color_discrete_sequence=['#3b181a'])
+                            fig_coc.update_traces(marker=dict(line=dict(width=1, color='#f87171')))
+                            st.plotly_chart(fig_coc, use_container_width=True)
+                else:
+                    st.warning("⚠️ No se pudo procesar la fecha para hacer la agrupación mensual.")
             else:
-                st.warning("⚠️ No se pudo procesar la fecha para hacer la agrupación mensual.")
-        else:
-            st.info("⚠️ Las columnas de 'Volumen' o 'Cantidad de cocimientos' no están disponibles en esta etapa para hacer el reporte.")
+                st.info("⚠️ Las columnas de 'Volumen' o 'Cantidad de cocimientos' no están disponibles en esta etapa para hacer el reporte.")
 
 else:
     st.error("Error de conexión de datos. Verifique la estructura del origen.")
