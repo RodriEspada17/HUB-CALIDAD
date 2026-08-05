@@ -119,7 +119,7 @@ if df is not None and not df.empty:
             </p>
         """, unsafe_allow_html=True)
 
-    # --- LÓGICA DE COLUMNAS (SEPARACIÓN SPC vs TENDENCIAS) ---
+    # --- LÓGICA DE COLUMNAS A PRUEBA DE BALAS ---
     cols_num_raw = [col for col in df.columns if pd.to_numeric(df[col].astype(str).str.replace(',', '.'), errors='coerce').notna().sum() > 3]
     
     idx_corte = len(df.columns)
@@ -132,34 +132,26 @@ if df is not None and not df.empty:
     
     for col in df.columns[:idx_corte]:
         if col in cols_num_raw:
-            col_upper = str(col).upper()
+            col_upper = str(col).upper().strip() # <--- El eliminador de espacios fantasma
             if not any(prohibida in col_upper for prohibida in palabras_prohibidas_base):
                 if col_upper != "FT":
                     cols_base.append(col)
 
-    # Filtros avanzados específicos
+    # Guillotina final para SPC y Tendencias
     cols_spc_limpias = []
     cols_tend_limpias = []
     
     for col in cols_base:
-        col_upper = str(col).upper()
+        col_upper = str(col).upper().strip()
         
-        # 1. Reglas para SPC
-        omitir_spc = False
+        omitir = False
         if etapa_seleccionada == "Filtración":
-            if "CDGM" in col_upper:
-                omitir_spc = True
+            # Si se llama exactamente TP o contiene CDGM o TEMP en cualquier parte del nombre, MUERE.
+            if col_upper == "TP" or "CDGM" in col_upper or "TEMP" in col_upper:
+                omitir = True
                 
-        if not omitir_spc:
+        if not omitir:
             cols_spc_limpias.append(col)
-            
-        # 2. Reglas para Tendencias
-        omitir_tend = False
-        if etapa_seleccionada == "Filtración":
-            if "CDGM" in col_upper or col_upper == "TP" or " TP " in f" {col_upper} ":
-                omitir_tend = True
-                
-        if not omitir_tend:
             cols_tend_limpias.append(col)
     # --------------------------------------------------------
 
@@ -195,7 +187,6 @@ if df is not None and not df.empty:
 
     with tab_tendencias:
         if cols_tend_limpias:
-            # AHORA USA LA LISTA EXCLUSIVA DE TENDENCIAS
             var_tend = st.selectbox("Parámetro de Seguimiento:", cols_tend_limpias, key="tend_var")
             posibles_x = [c for c in df.columns if "FECHA DE AN" in str(c).upper() or "FECHA" in str(c).upper()]
             if not posibles_x: posibles_x = [c for c in df.columns if "LOTE" in str(c).upper()]
