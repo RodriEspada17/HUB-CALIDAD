@@ -6,7 +6,11 @@ from utils.core import aplicar_estilo_neon, obtener_limites, generar_url_csv, ca
 st.set_page_config(page_title="Parámetros Críticos", layout="wide", page_icon="▪️")
 aplicar_estilo_neon()
 
-# --- SIDEBAR: FILTROS LIMPIOS ---
+# --- SIDEBAR: NAVEGACIÓN Y FILTROS ---
+# Este es el botón mágico para volver al Home
+st.sidebar.page_link("app.py", label="Volver al Home", icon="⬅️")
+
+st.sidebar.markdown("<br>", unsafe_allow_html=True)
 st.sidebar.markdown("<h3 style='color: #a3ff00; font-size: 1.1rem; letter-spacing: 1px;'>⯈ FILTROS DE DATOS</h3>", unsafe_allow_html=True)
 st.sidebar.markdown("<hr style='border: 1px solid #1a1a1a; margin-top: 0.5rem; margin-bottom: 1.5rem;'>", unsafe_allow_html=True)
 
