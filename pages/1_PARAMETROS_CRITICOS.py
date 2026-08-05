@@ -25,14 +25,14 @@ producto_actual = "Todos"
 
 if df is not None and not df.empty:
 
-    # 1. ORDENAR DATOS: Voltear la tabla para ver lo más reciente arriba
+    # 1. ORDENAR DATOS
     df = df.iloc[::-1].reset_index(drop=True)
 
-    # 2. PURGA GENERAL: Destruir columnas basura "Unnamed" de Pandas
+    # 2. PURGA GENERAL: "Unnamed"
     cols_unnamed = [c for c in df.columns if "UNNAMED" in str(c).upper()]
     df = df.drop(columns=cols_unnamed, errors='ignore')
 
-    # 3. PURGA ESPECÍFICA: Filtro de Cocimiento
+    # 3. PURGA ESPECÍFICA DE COCIMIENTO
     if etapa_seleccionada == "Cocimiento":
         cols_blacklist = [
             "EXTRACTO ORIGINAL FT A LAS 3HRS", "SO2", "FAN", "CALCIO",
@@ -42,7 +42,7 @@ if df is not None and not df.empty:
         cols_a_borrar = [c for c in df.columns if any(b in c.upper() for b in cols_blacklist)]
         df = df.drop(columns=cols_a_borrar, errors='ignore')
 
-    # 4. PURGA AUTOMÁTICA: Eliminar columnas 100% vacías o llenas de 'None'
+    # 4. PURGA AUTOMÁTICA: Columnas vacías
     cols_validas = []
     for col in df.columns:
         vals_check = df[col].astype(str).str.strip().str.upper()
@@ -55,7 +55,6 @@ if df is not None and not df.empty:
     if col_prod:
         productos_limpios = df[col_prod[0]].astype(str).str.strip().str.upper()
         
-        # Unificamos el filtro para Cocimiento Y Fin de Reposo
         if etapa_seleccionada in ["Cocimiento", "Fin de Reposo"]:
             lista_productos = ["Todos", "Amstel", "Schneider", "Capital", "Malta Real"]
         else:
@@ -75,24 +74,18 @@ if df is not None and not df.empty:
                 
             producto_actual = prod_sel
 
-    # --- SEMAFORIZACIÓN ELEGANTE (DARK PASTELS) ---
+    # --- SEMAFORIZACIÓN ELEGANTE ---
     def pintar_celdas(val, lsl, usl, std_l, std_u):
-        # Seguro contra celdas vacías o "None"
         if pd.isna(val) or str(val).strip().upper() in ['NONE', 'NAN', 'N/A', '']:
             return ''
-            
         try:
             v = float(str(val).replace(',', '.'))
             if lsl is not None and usl is not None:
-                if v < lsl or v > usl: 
-                    return 'background-color: #3b181a; color: #f87171;' 
+                if v < lsl or v > usl: return 'background-color: #3b181a; color: #f87171;' 
                 elif std_l is not None and std_u is not None:
-                    if std_l <= v <= std_u: 
-                        return 'background-color: #143324; color: #4ade80;' 
-                    else: 
-                        return 'background-color: #332d14; color: #facc15;' 
-                else: 
-                    return 'background-color: #332d14; color: #facc15;'
+                    if std_l <= v <= std_u: return 'background-color: #143324; color: #4ade80;' 
+                    else: return 'background-color: #332d14; color: #facc15;' 
+                else: return 'background-color: #332d14; color: #facc15;'
         except: pass
         return ''
 
@@ -101,25 +94,20 @@ if df is not None and not df.empty:
         prod_fila = producto_actual
         if prod_fila == "Todos":
             col_p = next((c for c in row.index if "PRODUCTO" in str(c).upper()), None)
-            if col_p: 
-                prod_fila = str(row[col_p]).strip().upper()
-            else: 
-                return estilos
+            if col_p: prod_fila = str(row[col_p]).strip().upper()
+            else: return estilos
                 
         for i, col in enumerate(row.index):
-            # Excepción: No pintar ciertas columnas si estamos en Cocimiento
             if etapa_seleccionada == "Cocimiento":
                 cols_excluidas = ["ATENUACION", "EXTRACTO ORIGINAL AT", "EXTRACTO APARENTE", "EXTRACTO REAL", "ALCOHOL"]
-                if any(ex in str(col).upper() for ex in cols_excluidas):
-                    continue # Salta esta columna y la deja sin color
+                if any(ex in str(col).upper() for ex in cols_excluidas): continue
             
             lsl, usl, std_l, std_u = obtener_limites(etapa_seleccionada, prod_fila, col)
-            if lsl is not None: 
-                estilos[i] = pintar_celdas(row[col], lsl, usl, std_l, std_u)
+            if lsl is not None: estilos[i] = pintar_celdas(row[col], lsl, usl, std_l, std_u)
         return estilos
 
-    # AQUI ESTÁN TUS NUEVOS NOMBRES DE PESTAÑAS
-    tab_datos, tab_spc, tab_tendencias = st.tabs(["DATOS", "SPC ANALYTICS", "TENDENCIAS"])
+    # --- RENDERIZADO DE PESTAÑAS (4 TABS AHORA) ---
+    tab_datos, tab_spc, tab_tendencias, tab_prod = st.tabs(["DATOS", "SPC ANALYTICS", "TENDENCIAS", "PRODUCCIÓN"])
 
     with tab_datos:
         st.dataframe(df.style.apply(aplicar_semaforo, axis=1), use_container_width=True)
@@ -131,11 +119,30 @@ if df is not None and not df.empty:
             </p>
         """, unsafe_allow_html=True)
 
-    cols_num = [col for col in df.columns if pd.to_numeric(df[col].astype(str).str.replace(',', '.'), errors='coerce').notna().sum() > 3]
+    # Lógica estricta para seleccionar columnas del SPC
+    cols_num_raw = [col for col in df.columns if pd.to_numeric(df[col].astype(str).str.replace(',', '.'), errors='coerce').notna().sum() > 3]
+    
+    # 1. Encontrar el índice de "Extracto Original AT" para cortar a la derecha
+    idx_corte = len(df.columns)
+    for i, col in enumerate(df.columns):
+        if "EXTRACTO ORIGINAL AT" in str(col).upper() or "ATENUACION" in str(col).upper():
+            idx_corte = min(idx_corte, i)
+
+    # 2. Filtrar columnas operativas de la lista
+    palabras_prohibidas_spc = ["DIAS", "LOTE", "FT", "VOLUMEN", "CANTIDAD", "COCIMIENTO"]
+    cols_spc_limpias = []
+    
+    for col in df.columns[:idx_corte]:
+        if col in cols_num_raw:
+            col_upper = str(col).upper()
+            if not any(prohibida in col_upper for prohibida in palabras_prohibidas_spc):
+                # Filtro extra estricto para aislar la palabra "FT" exacta si se coló
+                if col_upper != "FT":
+                    cols_spc_limpias.append(col)
 
     with tab_spc:
-        if cols_num:
-            var_analizar = st.selectbox("Métrica a analizar:", cols_num, key="spc_var")
+        if cols_spc_limpias:
+            var_analizar = st.selectbox("Métrica a analizar:", cols_spc_limpias, key="spc_var")
             datos_clean = pd.to_numeric(df[var_analizar].astype(str).str.replace(',', '.'), errors='coerce').dropna()
             lsl_auto, usl_auto, _, _ = obtener_limites(etapa_seleccionada, producto_actual, var_analizar) if producto_actual != "Todos" else (None, None, None, None)
             
@@ -160,10 +167,12 @@ if df is not None and not df.empty:
                     fig_hist.add_vline(x=lsl, line_dash="dash", line_color="#f87171", annotation_text="LSL")
                     fig_hist.add_vline(x=usl, line_dash="dash", line_color="#f87171", annotation_text="USL")
                     st.plotly_chart(fig_hist, use_container_width=True)
+        else:
+            st.info("No hay métricas de calidad disponibles para análisis SPC con los filtros actuales.")
 
     with tab_tendencias:
-        if cols_num:
-            var_tend = st.selectbox("Parámetro de Seguimiento:", cols_num, key="tend_var")
+        if cols_spc_limpias:
+            var_tend = st.selectbox("Parámetro de Seguimiento:", cols_spc_limpias, key="tend_var")
             posibles_x = [c for c in df.columns if "FECHA DE AN" in str(c).upper() or "FECHA" in str(c).upper()]
             if not posibles_x: posibles_x = [c for c in df.columns if "LOTE" in str(c).upper()]
             eje_x = st.selectbox("Eje Temporal:", posibles_x if posibles_x else df.columns, index=0)
@@ -188,5 +197,54 @@ if df is not None and not df.empty:
                 
                 fig_trend.update_traces(line=dict(width=2), marker=dict(size=6, color="#a3ff00"))
                 st.plotly_chart(fig_trend, use_container_width=True)
+
+    # --- NUEVA PESTAÑA DE PRODUCCIÓN ---
+    with tab_prod:
+        st.markdown("<h3 style='color: #a3ff00; font-size: 1.2rem;'>RESUMEN DE PRODUCCIÓN MENSUAL</h3>", unsafe_allow_html=True)
+        
+        # Detectar columnas clave de forma dinámica
+        col_fecha = next((c for c in df.columns if "FECHA" in str(c).upper()), None)
+        col_volumen = next((c for c in df.columns if "VOLUMEN" in str(c).upper()), None)
+        col_coc = next((c for c in df.columns if "COCIMIENTO" in str(c).upper() and ("CANT" in str(c).upper() or "#" in str(c).upper())), None)
+
+        if col_fecha and (col_volumen or col_coc):
+            df_prod = df.copy()
+            # Convertir fechas asegurando formato día-mes-año
+            df_prod['FECHA_PARSEADA'] = pd.to_datetime(df_prod[col_fecha], errors='coerce', dayfirst=True)
+            df_prod = df_prod.dropna(subset=['FECHA_PARSEADA'])
+            
+            if not df_prod.empty:
+                # Extraer Mes y Año
+                df_prod['Mes'] = df_prod['FECHA_PARSEADA'].dt.to_period('M').astype(str)
+                
+                agg_dict = {}
+                if col_volumen:
+                    df_prod[col_volumen] = pd.to_numeric(df_prod[col_volumen].astype(str).str.replace(',', '.'), errors='coerce').fillna(0)
+                    agg_dict[col_volumen] = 'sum'
+                if col_coc:
+                    df_prod[col_coc] = pd.to_numeric(df_prod[col_coc].astype(str).str.replace(',', '.'), errors='coerce').fillna(0)
+                    agg_dict[col_coc] = 'sum'
+                    
+                # Agrupar por mes sumando los totales
+                df_resumen = df_prod.groupby('Mes').agg(agg_dict).reset_index()
+                
+                col1, col2 = st.columns(2)
+                
+                if col_volumen:
+                    with col1:
+                        fig_vol = px.bar(df_resumen, x='Mes', y=col_volumen, title=f"Total {col_volumen}", text_auto='.2s', template="plotly_dark", color_discrete_sequence=['#143324'])
+                        fig_vol.update_traces(marker=dict(line=dict(width=1, color='#4ade80')))
+                        st.plotly_chart(fig_vol, use_container_width=True)
+                        
+                if col_coc:
+                    with col2:
+                        fig_coc = px.bar(df_resumen, x='Mes', y=col_coc, title=f"Total {col_coc}", text_auto=True, template="plotly_dark", color_discrete_sequence=['#3b181a'])
+                        fig_coc.update_traces(marker=dict(line=dict(width=1, color='#f87171')))
+                        st.plotly_chart(fig_coc, use_container_width=True)
+            else:
+                st.warning("⚠️ No se pudo procesar la fecha para hacer la agrupación mensual.")
+        else:
+            st.info("⚠️ Las columnas de 'Volumen' o 'Cantidad de cocimientos' no están disponibles en esta etapa para hacer el reporte.")
+
 else:
     st.error("Error de conexión de datos. Verifique la estructura del origen.")
