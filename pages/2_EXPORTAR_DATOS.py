@@ -7,7 +7,7 @@ from utils.core import aplicar_estilo_neon, generar_url_csv, cargar_datos
 st.set_page_config(page_title="Exportar Datos", layout="wide", initial_sidebar_state="expanded")
 aplicar_estilo_neon()
 
-# --- CSS AVANZADO: PURGA DE AZUL Y BOTONES NEÓN EN SIDEBAR ---
+# --- CSS AVANZADO: ESTANDARIZACIÓN DE BOTONES Y ENLACES NEÓN ---
 st.markdown("""
     <style>
     /* 1. Botones principales del módulo */
@@ -54,7 +54,7 @@ st.markdown("""
         margin: 0 !important;
     }
 
-    /* 3. Botón de WhatsApp a prueba de navegadores (Chao azul feo) */
+    /* 3. Botón de WhatsApp a prueba de navegadores */
     .btn-wpp-neon {
         display: block !important;
         width: 100% !important;
@@ -190,10 +190,11 @@ if df is not None and not df.empty:
             else:
                 registro = df_filtro.iloc[0]
                 
-                mensaje = f"REPORTE DE CALIDAD BBO\n"
-                mensaje += f"Etapa: {etapa_seleccionada}\n"
-                mensaje += f"Producto: {prod_sel}\n"
-                mensaje += f"FT: {ft_input} | Lote FT: {lote_input}\n"
+                # --- FORMATO WHATSAPP (Asteriscos para Negrita, Guiones bajos para Cursiva) ---
+                mensaje = f"*REPORTE DE CALIDAD BBO*\n"
+                mensaje += f"*Etapa:* {etapa_seleccionada}\n"
+                mensaje += f"*Producto:* {prod_sel}\n"
+                mensaje += f"*FT:* {ft_input} | *Lote FT:* {lote_input}\n"
                 mensaje += f"-----------------------------------\n"
                 
                 for col in df_filtro.columns:
@@ -211,11 +212,12 @@ if df is not None and not df.empty:
                             nombre_columna_formateado = f"{col} {unidad}"
                             break
                     
-                    mensaje += f"{nombre_columna_formateado}: {val}\n"
+                    mensaje += f"*{nombre_columna_formateado}:* {val}\n"
                 
                 mensaje += f"-----------------------------------\n"
-                mensaje += f" Generado automáticamente desde BBO HUB"
+                mensaje += f"_Generado automáticamente desde BBO HUB_"
 
+                # GUARDAR EN MEMORIA
                 st.session_state.mensaje_wpp = mensaje
                 st.session_state.reporte_listo = True
 
@@ -256,6 +258,7 @@ if df is not None and not df.empty:
                 mensaje_codificado = urllib.parse.quote(st.session_state.mensaje_wpp)
                 url_whatsapp = f"https://wa.me/{st.session_state.phone_number}?text={mensaje_codificado}"
                 
+                # Usamos la clase pura de CSS que inyectamos arriba
                 st.markdown(f'<a href="{url_whatsapp}" target="_blank" class="btn-wpp-neon">ENVIAR REPORTE AL DESTINO</a>', unsafe_allow_html=True)
 
 else:
