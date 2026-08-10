@@ -12,7 +12,7 @@ if 'autenticado' not in st.session_state:
 # Aplica la tipografía y el fondo base
 aplicar_estilo_neon()
 
-# --- CSS GLOBAL DE ALTA GAMA ---
+# --- CSS GLOBAL DE ALTA GAMA Y TARJETAS NEÓN ---
 st.markdown("""
     <style>
     /* 1. Destructor total del menú feo por defecto de Streamlit */
@@ -77,32 +77,72 @@ st.markdown("""
         color: #f87171 !important;
     }
 
-    /* 4. Estilizado Neón idéntico a las Tarjetas de la Derecha */
+    /* 4. TARJETAS NEÓN CON DISEÑO FIDELIDAD IDÉNTICA */
+    .card-module {
+        background-color: #0a0a0a;
+        border: 1px solid #1a1a1a;
+        padding: 25px;
+        border-radius: 12px;
+        transition: all 0.3s ease;
+        min-height: 190px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+    }
+    .card-module:hover {
+        border-color: #333333;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        transform: translateY(-3px);
+    }
+    .card-slashes {
+        color: #a3ff00;
+        font-weight: 800;
+        font-size: 1.2rem;
+        letter-spacing: 2px;
+        margin-bottom: 10px;
+    }
+    .card-title-text {
+        color: #ffffff;
+        font-size: 1.3rem;
+        font-weight: 700;
+        margin-bottom: 10px;
+        font-family: 'Space Grotesk', sans-serif;
+    }
+    .card-desc-text {
+        color: #888888;
+        font-size: 0.88rem;
+        line-height: 1.5;
+        margin-bottom: 20px;
+    }
+    .pill-activo {
+        display: inline-block;
+        background-color: rgba(163, 255, 0, 0.1);
+        color: #a3ff00;
+        border: 1px solid rgba(163, 255, 0, 0.3);
+        padding: 3px 10px;
+        border-radius: 4px;
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 1px;
+    }
+    .pill-desarrollo {
+        display: inline-block;
+        background-color: rgba(250, 204, 21, 0.1);
+        color: #facc15;
+        border: 1px solid rgba(250, 204, 21, 0.3);
+        padding: 3px 10px;
+        border-radius: 4px;
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 1px;
+    }
+
+    /* Botón transparente para hacer clickable la tarjeta */
     div[data-testid="stColumn"] div[data-testid="stButton"] > button {
-        background-color: #0a0a0a !important;
-        border: 1px solid #1a1a1a !important;
-        padding: 28px 24px !important;
-        border-radius: 12px !important;
-        text-align: left !important;
-        min-height: 220px !important;
-        display: flex !important;
-        flex-direction: column !important;
-        justify-content: space-between !important;
-        align-items: flex-start !important;
-        width: 100% !important;
-        transition: all 0.3s ease !important;
-    }
-    div[data-testid="stColumn"] div[data-testid="stButton"] > button:hover {
-        border-color: #333333 !important;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5) !important;
-        transform: translateY(-4px) !important;
-    }
-    div[data-testid="stColumn"] div[data-testid="stButton"] > button p {
-        color: #ffffff !important;
-        font-family: 'Space Grotesk', sans-serif !important;
-        margin: 0 !important;
-        white-space: pre-wrap !important;
-        text-align: left !important;
+        background-color: transparent !important;
+        border: none !important;
+        padding: 0 !important;
+        margin-top: 10px !important;
         width: 100% !important;
     }
     </style>
@@ -131,13 +171,11 @@ if not st.session_state['autenticado']:
     
     with col2:
         with st.form("login_form"):
-            # ENCABEZADO LOGIN
             st.markdown("""
-                <div style='display: flex; align-items: center; justify-content: center; gap: 15px; margin-bottom: 10px;'>
-                    <span style='color: #a3ff00; font-size: 2.8rem; font-weight: 800; letter-spacing: 4px; font-family: "Space Grotesk", sans-serif;'>HUB</span>
-                    <img src='https://raw.githubusercontent.com/aespada/hub-calidad/main/LogoBBO.png' style='height: 55px; object-fit: contain;' onerror="this.style.display='none'">
+                <div style='text-align: center; margin-bottom: 20px;'>
+                    <span style='color: #a3ff00; font-size: 2.8rem; font-weight: 800; letter-spacing: 4px; font-family: "Space Grotesk", sans-serif;'>HUB BBO</span>
+                    <p style='color: #888888; font-size: 0.85rem; letter-spacing: 2px; margin-top: 5px;'>CENTRO DE CONTROL Y MONITOREO</p>
                 </div>
-                <p style='text-align: center; color: #888888; font-size: 0.85rem; letter-spacing: 2px; margin-bottom: 2.5rem; font-family: "Space Grotesk", sans-serif;'>CENTRO DE CONTROL Y MONITOREO</p>
             """, unsafe_allow_html=True)
             
             usuario = st.text_input("Usuario", placeholder="Ingresa tu ID corporativo...")
@@ -176,49 +214,88 @@ else:
         st.session_state['autenticado'] = False
         st.rerun()
 
-    # --- ENCABEZADO CENTRAL (HUB BBO en la misma línea) ---
+    # --- ENCABEZADO CENTRAL (HUB BBO EN LA MISMA LÍNEA Y LOGO NATIVO) ---
     st.markdown("<br>", unsafe_allow_html=True)
     
-    # Intentamos cargar la imagen local LogoBBO.png si existe
-    logo_path = "LogoBBO.png"
-    logo_exists = os.path.exists(logo_path)
-    
-    st.markdown(f"""
-        <div style='display: flex; align-items: center; justify-content: center; gap: 20px; margin-bottom: 5px;'>
-            <span style='color: #a3ff00; font-size: 4rem; font-weight: 800; letter-spacing: 6px; font-family: "Space Grotesk", sans-serif; line-height: 1;'>HUB</span>
-            {'<img src="LogoBBO.png" style="height: 75px; object-fit: contain;">' if logo_exists else '<span style="color: #ffffff; font-size: 4rem; font-weight: 800; letter-spacing: 6px;">BBO</span>'}
-        </div>
-        <p style='text-align: center; color: #888888; font-size: 1rem; letter-spacing: 3px; margin-bottom: 3.5rem; text-transform: uppercase; font-family: "Space Grotesk", sans-serif;'>Centro de Control y Monitoreo</p>
-    """, unsafe_allow_html=True)
+    col_d1, col_d2, col_d3 = st.columns([1, 2, 1])
+    with col_d2:
+        c_hub, c_logo = st.columns([1, 1.2])
+        with c_hub:
+            st.markdown("<h1 style='text-align: right; color: #a3ff00; font-size: 3.8rem; font-weight: 800; letter-spacing: 6px; font-family: \"Space Grotesk\", sans-serif; margin: 0; line-height: 1.1;'>HUB</h1>", unsafe_allow_html=True)
+        with c_logo:
+            if os.path.exists("LogoBBO.png"):
+                st.image("LogoBBO.png", width=180)
+            else:
+                st.markdown("<h1 style='text-align: left; color: #ffffff; font-size: 3.8rem; font-weight: 800; letter-spacing: 6px; font-family: \"Space Grotesk\", sans-serif; margin: 0; line-height: 1.1;'>BBO</h1>", unsafe_allow_html=True)
 
-    # --- CUADRÍCULA DE TARJETAS NEÓN ---
+    st.markdown("<p style='text-align: center; color: #888888; font-size: 0.95rem; letter-spacing: 3px; margin-top: 10px; margin-bottom: 3.5rem; text-transform: uppercase; font-family: \"Space Grotesk\", sans-serif;'>Centro de Control y Monitoreo</p>", unsafe_allow_html=True)
+
+    # --- CUADRÍCULA DE TARJETAS CON ESTILO NEÓN EXACTO ---
     col1, col2 = st.columns(2)
     
-    # TEXTOS DE LAS TARJETAS (FORMATO EXACTO AL PANEL DE CALIDAD)
-    txt_cc = "///\n\nControl de Calidad\n\nAnálisis SPC, tendencias y resumen de producción mensual.\n\n\n■ MÓDULO ACTIVO"
-    txt_est = "///\n\nControl de Estadía\n\nMonitoreo de tiempos de residencia de tanques para Malta y Cervezas.\n\n\n■ MÓDULO ACTIVO"
-    txt_elab = "///\n\nElaboración\n\nControl de procesos de cocimiento, fermentación y filtración. Mermas y eficiencias.\n\n\n■ EN DESARROLLO"
-    txt_env = "///\n\nEnvasado\n\nSupervisión de líneas de llenado, mermas de empaque y eficiencias de turno (OEE).\n\n\n■ EN DESARROLLO"
-
     with col1:
-        if st.button(txt_cc, use_container_width=True, key="card_cc"):
+        # TARJETA 1: CALIDAD
+        st.markdown("""
+            <div class="card-module">
+                <div>
+                    <div class="card-slashes">///</div>
+                    <div class="card-title-text">Control de Calidad</div>
+                    <div class="card-desc-text">Análisis SPC, tendencias y resumen de producción mensual.</div>
+                </div>
+                <div><span class="pill-activo">■ MÓDULO ACTIVO</span></div>
+            </div>
+        """, unsafe_allow_html=True)
+        if st.button("ACCEDER A CALIDAD ➔", key="btn_cc"):
             st.switch_page("pages/CONTROL_CALIDAD.py")
             
         st.markdown("<br>", unsafe_allow_html=True)
         
-        if st.button(txt_elab, use_container_width=True, key="card_elab"):
+        # TARJETA 3: ELABORACIÓN
+        st.markdown("""
+            <div class="card-module">
+                <div>
+                    <div class="card-slashes">///</div>
+                    <div class="card-title-text">Elaboración</div>
+                    <div class="card-desc-text">Control de procesos de cocimiento, fermentación y filtración. Mermas y eficiencias.</div>
+                </div>
+                <div><span class="pill-desarrollo">■ EN DESARROLLO</span></div>
+            </div>
+        """, unsafe_allow_html=True)
+        if st.button("ACCEDER A ELABORACIÓN ➔", key="btn_elab"):
             try:
                 st.switch_page("pages/ELABORACION.py")
             except:
                 st.warning("🚧 Módulo de Elaboración en desarrollo.")
 
     with col2:
-        if st.button(txt_est, use_container_width=True, key="card_est"):
+        # TARJETA 2: ESTADÍA
+        st.markdown("""
+            <div class="card-module">
+                <div>
+                    <div class="card-slashes">///</div>
+                    <div class="card-title-text">Control de Estadía</div>
+                    <div class="card-desc-text">Monitoreo de tiempos de residencia de tanques para Malta y Cervezas.</div>
+                </div>
+                <div><span class="pill-activo">■ MÓDULO ACTIVO</span></div>
+            </div>
+        """, unsafe_allow_html=True)
+        if st.button("ACCEDER A ESTADÍA ➔", key="btn_est"):
             st.switch_page("pages/3_ESTADIA_TANQUES.py")
             
         st.markdown("<br>", unsafe_allow_html=True)
         
-        if st.button(txt_env, use_container_width=True, key="card_env"):
+        # TARJETA 4: ENVASADO
+        st.markdown("""
+            <div class="card-module">
+                <div>
+                    <div class="card-slashes">///</div>
+                    <div class="card-title-text">Envasado</div>
+                    <div class="card-desc-text">Supervisión de líneas de llenado, mermas de empaque y eficiencias de turno (OEE).</div>
+                </div>
+                <div><span class="pill-desarrollo">■ EN DESARROLLO</span></div>
+            </div>
+        """, unsafe_allow_html=True)
+        if st.button("ACCEDER A ENVASADO ➔", key="btn_env"):
             try:
                 st.switch_page("pages/ENVASADO.py")
             except:
