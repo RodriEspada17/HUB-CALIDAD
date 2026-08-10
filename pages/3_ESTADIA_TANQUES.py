@@ -171,20 +171,27 @@ st.markdown("<h4 style='color: #a3ff00; letter-spacing: 1px; font-size: 1.1rem; 
 
 col_cerv, col_malt = st.columns(2)
 
-# ESTILIZADOR EXACTO AL DE PARAMETROS CRÍTICOS (Usando .apply en vez de .map o set_properties)
+# ESTILIZADOR BLINDADO (Fuerza fondos y cabeceras oscuras)
 def aplicar_estilo_tabla(df):
     def pintar_celdas(row):
-        estilos = [''] * len(row)
+        # Color base oscuro para todas las celdas
+        estilos = ['background-color: #0e1117; color: #fafafa; border-bottom: 1px solid #1a1a1a;'] * len(row)
         for i, col in enumerate(row.index):
             if col == 'ESTADO':
                 val = str(row[col])
                 if 'CRÍTICO' in val:
-                    estilos[i] = 'color: #f87171; font-weight: bold;'
+                    estilos[i] = 'background-color: #0e1117; color: #f87171; font-weight: bold; border-bottom: 1px solid #1a1a1a;'
                 elif 'NORMAL' in val:
-                    estilos[i] = 'color: #4ade80;'
+                    estilos[i] = 'background-color: #0e1117; color: #4ade80; border-bottom: 1px solid #1a1a1a;'
         return estilos
     
-    return df.style.apply(pintar_celdas, axis=1).format({"DIAS ESTADIA": "{:.1f}"})
+    # Color oscuro forzado para las cabeceras (headers)
+    estilos_cabecera = [
+        {'selector': 'th', 'props': [('background-color', '#050505'), ('color', '#888888'), ('font-weight', 'bold'), ('border-bottom', '1px solid #1a1a1a')]},
+        {'selector': 'tr:hover', 'props': [('background-color', '#1a1a1a')]}
+    ]
+    
+    return df.style.apply(pintar_celdas, axis=1).set_table_styles(estilos_cabecera).format({"DIAS ESTADIA": "{:.1f}"})
 
 with col_cerv:
     st.markdown("""
@@ -194,7 +201,6 @@ with col_cerv:
     """, unsafe_allow_html=True)
     
     if not df_cervezas_final.empty:
-        # AQUÍ ESTÁ EL SECRETO: Quitamos hide_index=True para que respete el Modo Noche de Streamlit
         st.dataframe(aplicar_estilo_tabla(df_cervezas_final), use_container_width=True)
     else:
         st.info("No se encontraron tanques de cerveza activos.")
@@ -207,7 +213,6 @@ with col_malt:
     """, unsafe_allow_html=True)
     
     if not df_malta_final.empty:
-        # AQUÍ ESTÁ EL SECRETO: Quitamos hide_index=True para que respete el Modo Noche de Streamlit
         st.dataframe(aplicar_estilo_tabla(df_malta_final), use_container_width=True)
     else:
         st.info("No hay tanques de Malta Real activos.")
