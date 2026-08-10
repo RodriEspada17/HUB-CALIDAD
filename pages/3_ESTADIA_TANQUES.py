@@ -97,6 +97,9 @@ if df_coc_raw is not None and not df_coc_raw.empty and df_rep_raw is not None an
             df_malta['ESTADO'] = df_malta['DIAS ESTADIA'].apply(lambda x: '■ CRÍTICO (> 6.5d)' if x >= 6.5 else '■ NORMAL')
             df_malta = df_malta.dropna(subset=['DIAS ESTADIA'])
             
+            # Formatear a texto con 1 decimal directo en la base
+            df_malta['DIAS ESTADIA'] = df_malta['DIAS ESTADIA'].map(lambda x: f"{x:.1f}")
+            
             cols_m = [col_lote_coc, col_ft_coc, col_prod_coc, col_llenado, 'DIAS ESTADIA', 'ESTADO']
             df_malta_final = df_malta[cols_m].sort_values(by='DIAS ESTADIA', ascending=False)
             
@@ -139,6 +142,9 @@ if df_coc_raw is not None and not df_coc_raw.empty and df_rep_raw is not None an
                 df_merged['ESTADO'] = df_merged.apply(get_status_cerv, axis=1)
                 df_merged = df_merged.dropna(subset=['DIAS ESTADIA'])
                 
+                # Formatear a texto con 1 decimal directo en la base
+                df_merged['DIAS ESTADIA'] = df_merged['DIAS ESTADIA'].map(lambda x: f"{x:.1f}")
+                
                 cols_c = [col_lote_coc, col_ft_coc, col_prod_coc, 'FECHA_REPOSO_CRUCE', 'DIAS ESTADIA', 'ESTADO']
                 df_cervezas_final = df_merged[cols_c].sort_values(by='DIAS ESTADIA', ascending=False)
                 df_cervezas_final.rename(columns={'FECHA_REPOSO_CRUCE': 'FECHA FIN DE REPOSO'}, inplace=True)
@@ -171,27 +177,18 @@ st.markdown("<h4 style='color: #a3ff00; letter-spacing: 1px; font-size: 1.1rem; 
 
 col_cerv, col_malt = st.columns(2)
 
-# ESTILIZADOR BLINDADO (Fuerza fondos y cabeceras oscuras)
-def aplicar_estilo_tabla(df):
-    def pintar_celdas(row):
-        # Color base oscuro para todas las celdas
-        estilos = ['background-color: #0e1117; color: #fafafa; border-bottom: 1px solid #1a1a1a;'] * len(row)
-        for i, col in enumerate(row.index):
-            if col == 'ESTADO':
-                val = str(row[col])
-                if 'CRÍTICO' in val:
-                    estilos[i] = 'background-color: #0e1117; color: #f87171; font-weight: bold; border-bottom: 1px solid #1a1a1a;'
-                elif 'NORMAL' in val:
-                    estilos[i] = 'background-color: #0e1117; color: #4ade80; border-bottom: 1px solid #1a1a1a;'
-        return estilos
-    
-    # Color oscuro forzado para las cabeceras (headers)
-    estilos_cabecera = [
-        {'selector': 'th', 'props': [('background-color', '#050505'), ('color', '#888888'), ('font-weight', 'bold'), ('border-bottom', '1px solid #1a1a1a')]},
-        {'selector': 'tr:hover', 'props': [('background-color', '#1a1a1a')]}
-    ]
-    
-    return df.style.apply(pintar_celdas, axis=1).set_table_styles(estilos_cabecera).format({"DIAS ESTADIA": "{:.1f}"})
+# --- FUNCIÓN DE COLOR IDÉNTICA A PARÁMETROS CRÍTICOS ---
+def aplicar_semaforo_estado(row):
+    # Por defecto devolvemos vacío ('') para que Streamlit aplique su tema nativo oscuro
+    estilos = [''] * len(row)
+    for i, col in enumerate(row.index):
+        if col == 'ESTADO':
+            val = str(row[col])
+            if 'CRÍTICO' in val:
+                estilos[i] = 'color: #f87171; font-weight: bold;'
+            elif 'NORMAL' in val:
+                estilos[i] = 'color: #4ade80;'
+    return estilos
 
 with col_cerv:
     st.markdown("""
@@ -201,7 +198,8 @@ with col_cerv:
     """, unsafe_allow_html=True)
     
     if not df_cervezas_final.empty:
-        st.dataframe(aplicar_estilo_tabla(df_cervezas_final), use_container_width=True)
+        # Se envía SIN format y SIN hide_index, exactamente como en Parámetros Críticos
+        st.dataframe(df_cervezas_final.style.apply(aplicar_semaforo_estado, axis=1), use_container_width=True)
     else:
         st.info("No se encontraron tanques de cerveza activos.")
 
@@ -213,6 +211,7 @@ with col_malt:
     """, unsafe_allow_html=True)
     
     if not df_malta_final.empty:
-        st.dataframe(aplicar_estilo_tabla(df_malta_final), use_container_width=True)
+        # Se envía SIN format y SIN hide_index, exactamente como en Parámetros Críticos
+        st.dataframe(df_malta_final.style.apply(aplicar_semaforo_estado, axis=1), use_container_width=True)
     else:
         st.info("No hay tanques de Malta Real activos.")
