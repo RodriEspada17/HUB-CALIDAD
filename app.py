@@ -1,5 +1,5 @@
 import streamlit as st
-import time
+import os
 from utils.core import aplicar_estilo_neon
 
 # Configuración inicial de la página
@@ -131,10 +131,14 @@ if not st.session_state['autenticado']:
     
     with col2:
         with st.form("login_form"):
-            # LOGO BBO CENTRADO EN LOGIN
+            # LOGO BBO CENTRADO EN LOGIN CON ESCUDO ANTI-CAÍDAS
             col_l1, col_l2, col_l3 = st.columns([1, 2, 1])
             with col_l2:
-                st.image("LogoBBO.png", use_column_width=True)
+                if os.path.exists("LogoBBO.png"):
+                    st.image("LogoBBO.png", use_column_width=True)
+                else:
+                    st.markdown("<h3 style='text-align: center; color: #f87171;'>[ LOGO FALTANTE ]</h3>", unsafe_allow_html=True)
+                    
             st.markdown("<h1 style='text-align: center; color: #a3ff00; font-size: 2.5rem; letter-spacing: 5px; margin-top: -15px; margin-bottom: 0;'>HUB</h1>", unsafe_allow_html=True)
             st.markdown("<p style='text-align: center; color: #888888; font-size: 0.85rem; letter-spacing: 2px; margin-bottom: 2.5rem;'>CONTROL CENTRAL DE CALIDAD</p>", unsafe_allow_html=True)
             
@@ -163,7 +167,7 @@ else:
     st.sidebar.markdown(f"""
         <div style='background-color: #050505; border: 1px solid #1a1a1a; padding: 15px; border-radius: 8px; text-align: center; margin-bottom: 25px;'>
             <span style='color: #888888; font-size: 0.75rem; letter-spacing: 2px; text-transform: uppercase;'>Sesión Activa</span><br>
-            <span style='color: #a3ff00; font-weight: bold; font-size: 1.1rem; letter-spacing: 1px;'>■ {st.session_state['usuario_actual'].upper()}</span>
+            <span style='color: #a3ff00; font-weight: bold; font-size: 1.2rem; letter-spacing: 1px;'>■ {st.session_state['usuario_actual'].upper()}</span>
         </div>
     """, unsafe_allow_html=True)
     
@@ -177,11 +181,14 @@ else:
     # --- CONTENIDO PRINCIPAL ---
     st.markdown("<br>", unsafe_allow_html=True)
     
-    # LOGO BBO CENTRADO EN DASHBOARD
+    # LOGO BBO CENTRADO EN DASHBOARD CON ESCUDO ANTI-CAÍDAS
     col_d1, col_d2, col_d3 = st.columns([1.5, 1, 1.5])
     with col_d2:
-        st.image("LogoBBO.png", use_column_width=True)
-        
+        if os.path.exists("LogoBBO.png"):
+            st.image("LogoBBO.png", use_column_width=True)
+        else:
+            st.markdown("<h3 style='text-align: center; color: #f87171;'>[ LOGO FALTANTE ]</h3>", unsafe_allow_html=True)
+            
     st.markdown("<h1 style='text-align: center; font-size: 3rem; letter-spacing: 8px; color: #a3ff00; margin-top: -15px; margin-bottom: 0; line-height: 1;'>HUB</h1>", unsafe_allow_html=True)
     st.markdown("<p style='text-align: center; color: #888888; font-size: 1rem; letter-spacing: 3px; margin-bottom: 4rem; text-transform: uppercase;'>Centro de Control y Monitoreo</p>", unsafe_allow_html=True)
 
