@@ -14,21 +14,34 @@ st.markdown("""
     body {background-color: #050505; color: #e0e0e0; font-family: 'Space Grotesk', sans-serif;}
     .stApp {background-color: #050505;}
     
-    /* Diseño del panel de Login */
-    .login-box {
-        background-color: #0a0a0a;
-        padding: 40px;
-        border-radius: 10px;
-        border: 1px solid #1a1a1a;
-        box-shadow: 0 0 20px rgba(163, 255, 0, 0.1);
-        text-align: center;
-        max-width: 400px;
-        margin: 50px auto;
+    /* Botones Neón Globales (Aplica también a los formularios) */
+    div[data-testid="stButton"] > button,
+    div[data-testid="stFormSubmitButton"] > button { 
+        background-color: #050505 !important; 
+        border: 1px solid #a3ff00 !important; 
+        border-radius: 6px !important; 
+        transition: all 0.3s ease !important; 
+        width: 100% !important; 
+        padding: 0.6rem 1rem !important; 
     }
-    
-    /* Botones Neón */
-    .stButton > button { background-color: #050505 !important; color: #a3ff00 !important; border: 1px solid #a3ff00 !important; border-radius: 6px !important; font-weight: 600 !important; transition: all 0.3s ease !important; width: 100%; padding: 10px !important; }
-    .stButton > button:hover { background-color: #a3ff00 !important; color: #050505 !important; box-shadow: 0 0 15px rgba(163, 255, 0, 0.4) !important; transform: translateY(-2px) !important; }
+    div[data-testid="stButton"] > button p,
+    div[data-testid="stFormSubmitButton"] > button p { 
+        color: #a3ff00 !important; 
+        font-weight: 600 !important; 
+        font-family: 'Space Grotesk', sans-serif !important; 
+        font-size: 1rem !important; 
+        margin: 0 !important;
+    }
+    div[data-testid="stButton"] > button:hover,
+    div[data-testid="stFormSubmitButton"] > button:hover { 
+        background-color: #a3ff00 !important; 
+        box-shadow: 0 0 15px rgba(163, 255, 0, 0.4) !important; 
+        transform: translateY(-2px) !important; 
+    }
+    div[data-testid="stButton"] > button:hover p,
+    div[data-testid="stFormSubmitButton"] > button:hover p { 
+        color: #050505 !important; 
+    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -36,43 +49,61 @@ st.markdown("""
 # 🛑 PANTALLA DE LOGIN (Si no está autenticado)
 # ==========================================
 if not st.session_state['autenticado']:
-    st.markdown("<br><br>", unsafe_allow_html=True)
-    col1, col2, col3 = st.columns([1, 1.5, 1])
+    # --- CSS EXCLUSIVO PARA EL LOGIN (Desaparece el Sidebar y estiliza la tarjeta) ---
+    st.markdown("""
+        <style>
+        /* Desaparecer menú lateral por completo */
+        [data-testid="collapsedControl"] { display: none !important; }
+        [data-testid="stSidebar"] { display: none !important; }
+        
+        /* Convertir el formulario en una tarjeta Premium */
+        [data-testid="stForm"] { 
+            border: 1px solid #1a1a1a !important; 
+            border-radius: 12px !important; 
+            background-color: #0a0a0a !important; 
+            padding: 3rem 2.5rem !important; 
+            box-shadow: 0 15px 40px rgba(0,0,0,0.9), 0 0 20px rgba(163,255,0,0.03) !important;
+        }
+        </style>
+    """, unsafe_allow_html=True)
+    
+    st.markdown("<br><br><br>", unsafe_allow_html=True)
+    col1, col2, col3 = st.columns([1, 1.2, 1])
     
     with col2:
-        st.markdown("""
-            <div class='login-box'>
-                <h1 style='color: #a3ff00; letter-spacing: 2px; margin-bottom: 5px;'>BBO HUB</h1>
-                <p style='color: #888888; font-size: 0.9rem; margin-bottom: 30px;'>CONTROL CENTRAL DE CALIDAD</p>
-            </div>
-        """, unsafe_allow_html=True)
-        
-        # Formulario de Ingreso
+        # Formulario Integrado
         with st.form("login_form"):
-            usuario = st.text_input("Usuario", placeholder="Ingresa tu usuario...")
+            st.markdown("<h1 style='text-align: center; color: #a3ff00; font-size: 3rem; letter-spacing: 3px; margin-bottom: 0;'>BBO HUB</h1>", unsafe_allow_html=True)
+            st.markdown("<p style='text-align: center; color: #888888; font-size: 0.85rem; letter-spacing: 2px; margin-bottom: 2.5rem;'>CONTROL CENTRAL DE CALIDAD</p>", unsafe_allow_html=True)
+            
+            usuario = st.text_input("Usuario", placeholder="Ingresa tu ID corporativo...")
             password = st.text_input("Contraseña", type="password", placeholder="••••••••")
-            submit = st.form_submit_button("INGRESAR AL SISTEMA")
+            
+            st.markdown("<br>", unsafe_allow_html=True)
+            submit = st.form_submit_button("ACCEDER AL SISTEMA")
             
             if submit:
-                # Verificar credenciales en los Secretos de Streamlit
                 try:
                     if usuario in st.secrets["passwords"] and st.secrets["passwords"][usuario] == password:
                         st.session_state['autenticado'] = True
                         st.session_state['usuario_actual'] = usuario
-                        st.success("¡Acceso Concedido! Iniciando sistemas...")
-                        time.sleep(1)
-                        st.rerun() # Recarga la página para mostrar el HUB
+                        st.rerun() # Recarga la página y borra el Login
                     else:
-                        st.error("❌ Usuario o contraseña incorrectos.")
+                        st.error("❌ Credenciales incorrectas. Acceso denegado.")
                 except Exception as e:
-                    st.error("⚠️ Error crítico: No se encontró la Bóveda de Secretos configurada en Streamlit Cloud.")
+                    st.error("⚠️ Error crítico: La Bóveda de Secretos no está configurada en Streamlit Cloud.")
 
 # ==========================================
 # 🟢 DASHBOARD PRINCIPAL (Si está autenticado)
 # ==========================================
 else:
     # --- MENÚ LATERAL (SIDEBAR) ---
-    st.sidebar.markdown(f"<div style='text-align: center; color: #a3ff00; font-weight: bold; margin-bottom: 20px;'>👤 USUARIO: {st.session_state['usuario_actual'].upper()}</div>", unsafe_allow_html=True)
+    st.sidebar.markdown(f"""
+        <div style='background-color: #0a0a0a; border: 1px solid #1a1a1a; padding: 15px; border-radius: 8px; text-align: center; margin-bottom: 20px;'>
+            <span style='color: #888888; font-size: 0.8rem; letter-spacing: 1px;'>SESIÓN INICIADA</span><br>
+            <span style='color: #a3ff00; font-weight: bold; font-size: 1.1rem; letter-spacing: 1px;'>👤 {st.session_state['usuario_actual'].upper()}</span>
+        </div>
+    """, unsafe_allow_html=True)
     
     st.sidebar.page_link("pages/CONTROL_CALIDAD.py", label="🔬 CONTROL DE CALIDAD", icon="📊")
     st.sidebar.page_link("pages/3_ESTADIA_TANQUES.py", label="⏱️ ESTADÍA DE TANQUES", icon="⏳")
