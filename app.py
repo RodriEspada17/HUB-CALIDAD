@@ -7,7 +7,7 @@ st.set_page_config(page_title="HUB BBO CALIDAD", layout="wide", initial_sidebar_
 if 'autenticado' not in st.session_state:
     st.session_state['autenticado'] = False
 
-# --- CSS GLOBAL DE ALTA GAMA Y NAVEGACIÓN ---
+# --- CSS GLOBAL DE ALTA GAMA (CLON EXACTO DE LOBBY CALIDAD) ---
 st.markdown("""
     <style>
     /* Tipografía Global */
@@ -28,9 +28,9 @@ st.markdown("""
         flex-direction: column !important;
         height: 100vh !important;
     }
-    .sidebar-bottom-container {
+    div[data-testid="stSidebar"] div[data-testid="stButton"] {
         margin-top: auto !important;
-        padding-bottom: 20px !important;
+        padding-bottom: 25px !important;
     }
     div[data-testid="stSidebar"] div[data-testid="stButton"] > button {
         background-color: transparent !important;
@@ -55,36 +55,34 @@ st.markdown("""
         color: #f87171 !important;
     }
 
-    /* 3. BOTONES CON ESTÁTICA DE TARJETA NEÓN 100% CLICKABLE */
+    /* 3. ESTILO DE TARJETAS IDÉNTICO AL LOBBY DE CALIDAD */
     div[data-testid="stColumn"] div[data-testid="stButton"] > button {
         background-color: #0a0a0a !important;
         border: 1px solid #1a1a1a !important;
-        padding: 25px !important;
+        padding: 28px 24px !important;
         border-radius: 12px !important;
-        min-height: 200px !important;
+        min-height: 220px !important;
         width: 100% !important;
         display: flex !important;
         flex-direction: column !important;
-        justify-content: space-between !important;
+        justify-content: flex-start !important;
         align-items: flex-start !important;
         text-align: left !important;
         transition: all 0.3s ease !important;
         box-shadow: none !important;
     }
     div[data-testid="stColumn"] div[data-testid="stButton"] > button:hover {
-        border-color: #333333 !important;
+        border-color: #a3ff00 !important;
         background-color: #0d0d0d !important;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8) !important;
-        transform: translateY(-4px) !important;
+        box-shadow: 0 0 20px rgba(163, 255, 0, 0.15) !important;
+        transform: translateY(-3px) !important;
     }
     div[data-testid="stColumn"] div[data-testid="stButton"] > button p {
-        color: #ffffff !important;
         font-family: 'Space Grotesk', sans-serif !important;
         margin: 0 !important;
         white-space: pre-wrap !important;
         text-align: left !important;
         width: 100% !important;
-        line-height: 1.4 !important;
     }
 
     /* 4. Botón de Login Form */
@@ -169,8 +167,6 @@ else:
         </div>
     """, unsafe_allow_html=True)
     
-    # Contenedor que empuja el botón al fondo del sidebar
-    st.sidebar.markdown('<div class="sidebar-bottom-container"></div>', unsafe_allow_html=True)
     if st.sidebar.button("■ CERRAR SESIÓN"):
         st.session_state['autenticado'] = False
         st.rerun()
@@ -185,14 +181,14 @@ else:
         <p style='text-align: center; color: #888888; font-size: 0.95rem; letter-spacing: 3px; margin-bottom: 3.5rem; text-transform: uppercase;'>Centro de Control y Monitoreo</p>
     """, unsafe_allow_html=True)
 
-    # --- CUADRÍCULA DE TARJETAS TARJETAS CLICKABLES ---
+    # --- CUADRÍCULA DE TARJETAS TIPO LOBBY CALIDAD ---
     col1, col2 = st.columns(2)
     
-    # TEXTOS DE LAS TARJETAS CON HTML INYECTADO PARA FORMATO NEÓN EXACTO
-    txt_cc = "///\n\nControl de Calidad\n\nAnálisis SPC, tendencias, estadía de tanques y resumen de producción.\n\n"
-    txt_elab = "///\n\nElaboración\n\nControl de procesos de cocimiento, fermentación y filtración. Mermas y eficiencias.\n\n"
-    txt_env = "///\n\nEnvasado\n\nSupervisión de líneas de llenado, mermas de empaque y eficiencias de turno (OEE).\n\n"
-    txt_mantenimiento = "///\n\nMantenimiento\n\nGestión de órdenes de trabajo, paradas de planta, confiabilidad y repuestos.\n\n"
+    # ESTRUCTURA DE TEXTO CON FORMATO HTML INTEGRADO
+    txt_cc = ":green[///]\n\n### **Control de Calidad**\n\n:gray[Análisis SPC, tendencias, estadía de tanques y resumen de producción.]\n\n"
+    txt_elab = ":green[///]\n\n### **Elaboración**\n\n:gray[Control de procesos de cocimiento, fermentación y filtración. Mermas y eficiencias.]\n\n"
+    txt_env = ":green[///]\n\n### **Envasado**\n\n:gray[Supervisión de líneas de llenado, mermas de empaque y eficiencias de turno (OEE).]\n\n"
+    txt_mant = ":green[///]\n\n### **Mantenimiento**\n\n:gray[Gestión de órdenes de trabajo, paradas de planta, confiabilidad y repuestos.]\n\n"
 
     with col1:
         # MÓDULO 1: CONTROL DE CALIDAD
@@ -209,7 +205,7 @@ else:
         st.markdown("""<div style='margin-top: -55px; margin-left: 25px; margin-bottom: 40px; pointer-events: none;'><span style='background-color: rgba(250,204,21,0.1); color: #facc15; border: 1px solid rgba(250,204,21,0.3); padding: 3px 10px; border-radius: 4px; font-size: 0.72rem; font-weight: 700; letter-spacing: 1px;'>■ EN DESARROLLO</span></div>""", unsafe_allow_html=True)
 
     with col2:
-        # MÓDULO 2: ENVASADO (Reemplaza a Estadía que ahora vive dentro de Calidad)
+        # MÓDULO 2: ENVASADO
         if st.button(txt_env, use_container_width=True, key="card_env"):
             try:
                 st.switch_page("pages/ENVASADO.py")
@@ -218,7 +214,7 @@ else:
         st.markdown("""<div style='margin-top: -55px; margin-left: 25px; margin-bottom: 40px; pointer-events: none;'><span style='background-color: rgba(250,204,21,0.1); color: #facc15; border: 1px solid rgba(250,204,21,0.3); padding: 3px 10px; border-radius: 4px; font-size: 0.72rem; font-weight: 700; letter-spacing: 1px;'>■ EN DESARROLLO</span></div>""", unsafe_allow_html=True)
             
         # MÓDULO 4: MANTENIMIENTO
-        if st.button(txt_mantenimiento, use_container_width=True, key="card_mantenimiento"):
+        if st.button(txt_mant, use_container_width=True, key="card_mant"):
             try:
                 st.switch_page("pages/MANTENIMIENTO.py")
             except:
