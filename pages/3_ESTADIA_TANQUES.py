@@ -42,7 +42,6 @@ GID_REPOSO = "79058483"
 
 # --- FUNCIÓN LIMPIADORA DE LLAVES ---
 def limpiar_llave(serie):
-    # Quita ".0", espacios en blanco, guiones y convierte a mayúsculas
     return serie.astype(str).str.replace(r'\.0$', '', regex=True).str.strip().str.upper()
 
 # --- LÓGICA DE PROCESAMIENTO ---
@@ -55,10 +54,9 @@ promedio_global = 0.0
 
 df_cervezas_final = pd.DataFrame()
 df_malta_final = pd.DataFrame()
-debug_info = [] # Para almacenar el diagnóstico
+debug_info = []
 
 if df_coc is not None and not df_coc.empty and df_rep is not None and not df_rep.empty:
-    # Limpiar nombres de columnas
     df_coc.columns = [str(c).strip().upper() for c in df_coc.columns]
     df_rep.columns = [str(c).strip().upper() for c in df_rep.columns]
     
@@ -67,11 +65,8 @@ if df_coc is not None and not df_coc.empty and df_rep is not None and not df_rep
     # ---------------------------------------------
     col_envasado = next((c for c in df_coc.columns if "ENVASADO" in c), None)
     if col_envasado:
-        # 1. Verifica si es nulo nativo de Pandas
         mask_vacio = df_coc[col_envasado].isna()
-        # 2. Verifica si es texto basura (espacios, 'nan', 'none')
         mask_texto = df_coc[col_envasado].astype(str).str.strip().str.upper().isin(['NAN', 'NONE', 'N/A', '', 'NO', 'FALSE', '0'])
-        
         df_activos = df_coc[mask_vacio | mask_texto]
         debug_info.append(f"Columna de Envasado encontrada: '{col_envasado}'. Tanques marcados como activos: {len(df_activos)}")
     else:
@@ -93,7 +88,7 @@ if df_coc is not None and not df_coc.empty and df_rep is not None and not df_rep
         if col_llenado and not df_malta.empty:
             df_malta['FECHA_PARSED'] = pd.to_datetime(df_malta[col_llenado], dayfirst=True, errors='coerce')
             df_malta['DIAS ESTADIA'] = (pd.Timestamp.now() - df_malta['FECHA_PARSED']).dt.total_seconds() / 86400
-            df_malta['ESTADO'] = df_malta['DIAS ESTADIA'].apply(lambda x: '🔴 CRÍTICO (> 6.5d)' if x >= 6.5 else '🟢 NORMAL')
+            df_malta['ESTADO'] = df_malta['DIAS ESTADIA'].apply(lambda x: '■ CRÍTICO (> 6.5d)' if x >= 6.5 else '■ NORMAL')
             df_malta = df_malta.dropna(subset=['DIAS ESTADIA'])
             df_malta['DIAS ESTADIA'] = df_malta['DIAS ESTADIA'].round(1)
             
@@ -120,7 +115,6 @@ if df_coc is not None and not df_coc.empty and df_rep is not None and not df_rep
     if not col_lote_rep: col_lote_rep = next((c for c in df_rep.columns if "LOTE" in c), None)
     col_fecha_rep = next((c for c in df_rep.columns if "FECHA DE AN" in c or "FECHA" in c), None)
     
-    # Validaciones para el Modo Diagnóstico
     if not col_ft_coc: debug_info.append("❌ Falta columna 'FT' en Cocimiento.")
     if not col_lote_coc: debug_info.append("❌ Falta columna 'LOTE FT' en Cocimiento.")
     if not col_ft_rep: debug_info.append("❌ Falta columna 'FT' en Fin de Reposo.")
@@ -129,31 +123,33 @@ if df_coc is not None and not df_coc.empty and df_rep is not None and not df_rep
 
     if col_ft_coc and col_lote_coc and col_ft_rep and col_lote_rep and col_fecha_rep and not df_cerv.empty:
         
-        # Preparación de llaves para el Join
         df_cerv['_MATCH_FT'] = limpiar_llave(df_cerv[col_ft_coc])
         df_cerv['_MATCH_LOTE'] = limpiar_llave(df_cerv[col_lote_coc])
         
-        # Eliminar duplicados en reposo para no clonar filas en el cruce
         df_rep_clean = df_rep.copy()
         df_rep_clean['_MATCH_FT'] = limpiar_llave(df_rep_clean[col_ft_rep])
         df_rep_clean['_MATCH_LOTE'] = limpiar_llave(df_rep_clean[col_lote_rep])
         df_rep_clean = df_rep_clean.drop_duplicates(subset=['_MATCH_FT', '_MATCH_LOTE'], keep='last')
         
-        # Cruce de bases
-        df_merged = pd.merge(df_cerv, df_rep_clean[['_MATCH_FT', '_MATCH_LOTE', col_fecha_rep]], on=['_MATCH_FT', '_MATCH_LOTE'], how='inner')
+        # --- SOLUCIÓN DE LA COLISIÓN ---
+        # Renombramos la fecha temporalmente para que no choque con la de Cocimiento
+        df_rep_clean.rename(columns={col_fecha_rep: 'FECHA_REPOSO_CRUCE'}, inplace=True)
+        
+        df_merged = pd.merge(df_cerv, df_rep_clean[['_MATCH_FT', '_MATCH_LOTE', 'FECHA_REPOSO_CRUCE']], on=['_MATCH_FT', '_MATCH_LOTE'], how='inner')
         debug_info.append(f"Cruce exitoso (Match de FT y Lote): {len(df_merged)} tanques cruzados.")
         
         if not df_merged.empty:
-            df_merged['FECHA_PARSED'] = pd.to_datetime(df_merged[col_fecha_rep], dayfirst=True, errors='coerce')
+            # Ahora calculamos en base a la columna segura
+            df_merged['FECHA_PARSED'] = pd.to_datetime(df_merged['FECHA_REPOSO_CRUCE'], dayfirst=True, errors='coerce')
             df_merged['DIAS ESTADIA'] = (pd.Timestamp.now() - df_merged['FECHA_PARSED']).dt.total_seconds() / 86400
             
             def get_status_cerv(row):
                 prod = str(row[col_prod_coc]).upper()
                 dias = row['DIAS ESTADIA']
-                if pd.isna(dias): return '⚪ N/A'
-                if "SCHNEIDER" in prod and dias >= 10: return '🔴 CRÍTICO (> 10d)'
-                if "AMSTEL" in prod and dias >= 21: return '🔴 CRÍTICO (> 21d)'
-                return '🟢 NORMAL'
+                if pd.isna(dias): return '■ N/A'
+                if "SCHNEIDER" in prod and dias >= 10: return '■ CRÍTICO (> 10d)'
+                if "AMSTEL" in prod and dias >= 21: return '■ CRÍTICO (> 21d)'
+                return '■ NORMAL'
                 
             df_merged['ESTADO'] = df_merged.apply(get_status_cerv, axis=1)
             
@@ -163,10 +159,12 @@ if df_coc is not None and not df_coc.empty and df_rep is not None and not df_rep
             cols_c = []
             if col_lote_coc: cols_c.append(col_lote_coc)
             if col_ft_coc: cols_c.append(col_ft_coc)
-            cols_c.extend([col_prod_coc, col_fecha_rep, 'DIAS ESTADIA', 'ESTADO'])
+            cols_c.extend([col_prod_coc, 'FECHA_REPOSO_CRUCE', 'DIAS ESTADIA', 'ESTADO'])
             
             df_cervezas_final = df_merged[cols_c].sort_values(by='DIAS ESTADIA', ascending=False)
-            df_cervezas_final.rename(columns={col_fecha_rep: 'FECHA FIN DE REPOSO'}, inplace=True)
+            
+            # La devolvemos a un nombre limpio y bonito para la tabla final
+            df_cervezas_final.rename(columns={'FECHA_REPOSO_CRUCE': 'FECHA FIN DE REPOSO'}, inplace=True)
             
             total_activos += len(df_cervezas_final)
             total_criticos += len(df_cervezas_final[df_cervezas_final['ESTADO'].str.contains('CRÍTICO')])
@@ -209,20 +207,28 @@ st.markdown("<h4 style='color: #a3ff00; letter-spacing: 1px; font-size: 1.1rem;'
 
 tab_cervezas, tab_malta = st.tabs(["CERVEZAS (Fin de Reposo)", "MALTA REAL (Cocimiento)"])
 
+# Función para pintar el estado sin emojis
+def color_estado(val):
+    if 'CRÍTICO' in str(val):
+        return 'color: #f87171; font-weight: bold;'
+    elif 'NORMAL' in str(val):
+        return 'color: #4ade80;'
+    return ''
+
 with tab_cervezas:
     if not df_cervezas_final.empty:
-        st.dataframe(df_cervezas_final, use_container_width=True, hide_index=True)
+        st.dataframe(df_cervezas_final.style.applymap(color_estado, subset=['ESTADO']), use_container_width=True, hide_index=True)
     else:
         st.info("No se encontraron tanques de cerveza activos con cruce de Fin de Reposo.")
 
 with tab_malta:
     if not df_malta_final.empty:
-        st.dataframe(df_malta_final, use_container_width=True, hide_index=True)
+        st.dataframe(df_malta_final.style.applymap(color_estado, subset=['ESTADO']), use_container_width=True, hide_index=True)
     else:
         st.info("No hay tanques de Malta Real activos en este momento.")
 
 # --- MODO RAYOS X (DIAGNÓSTICO) ---
-with st.expander("🛠️ Modo Rayos X (Diagnóstico de Datos)"):
+with st.expander("Modo Rayos X (Diagnóstico de Datos)"):
     for msg in debug_info:
         st.write(f"- {msg}")
     
