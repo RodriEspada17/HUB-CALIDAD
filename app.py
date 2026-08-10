@@ -3,13 +3,13 @@ import os
 from utils.core import aplicar_estilo_neon
 
 # Configuración inicial de la página
-st.set_page_config(page_title="BBO HUB CALIDAD", layout="wide", initial_sidebar_state="expanded")
+st.set_page_config(page_title="HUB BBO CALIDAD", layout="wide", initial_sidebar_state="expanded")
 
 # --- INICIALIZAR ESTADO DE SESIÓN ---
 if 'autenticado' not in st.session_state:
     st.session_state['autenticado'] = False
 
-# Aplica la tipografía y el fondo base de nuestra librería
+# Aplica la tipografía y el fondo base
 aplicar_estilo_neon()
 
 # --- CSS GLOBAL DE ALTA GAMA ---
@@ -44,12 +44,21 @@ st.markdown("""
         color: #050505 !important; 
     }
 
-    /* 3. Botón de Cerrar Sesión (Pequeño, inferior izquierdo) */
+    /* 3. Ajuste de posición del botón de Cerrar Sesión en el fondo del Sidebar */
+    [data-testid="stSidebar"] {
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+    }
+    [data-testid="stSidebar"] div[data-testid="stButton"] {
+        margin-top: auto !important;
+        padding-bottom: 20px !important;
+    }
     [data-testid="stSidebar"] div[data-testid="stButton"] > button {
         background-color: transparent !important;
         border: 1px solid #1a1a1a !important;
         width: fit-content !important;
-        padding: 4px 12px !important;
+        padding: 6px 14px !important;
         border-radius: 4px !important;
         transition: all 0.3s ease !important;
     }
@@ -58,6 +67,7 @@ st.markdown("""
         font-size: 0.75rem !important;
         margin: 0 !important;
         font-weight: bold !important;
+        letter-spacing: 1px;
     }
     [data-testid="stSidebar"] div[data-testid="stButton"] > button:hover {
         border-color: #f87171 !important;
@@ -67,27 +77,39 @@ st.markdown("""
         color: #f87171 !important;
     }
 
-    /* 4. Estilos para los Módulos/Tarjetas Clickables */
+    /* 4. Estilizado Neón idéntico a las Tarjetas de la Derecha */
     div[data-testid="stColumn"] div[data-testid="stButton"] > button {
         background-color: #0a0a0a !important;
         border: 1px solid #1a1a1a !important;
-        padding: 25px 20px !important;
+        padding: 28px 24px !important;
         border-radius: 12px !important;
         text-align: left !important;
-        min-height: 180px !important;
+        min-height: 220px !important;
+        display: flex !important;
+        flex-direction: column !important;
+        justify-content: space-between !important;
         align-items: flex-start !important;
-        justify-content: flex-start !important;
+        width: 100% !important;
+        transition: all 0.3s ease !important;
     }
     div[data-testid="stColumn"] div[data-testid="stButton"] > button:hover {
-        border-color: #a3ff00 !important;
-        box-shadow: 0 10px 30px rgba(163, 255, 0, 0.05) !important;
-        transform: translateY(-5px) !important;
+        border-color: #333333 !important;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5) !important;
+        transform: translateY(-4px) !important;
+    }
+    div[data-testid="stColumn"] div[data-testid="stButton"] > button p {
+        color: #ffffff !important;
+        font-family: 'Space Grotesk', sans-serif !important;
+        margin: 0 !important;
+        white-space: pre-wrap !important;
+        text-align: left !important;
+        width: 100% !important;
     }
     </style>
 """, unsafe_allow_html=True)
 
 # ==========================================
-# 🛑 PANTALLA DE LOGIN (Modo Bloqueo)
+# 🛑 PANTALLA DE LOGIN
 # ==========================================
 if not st.session_state['autenticado']:
     st.markdown("""
@@ -109,15 +131,14 @@ if not st.session_state['autenticado']:
     
     with col2:
         with st.form("login_form"):
-            col_l1, col_l2, col_l3 = st.columns([1, 2, 1])
-            with col_l2:
-                if os.path.exists("LogoBBO.png"):
-                    st.image("LogoBBO.png", use_container_width=True)
-                else:
-                    st.markdown("<h3 style='text-align: center; color: #a3ff00;'>BBO</h3>", unsafe_allow_html=True)
-                    
-            st.markdown("<h1 style='text-align: center; color: #a3ff00; font-size: 2.5rem; letter-spacing: 5px; margin-top: -15px; margin-bottom: 0;'>HUB</h1>", unsafe_allow_html=True)
-            st.markdown("<p style='text-align: center; color: #888888; font-size: 0.85rem; letter-spacing: 2px; margin-bottom: 2.5rem;'>CONTROL CENTRAL DE CALIDAD</p>", unsafe_allow_html=True)
+            # ENCABEZADO LOGIN
+            st.markdown("""
+                <div style='display: flex; align-items: center; justify-content: center; gap: 15px; margin-bottom: 10px;'>
+                    <span style='color: #a3ff00; font-size: 2.8rem; font-weight: 800; letter-spacing: 4px; font-family: "Space Grotesk", sans-serif;'>HUB</span>
+                    <img src='https://raw.githubusercontent.com/aespada/hub-calidad/main/LogoBBO.png' style='height: 55px; object-fit: contain;' onerror="this.style.display='none'">
+                </div>
+                <p style='text-align: center; color: #888888; font-size: 0.85rem; letter-spacing: 2px; margin-bottom: 2.5rem; font-family: "Space Grotesk", sans-serif;'>CENTRO DE CONTROL Y MONITOREO</p>
+            """, unsafe_allow_html=True)
             
             usuario = st.text_input("Usuario", placeholder="Ingresa tu ID corporativo...")
             password = st.text_input("Contraseña", type="password", placeholder="••••••••")
@@ -137,7 +158,7 @@ if not st.session_state['autenticado']:
                     st.error("Error crítico: La Bóveda de Secretos no está configurada en Streamlit Cloud.")
 
 # ==========================================
-# 🟢 DASHBOARD PRINCIPAL (Modo Acceso)
+# 🟢 DASHBOARD PRINCIPAL
 # ==========================================
 else:
     # --- SIDEBAR ---
@@ -148,51 +169,60 @@ else:
         </div>
     """, unsafe_allow_html=True)
     
-    st.sidebar.markdown("<br>" * 15, unsafe_allow_html=True)
+    # Espaciador para empujar el botón de Cerrar Sesión al fondo absoluto del sidebar
+    st.sidebar.markdown("<br>" * 18, unsafe_allow_html=True)
     
     if st.sidebar.button("■ CERRAR SESIÓN"):
         st.session_state['autenticado'] = False
         st.rerun()
 
-    # --- CONTENIDO PRINCIPAL ---
+    # --- ENCABEZADO CENTRAL (HUB BBO en la misma línea) ---
     st.markdown("<br>", unsafe_allow_html=True)
     
-    col_d1, col_d2, col_d3 = st.columns([1.5, 1, 1.5])
-    with col_d2:
-        if os.path.exists("LogoBBO.png"):
-            st.image("LogoBBO.png", use_container_width=True)
-        else:
-            st.markdown("<h2 style='text-align: center; color: #a3ff00;'>BBO</h2>", unsafe_allow_html=True)
-            
-    st.markdown("<h1 style='text-align: center; font-size: 3rem; letter-spacing: 8px; color: #a3ff00; margin-top: -15px; margin-bottom: 0; line-height: 1;'>HUB</h1>", unsafe_allow_html=True)
-    st.markdown("<p style='text-align: center; color: #888888; font-size: 1rem; letter-spacing: 3px; margin-bottom: 4rem; text-transform: uppercase;'>Centro de Control y Monitoreo</p>", unsafe_allow_html=True)
+    # Intentamos cargar la imagen local LogoBBO.png si existe
+    logo_path = "LogoBBO.png"
+    logo_exists = os.path.exists(logo_path)
+    
+    st.markdown(f"""
+        <div style='display: flex; align-items: center; justify-content: center; gap: 20px; margin-bottom: 5px;'>
+            <span style='color: #a3ff00; font-size: 4rem; font-weight: 800; letter-spacing: 6px; font-family: "Space Grotesk", sans-serif; line-height: 1;'>HUB</span>
+            {'<img src="LogoBBO.png" style="height: 75px; object-fit: contain;">' if logo_exists else '<span style="color: #ffffff; font-size: 4rem; font-weight: 800; letter-spacing: 6px;">BBO</span>'}
+        </div>
+        <p style='text-align: center; color: #888888; font-size: 1rem; letter-spacing: 3px; margin-bottom: 3.5rem; text-transform: uppercase; font-family: "Space Grotesk", sans-serif;'>Centro de Control y Monitoreo</p>
+    """, unsafe_allow_html=True)
 
-    # --- CUADRÍCULA DE MÓDULOS ---
+    # --- CUADRÍCULA DE TARJETAS NEÓN ---
     col1, col2 = st.columns(2)
     
+    # TEXTOS DE LAS TARJETAS (FORMATO EXACTO AL PANEL DE CALIDAD)
+    txt_cc = "///\n\nControl de Calidad\n\nAnálisis SPC, tendencias y resumen de producción mensual.\n\n\n■ MÓDULO ACTIVO"
+    txt_est = "///\n\nControl de Estadía\n\nMonitoreo de tiempos de residencia de tanques para Malta y Cervezas.\n\n\n■ MÓDULO ACTIVO"
+    txt_elab = "///\n\nElaboración\n\nControl de procesos de cocimiento, fermentación y filtración. Mermas y eficiencias.\n\n\n■ EN DESARROLLO"
+    txt_env = "///\n\nEnvasado\n\nSupervisión de líneas de llenado, mermas de empaque y eficiencias de turno (OEE).\n\n\n■ EN DESARROLLO"
+
     with col1:
-        if st.button("■ CONTROL DE CALIDAD\n\nPlataforma de monitoreo estadístico avanzado. Analiza tendencias fisicoquímicas en tiempo real, calcula métricas de capacidad (Cp/Cpk) y exporta reportes.", use_container_width=True, key="btn_cc"):
+        if st.button(txt_cc, use_container_width=True, key="card_cc"):
             st.switch_page("pages/CONTROL_CALIDAD.py")
             
         st.markdown("<br>", unsafe_allow_html=True)
         
-        if st.button("■ ELABORACIÓN\n\nPanel de control para procesos de cocimiento, fermentación y filtración. Monitoreo de mermas, extractos y eficiencias de sala.", use_container_width=True, key="btn_elab"):
+        if st.button(txt_elab, use_container_width=True, key="card_elab"):
             try:
                 st.switch_page("pages/ELABORACION.py")
             except:
-                st.warning("🚧 Módulo en construcción.")
+                st.warning("🚧 Módulo de Elaboración en desarrollo.")
 
     with col2:
-        if st.button("■ ESTADÍA DE TANQUES\n\nTablero de seguimiento logístico para tiempos de maduración. Cuenta con sistema dual de alertas tempranas, panel de estado crítico y notificaciones.", use_container_width=True, key="btn_est"):
+        if st.button(txt_est, use_container_width=True, key="card_est"):
             st.switch_page("pages/3_ESTADIA_TANQUES.py")
             
         st.markdown("<br>", unsafe_allow_html=True)
         
-        if st.button("■ ENVASADO\n\nSupervisión de líneas de llenado, mermas de empaque, control de oxígeno disuelto y eficiencias operativas de turno (OEE).", use_container_width=True, key="btn_env"):
+        if st.button(txt_env, use_container_width=True, key="card_env"):
             try:
                 st.switch_page("pages/ENVASADO.py")
             except:
-                st.warning("🚧 Módulo en construcción.")
+                st.warning("🚧 Módulo de Envasado en desarrollo.")
         
     st.markdown("<br><br><hr style='border: 1px solid #1a1a1a; margin-top: 2rem;'><br>", unsafe_allow_html=True)
-    st.markdown("<p style='text-align: center; color: #333333; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px;'>BBO Cervecería © 2026 - Departamento de Calidad</p>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align: center; color: #333333; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; font-family: \"Space Grotesk\", sans-serif;'>BBO Cervecería © 2026 - Departamento de Calidad</p>", unsafe_allow_html=True)
