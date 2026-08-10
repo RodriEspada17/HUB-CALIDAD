@@ -3,14 +3,12 @@ import pandas as pd
 import urllib.parse
 from utils.core import aplicar_estilo_neon, generar_url_csv, cargar_datos
 
-# Configuración inicial
 st.set_page_config(page_title="Exportar Datos", layout="wide", initial_sidebar_state="expanded")
 aplicar_estilo_neon()
 
 # --- CSS AVANZADO: ESTANDARIZACIÓN DE BOTONES Y ENLACES NEÓN ---
 st.markdown("""
     <style>
-    /* 1. Botones principales del módulo */
     .stButton > button {
         background-color: #050505 !important;
         color: #a3ff00 !important;
@@ -26,7 +24,6 @@ st.markdown("""
         transform: translateY(-2px) !important;
     }
     
-    /* 2. Transformar los enlaces del Sidebar en Botones Neón */
     [data-testid="stSidebar"] [data-testid="stPageLink-NavLink"] {
         background-color: #050505 !important;
         color: #a3ff00 !important;
@@ -44,7 +41,6 @@ st.markdown("""
         box-shadow: 0 0 15px rgba(163, 255, 0, 0.4) !important;
         transform: translateY(-2px) !important;
     }
-    /* Matar el gris de fondo que pone Streamlit y forzar color de texto */
     [data-testid="stSidebar"] [data-testid="stPageLink-NavLink"] > div {
         background-color: transparent !important;
     }
@@ -54,7 +50,7 @@ st.markdown("""
         margin: 0 !important;
     }
 
-    /* 3. Botón de WhatsApp a prueba de navegadores */
+    /* Botón principal Neón */
     .btn-wpp-neon {
         display: block !important;
         width: 100% !important;
@@ -77,10 +73,34 @@ st.markdown("""
         box-shadow: 0 0 15px rgba(163, 255, 0, 0.4) !important;
         text-decoration: none !important;
     }
+
+    /* Botón Secundario Gris Metálico (Para Grupos) */
+    .btn-wpp-secondary {
+        display: block !important;
+        width: 100% !important;
+        text-align: center !important;
+        background-color: #050505 !important;
+        color: #888888 !important;
+        border: 1px solid #333333 !important;
+        padding: 9px 24px !important;
+        font-family: 'Space Grotesk', sans-serif !important;
+        font-weight: 600 !important;
+        font-size: 1rem !important;
+        text-decoration: none !important;
+        border-radius: 6px !important;
+        transition: all 0.3s ease !important;
+        margin-top: 10px !important;
+    }
+    .btn-wpp-secondary:hover {
+        background-color: #333333 !important;
+        color: #ffffff !important;
+        border: 1px solid #888888 !important;
+        text-decoration: none !important;
+    }
     </style>
 """, unsafe_allow_html=True)
 
-# --- INICIALIZAR LA MEMORIA DEL HUB (SESSION STATE) ---
+# --- INICIALIZAR LA MEMORIA DEL HUB ---
 if "reporte_listo" not in st.session_state:
     st.session_state.reporte_listo = False
 if "mensaje_wpp" not in st.session_state:
@@ -190,7 +210,6 @@ if df is not None and not df.empty:
             else:
                 registro = df_filtro.iloc[0]
                 
-                # --- FORMATO WHATSAPP (Asteriscos para Negrita, Guiones bajos para Cursiva) ---
                 mensaje = f"*REPORTE DE CALIDAD BBO*\n"
                 mensaje += f"*Etapa:* {etapa_seleccionada}\n"
                 mensaje += f"*Producto:* {prod_sel}\n"
@@ -217,7 +236,6 @@ if df is not None and not df.empty:
                 mensaje += f"-----------------------------------\n"
                 mensaje += f"_Generado automáticamente desde BBO HUB_"
 
-                # GUARDAR EN MEMORIA
                 st.session_state.mensaje_wpp = mensaje
                 st.session_state.reporte_listo = True
 
@@ -256,10 +274,14 @@ if df is not None and not df.empty:
 
             if st.session_state.phone_number:
                 mensaje_codificado = urllib.parse.quote(st.session_state.mensaje_wpp)
-                url_whatsapp = f"https://wa.me/{st.session_state.phone_number}?text={mensaje_codificado}"
                 
-                # Usamos la clase pura de CSS que inyectamos arriba
-                st.markdown(f'<a href="{url_whatsapp}" target="_blank" class="btn-wpp-neon">ENVIAR REPORTE AL DESTINO</a>', unsafe_allow_html=True)
+                # Enlace directo al número
+                url_whatsapp_directo = f"https://wa.me/{st.session_state.phone_number}?text={mensaje_codificado}"
+                # Enlace general para elegir grupo o contacto
+                url_whatsapp_grupos = f"https://api.whatsapp.com/send?text={mensaje_codificado}"
+                
+                st.markdown(f'<a href="{url_whatsapp_directo}" target="_blank" class="btn-wpp-neon">ENVIAR A DESTINO FIJO</a>', unsafe_allow_html=True)
+                st.markdown(f'<a href="{url_whatsapp_grupos}" target="_blank" class="btn-wpp-secondary">SELECCIONAR GRUPO O CONTACTO</a>', unsafe_allow_html=True)
 
 else:
     st.markdown("<p style='color: #f87171;'>[ERROR] Falla de conexión con la base de datos principal.</p>", unsafe_allow_html=True)
