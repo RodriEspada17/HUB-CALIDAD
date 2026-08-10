@@ -39,9 +39,20 @@ URL_BASE = "https://docs.google.com/spreadsheets/d/1YiYwKJZsR7vBrLjCQBbGxzVxlTQE
 GID_COCIMIENTO = "1587615990"
 GID_REPOSO = "79058483"
 
-# --- FUNCIÓN LIMPIADORA DE LLAVES ---
+# --- FUNCIONES DE LIMPIEZA Y TRADUCCIÓN ---
 def limpiar_llave(serie):
     return serie.astype(str).str.replace(r'\.0$', '', regex=True).str.strip().str.upper()
+
+def parsear_fechas_espanol(serie):
+    # Diccionario para traducir los meses de Sheets (español) a Pandas (inglés)
+    meses_traduccion = {
+        'ene': 'jan', 'feb': 'feb', 'mar': 'mar', 'abr': 'apr', 'may': 'may', 'jun': 'jun',
+        'jul': 'jul', 'ago': 'aug', 'sep': 'sep', 'oct': 'oct', 'nov': 'nov', 'dic': 'dec'
+    }
+    serie_str = serie.astype(str).str.lower()
+    for es, en in meses_traduccion.items():
+        serie_str = serie_str.str.replace(es, en)
+    return pd.to_datetime(serie_str, dayfirst=True, errors='coerce')
 
 # --- LÓGICA DE PROCESAMIENTO ---
 df_coc_raw, _ = cargar_datos(generar_url_csv(URL_BASE + GID_COCIMIENTO, GID_COCIMIENTO))
@@ -88,7 +99,8 @@ if df_coc_raw is not None and not df_coc_raw.empty and df_rep_raw is not None an
         df_malta = df_activos[df_activos[col_prod_coc].astype(str).str.upper().str.contains("MALTA", na=False)].copy()
         
         if col_llenado and not df_malta.empty:
-            df_malta['FECHA_PARSED'] = pd.to_datetime(df_malta[col_llenado], dayfirst=True, errors='coerce')
+            # AQUI USAMOS EL TRADUCTOR DE FECHAS
+            df_malta['FECHA_PARSED'] = parsear_fechas_espanol(df_malta[col_llenado])
             df_malta['DIAS ESTADIA'] = (pd.Timestamp.now() - df_malta['FECHA_PARSED']).dt.total_seconds() / 86400
             df_malta['ESTADO'] = df_malta['DIAS ESTADIA'].apply(lambda x: '■ CRÍTICO (> 6.5d)' if x >= 6.5 else '■ NORMAL')
             df_malta = df_malta.dropna(subset=['DIAS ESTADIA'])
@@ -122,7 +134,8 @@ if df_coc_raw is not None and not df_coc_raw.empty and df_rep_raw is not None an
             df_merged = pd.merge(df_cerv, df_rep_clean[['_MATCH_FT', '_MATCH_LOTE', 'FECHA_REPOSO_CRUCE']], on=['_MATCH_FT', '_MATCH_LOTE'], how='inner')
             
             if not df_merged.empty:
-                df_merged['FECHA_PARSED'] = pd.to_datetime(df_merged['FECHA_REPOSO_CRUCE'], dayfirst=True, errors='coerce')
+                # AQUI TAMBIEN USAMOS EL TRADUCTOR DE FECHAS
+                df_merged['FECHA_PARSED'] = parsear_fechas_espanol(df_merged['FECHA_REPOSO_CRUCE'])
                 df_merged['DIAS ESTADIA'] = (pd.Timestamp.now() - df_merged['FECHA_PARSED']).dt.total_seconds() / 86400
                 
                 def get_status_cerv(row):
@@ -166,10 +179,8 @@ st.markdown("<br><hr style='border: 1px solid #1a1a1a;'><br>", unsafe_allow_html
 # --- PANEL PRINCIPAL DE CONTROL SIMULTÁNEO ---
 st.markdown("<h4 style='color: #a3ff00; letter-spacing: 1px; font-size: 1.1rem; margin-bottom: 1.5rem;'>TABLEROS DE MONITOREO SIMULTÁNEO</h4>", unsafe_allow_html=True)
 
-# Layout de dos columnas grandes en pantalla
 col_cerv, col_malt = st.columns(2)
 
-# Función de inyección CSS y Formato para que la tabla parezca sacada de la Matrix
 def aplicar_estilo_tabla(df):
     def color_estado(val):
         if 'CRÍTICO' in str(val):
@@ -181,7 +192,7 @@ def aplicar_estilo_tabla(df):
     return (df.style
             .set_properties(**{'background-color': '#0f0f0f', 'color': '#e0e0e0', 'border': '1px solid #1a1a1a'})
             .map(color_estado, subset=['ESTADO'])
-            .format({"DIAS ESTADIA": "{:.1f}"})) # Fuerza el decimal exacto
+            .format({"DIAS ESTADIA": "{:.1f}"}))
 
 with col_cerv:
     st.markdown("""
