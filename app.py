@@ -2,8 +2,8 @@ import streamlit as st
 import time
 from utils.core import aplicar_estilo_neon
 
-# Configuración inicial de la página (Debe ser la primera línea)
-st.set_page_config(page_title="BBO HUB CALIDAD", page_icon="🍺", layout="wide", initial_sidebar_state="expanded")
+# Configuración inicial de la página (Sin emoji en la pestaña)
+st.set_page_config(page_title="BBO HUB CALIDAD", layout="wide", initial_sidebar_state="expanded")
 
 # --- INICIALIZAR ESTADO DE SESIÓN ---
 if 'autenticado' not in st.session_state:
@@ -52,7 +52,7 @@ st.markdown("""
     [data-testid="stSidebar"] [data-testid="stPageLink-NavLink"]:hover { background-color: #a3ff00 !important; color: #050505 !important; box-shadow: 0 0 15px rgba(163, 255, 0, 0.4) !important; transform: translateY(-2px) !important; border: 1px solid #a3ff00 !important; }
     [data-testid="stSidebar"] [data-testid="stPageLink-NavLink"]:hover p { color: #050505 !important; }
     [data-testid="stSidebar"] [data-testid="stPageLink-NavLink"] > div { background-color: transparent !important; }
-    [data-testid="stSidebar"] [data-testid="stPageLink-NavLink"] p { color: inherit !important; font-weight: 600 !important; font-size: 0.9rem !important; margin: 0 !important; }
+    [data-testid="stSidebar"] [data-testid="stPageLink-NavLink"] p { color: inherit !important; font-weight: 600 !important; font-size: 0.9rem !important; margin: 0 !important; text-transform: uppercase; letter-spacing: 1px;}
 
     /* 4. Tarjetas Premium del Dashboard Principal */
     .dash-card {
@@ -62,24 +62,22 @@ st.markdown("""
         border-radius: 12px;
         transition: all 0.3s ease;
         height: 100%;
-        text-align: center;
+        text-align: left;
     }
     .dash-card:hover {
         border-color: #a3ff00;
         box-shadow: 0 10px 30px rgba(163, 255, 0, 0.08);
         transform: translateY(-5px);
     }
-    .dash-icon {
-        font-size: 3rem;
-        margin-bottom: 15px;
-    }
     .dash-title {
         color: #a3ff00;
-        font-size: 1.3rem;
+        font-size: 1.2rem;
         font-weight: 700;
         letter-spacing: 1.5px;
         margin-bottom: 15px;
         text-transform: uppercase;
+        border-bottom: 1px solid #1a1a1a;
+        padding-bottom: 10px;
     }
     .dash-desc {
         color: #888888;
@@ -90,7 +88,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ==========================================
-# 🛑 PANTALLA DE LOGIN (Modo Bloqueo)
+# PANTALLA DE LOGIN (Modo Bloqueo)
 # ==========================================
 if not st.session_state['autenticado']:
     st.markdown("""
@@ -131,29 +129,28 @@ if not st.session_state['autenticado']:
                         st.session_state['usuario_actual'] = usuario
                         st.rerun() 
                     else:
-                        st.error("❌ Credenciales incorrectas. Acceso denegado.")
+                        st.error("Credenciales incorrectas. Acceso denegado.")
                 except Exception as e:
-                    st.error("⚠️ Error crítico: La Bóveda de Secretos no está configurada en Streamlit Cloud.")
+                    st.error("Error crítico: La Bóveda de Secretos no está configurada en Streamlit Cloud.")
 
 # ==========================================
-# 🟢 DASHBOARD PRINCIPAL (Modo Acceso)
+# DASHBOARD PRINCIPAL (Modo Acceso)
 # ==========================================
 else:
-    # --- SIDEBAR (Menú Estilizado) ---
+    # --- SIDEBAR (Menú Estilizado y Profesional) ---
     st.sidebar.markdown(f"""
         <div style='background-color: #050505; border: 1px solid #1a1a1a; padding: 15px; border-radius: 8px; text-align: center; margin-bottom: 25px;'>
             <span style='color: #888888; font-size: 0.75rem; letter-spacing: 2px; text-transform: uppercase;'>Sesión Activa</span><br>
-            <span style='color: #a3ff00; font-weight: bold; font-size: 1.2rem; letter-spacing: 1px;'>👤 {st.session_state['usuario_actual'].upper()}</span>
+            <span style='color: #a3ff00; font-weight: bold; font-size: 1.2rem; letter-spacing: 1px;'>■ {st.session_state['usuario_actual'].upper()}</span>
         </div>
     """, unsafe_allow_html=True)
     
-    # IMPORTANTE: Cambia estos nombres si tus archivos se llaman diferente en la carpeta 'pages'
-    st.sidebar.page_link("pages/CONTROL_CALIDAD.py", label="🔬 CONTROL DE CALIDAD")
-    st.sidebar.page_link("pages/3_ESTADIA_TANQUES.py", label="⏱️ ESTADÍA DE TANQUES")
+    st.sidebar.page_link("pages/CONTROL_CALIDAD.py", label="■ CONTROL DE CALIDAD")
+    st.sidebar.page_link("pages/3_ESTADIA_TANQUES.py", label="■ ESTADÍA DE TANQUES")
     
     st.sidebar.markdown("<br><hr style='border: 1px solid #1a1a1a;'><br>", unsafe_allow_html=True)
     
-    if st.sidebar.button("🔴 CERRAR SESIÓN"):
+    if st.sidebar.button("■ CERRAR SESIÓN"):
         st.session_state['autenticado'] = False
         st.rerun()
 
@@ -162,14 +159,13 @@ else:
     st.markdown("<h1 style='text-align: center; font-size: 4.5rem; letter-spacing: 3px; color: #ffffff; margin-bottom: 0; line-height: 1;'>BBO <span style='color: #a3ff00;'>HUB</span></h1>", unsafe_allow_html=True)
     st.markdown("<p style='text-align: center; color: #888888; font-size: 1.1rem; letter-spacing: 3px; margin-bottom: 4rem; text-transform: uppercase;'>Centro de Control y Monitoreo</p>", unsafe_allow_html=True)
 
-    # Tarjetas Interactivas
+    # Tarjetas Interactivas Minimalistas
     col1, col2 = st.columns(2)
     
     with col1:
         st.markdown("""
             <div class='dash-card'>
-                <div class='dash-icon'>🔬</div>
-                <div class='dash-title'>Control de Calidad</div>
+                <div class='dash-title'>■ Control de Calidad</div>
                 <div class='dash-desc'>Plataforma de monitoreo estadístico avanzado. Analiza tendencias fisicoquímicas en tiempo real, calcula métricas de capacidad (Cp/Cpk) y exporta reportes corporativos automatizados.</div>
             </div>
         """, unsafe_allow_html=True)
@@ -177,11 +173,10 @@ else:
     with col2:
         st.markdown("""
             <div class='dash-card'>
-                <div class='dash-icon'>⏱️</div>
-                <div class='dash-title'>Estadía de Tanques</div>
+                <div class='dash-title'>■ Estadía de Tanques</div>
                 <div class='dash-desc'>Tablero de seguimiento logístico para tiempos de maduración. Cuenta con sistema dual de alertas tempranas, panel de estado crítico y envíos automáticos a gerencia.</div>
             </div>
         """, unsafe_allow_html=True)
         
     st.markdown("<br><hr style='border: 1px solid #1a1a1a; margin-top: 3rem;'><br>", unsafe_allow_html=True)
-    st.markdown("<p style='text-align: center; color: #333333; font-size: 0.8rem;'>BBO Cervecería © 2026 - Departamento de Calidad</p>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align: center; color: #333333; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px;'>BBO Cervecería © 2026 - Departamento de Calidad</p>", unsafe_allow_html=True)
