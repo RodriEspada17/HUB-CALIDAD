@@ -100,9 +100,6 @@ if df_coc_raw is not None and not df_coc_raw.empty and df_rep_raw is not None an
             cols_m = [col_lote_coc, col_ft_coc, col_prod_coc, col_llenado, 'DIAS ESTADIA', 'ESTADO']
             df_malta_final = df_malta[cols_m].sort_values(by='DIAS ESTADIA', ascending=False)
             
-            # Formateamos el decimal directamente en los datos
-            df_malta_final['DIAS ESTADIA'] = df_malta_final['DIAS ESTADIA'].apply(lambda x: f"{x:.1f}")
-            
             total_activos += len(df_malta_final)
             total_criticos += len(df_malta_final[df_malta_final['ESTADO'].str.contains('CRÍTICO')])
 
@@ -146,9 +143,6 @@ if df_coc_raw is not None and not df_coc_raw.empty and df_rep_raw is not None an
                 df_cervezas_final = df_merged[cols_c].sort_values(by='DIAS ESTADIA', ascending=False)
                 df_cervezas_final.rename(columns={'FECHA_REPOSO_CRUCE': 'FECHA FIN DE REPOSO'}, inplace=True)
                 
-                # Formateamos el decimal directamente en los datos
-                df_cervezas_final['DIAS ESTADIA'] = df_cervezas_final['DIAS ESTADIA'].apply(lambda x: f"{x:.1f}")
-                
                 total_activos += len(df_cervezas_final)
                 total_criticos += len(df_cervezas_final[df_cervezas_final['ESTADO'].str.contains('CRÍTICO')])
 
@@ -177,6 +171,21 @@ st.markdown("<h4 style='color: #a3ff00; letter-spacing: 1px; font-size: 1.1rem; 
 
 col_cerv, col_malt = st.columns(2)
 
+# ESTILIZADOR EXACTO AL DE PARAMETROS CRÍTICOS (Usando .apply en vez de .map o set_properties)
+def aplicar_estilo_tabla(df):
+    def pintar_celdas(row):
+        estilos = [''] * len(row)
+        for i, col in enumerate(row.index):
+            if col == 'ESTADO':
+                val = str(row[col])
+                if 'CRÍTICO' in val:
+                    estilos[i] = 'color: #f87171; font-weight: bold;'
+                elif 'NORMAL' in val:
+                    estilos[i] = 'color: #4ade80;'
+        return estilos
+    
+    return df.style.apply(pintar_celdas, axis=1).format({"DIAS ESTADIA": "{:.1f}"})
+
 with col_cerv:
     st.markdown("""
         <div style='background-color: #0a0a0a; padding: 12px; border-radius: 6px; border: 1px solid #1a1a1a; text-align: center; margin-bottom: 15px;'>
@@ -185,8 +194,8 @@ with col_cerv:
     """, unsafe_allow_html=True)
     
     if not df_cervezas_final.empty:
-        # Se envía el DataFrame crudo para aprovechar el tema nativo de Streamlit
-        st.dataframe(df_cervezas_final, use_container_width=True, hide_index=True)
+        # AQUÍ ESTÁ EL SECRETO: Quitamos hide_index=True para que respete el Modo Noche de Streamlit
+        st.dataframe(aplicar_estilo_tabla(df_cervezas_final), use_container_width=True)
     else:
         st.info("No se encontraron tanques de cerveza activos.")
 
@@ -198,7 +207,7 @@ with col_malt:
     """, unsafe_allow_html=True)
     
     if not df_malta_final.empty:
-        # Se envía el DataFrame crudo para aprovechar el tema nativo de Streamlit
-        st.dataframe(df_malta_final, use_container_width=True, hide_index=True)
+        # AQUÍ ESTÁ EL SECRETO: Quitamos hide_index=True para que respete el Modo Noche de Streamlit
+        st.dataframe(aplicar_estilo_tabla(df_malta_final), use_container_width=True)
     else:
         st.info("No hay tanques de Malta Real activos.")
