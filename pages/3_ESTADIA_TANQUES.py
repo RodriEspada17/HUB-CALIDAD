@@ -170,23 +170,21 @@ st.markdown("<h4 style='color: #a3ff00; letter-spacing: 1px; font-size: 1.1rem; 
 
 col_cerv, col_malt = st.columns(2)
 
+# --- FUNCIÓN DE ESTILOS ESTÁNDAR BBO HUB ---
+# En lugar de forzar fondos, aplicamos estilos por celda igual que en Parametros Críticos
 def aplicar_estilo_tabla(df):
-    def color_estado(val):
-        if 'CRÍTICO' in str(val):
-            return 'color: #f87171; font-weight: bold;'
-        elif 'NORMAL' in str(val):
-            return 'color: #4ade80;'
-        return ''
+    def pintar_celdas(row):
+        estilos = [''] * len(row)
+        for i, col in enumerate(row.index):
+            if col == 'ESTADO':
+                val = str(row[col])
+                if 'CRÍTICO' in val:
+                    estilos[i] = 'color: #f87171; font-weight: bold;'
+                elif 'NORMAL' in val:
+                    estilos[i] = 'color: #4ade80;'
+        return estilos
     
-    # Inyectamos el fondo nativo oscuro de Streamlit (#0e1117) y texto blanco hueso (#fafafa)
-    return (df.style
-            .set_properties(**{
-                'background-color': '#0e1117', 
-                'color': '#fafafa', 
-                'border-color': '#31333F'
-            })
-            .map(color_estado, subset=['ESTADO'])
-            .format({"DIAS ESTADIA": "{:.1f}"}))
+    return df.style.apply(pintar_celdas, axis=1).format({"DIAS ESTADIA": "{:.1f}"})
 
 with col_cerv:
     st.markdown("""
@@ -196,7 +194,8 @@ with col_cerv:
     """, unsafe_allow_html=True)
     
     if not df_cervezas_final.empty:
-        st.dataframe(aplicar_estilo_tabla(df_cervezas_final), use_container_width=True, hide_index=True)
+        # Volvemos a usar use_container_width=True, eliminamos hide_index para que se vea el índice nativo
+        st.dataframe(aplicar_estilo_tabla(df_cervezas_final), use_container_width=True)
     else:
         st.info("No se encontraron tanques de cerveza activos.")
 
@@ -208,6 +207,6 @@ with col_malt:
     """, unsafe_allow_html=True)
     
     if not df_malta_final.empty:
-        st.dataframe(aplicar_estilo_tabla(df_malta_final), use_container_width=True, hide_index=True)
+        st.dataframe(aplicar_estilo_tabla(df_malta_final), use_container_width=True)
     else:
         st.info("No hay tanques de Malta Real activos.")
