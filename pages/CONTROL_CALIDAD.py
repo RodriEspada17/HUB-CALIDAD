@@ -46,12 +46,13 @@ st.markdown("""
             <p class="card-desc">Carga directa de variables fisicoquímicas sin usar Google Sheets.</p>
             <div class="status-badge status-dev">■ En Desarrollo</div>
         </div>
-        <div class="vercel-card">
+        <!-- 3. Módulo de Estadía de Tanques -->
+        <a href="ESTADIA_TANQUES" target="_self" class="vercel-card">
             <div class="card-icon">///</div>
-            <h3 class="card-title">Calculadora de Diacetilo</h3>
-            <p class="card-desc">Herramienta predictiva y de ajuste analítico para tiempos de reposo.</p>
-            <div class="status-badge status-dev">■ En Desarrollo</div>
-        </div>
+            <h3 class="card-title">Control de Estadía</h3>
+            <p class="card-desc">Monitoreo de tiempos de residencia de tanques para Malta y Cervezas.</p>
+            <div class="status-badge status-active">■ Módulo Activo</div>
+        </a>
         <!-- 4. WhatsApp: EXPORTAR DATOS -->
         <a href="EXPORTAR_DATOS" target="_self" class="vercel-card">
             <div class="card-icon">///</div>
