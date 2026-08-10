@@ -13,28 +13,29 @@ aplicar_estilo_neon()
 # --- CSS AVANZADO: DISEÑO DE DASHBOARD Y BOTONES ---
 st.markdown("""
     <style>
-    /* Botón nativo de Streamlit (Correo) - ATAQUE DIRECTO AL PÁRRAFO INTERNO */
-    div[data-testid="stButton"] > button, 
-    div[data-testid="stButton"] > button p { 
+    /* Botón nativo de Streamlit (Correo) - SEPARANDO CAJA Y TEXTO */
+    div[data-testid="stButton"] > button { 
         background-color: #050505 !important; 
-        color: #a3ff00 !important; 
         border: 1px solid #a3ff00 !important; 
         border-radius: 6px !important; 
-        font-weight: 600 !important; 
         transition: all 0.3s ease !important; 
         width: 100% !important; 
         padding: 0.6rem 1rem !important; 
+    }
+    div[data-testid="stButton"] > button p { 
+        color: #a3ff00 !important; 
+        font-weight: 600 !important; 
         font-family: 'Space Grotesk', sans-serif !important; 
         font-size: 1rem !important; 
-        line-height: 1.6 !important;
         margin: 0 !important;
     }
-    div[data-testid="stButton"] > button:hover,
-    div[data-testid="stButton"] > button:hover p { 
+    div[data-testid="stButton"] > button:hover { 
         background-color: #a3ff00 !important; 
-        color: #050505 !important; 
         box-shadow: 0 0 15px rgba(163, 255, 0, 0.4) !important; 
         transform: translateY(-2px) !important; 
+    }
+    div[data-testid="stButton"] > button:hover p { 
+        color: #050505 !important; 
     }
     
     /* Botón HTML enlazado (WhatsApp) */
@@ -296,4 +297,8 @@ with col_btn_wpp:
 
 if correo_enviado:
     st.markdown("<br>", unsafe_allow_html=True)
-    st.success("¡Simulación exitosa! Se enviará el correo de reporte a: aespada@bbo.bo (Requiere configurar credenciales SMTP en los Secrets de Streamlit para el envío real).")
+    try:
+        destinatario_fijo = "aespada@bbo.bo"
+        st.success(f"¡Simulación exitosa! Se enviará el correo de reporte a: {destinatario_fijo} (Requiere credenciales SMTP en GitHub para el envío real).")
+    except Exception as e:
+        st.warning("⚠️ Faltan credenciales de correo (Secrets) para disparar el mensaje.")
