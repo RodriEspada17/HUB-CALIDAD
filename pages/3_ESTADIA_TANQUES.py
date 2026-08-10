@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import smtplib
+import urllib.parse
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from utils.core import aplicar_estilo_neon, generar_url_csv, cargar_datos
@@ -9,11 +10,16 @@ from utils.core import aplicar_estilo_neon, generar_url_csv, cargar_datos
 st.set_page_config(page_title="Estadía de Tanques", layout="wide", initial_sidebar_state="expanded")
 aplicar_estilo_neon()
 
-# --- CSS AVANZADO: DISEÑO DE DASHBOARD ---
+# --- CSS AVANZADO: DISEÑO DE DASHBOARD Y BOTONES ---
 st.markdown("""
     <style>
+    /* Botón nativo de Streamlit (Correo) */
     .stButton > button { background-color: #050505 !important; color: #a3ff00 !important; border: 1px solid #a3ff00 !important; border-radius: 6px !important; font-weight: 600 !important; transition: all 0.3s ease !important; width: 100% !important; padding: 10px !important;}
     .stButton > button:hover { background-color: #a3ff00 !important; color: #050505 !important; box-shadow: 0 0 15px rgba(163, 255, 0, 0.4) !important; transform: translateY(-2px) !important; }
+    
+    /* Botón HTML enlazado (WhatsApp) */
+    .btn-wpp-neon { display: block !important; background-color: #050505 !important; color: #a3ff00 !important; border: 1px solid #a3ff00 !important; border-radius: 6px !important; font-weight: 600 !important; transition: all 0.3s ease !important; width: 100% !important; padding: 10px !important; text-align: center !important; text-decoration: none !important; box-sizing: border-box !important; font-family: 'Space Grotesk', sans-serif !important; font-size: 1rem !important;}
+    .btn-wpp-neon:hover { background-color: #a3ff00 !important; color: #050505 !important; box-shadow: 0 0 15px rgba(163, 255, 0, 0.4) !important; transform: translateY(-2px) !important; text-decoration: none !important;}
     
     [data-testid="stSidebar"] [data-testid="stPageLink-NavLink"] { background-color: #050505 !important; color: #a3ff00 !important; border: 1px solid #a3ff00 !important; border-radius: 6px !important; padding: 6px 12px !important; margin-bottom: 8px !important; transition: all 0.3s ease !important; display: flex !important; justify-content: center !important; }
     [data-testid="stSidebar"] [data-testid="stPageLink-NavLink"]:hover { background-color: #a3ff00 !important; color: #050505 !important; box-shadow: 0 0 15px rgba(163, 255, 0, 0.4) !important; transform: translateY(-2px) !important; }
@@ -231,21 +237,46 @@ with col_malt:
 
 st.markdown("<br><hr style='border: 1px solid #1a1a1a;'><br>", unsafe_allow_html=True)
 
-# --- SISTEMA DE CORREO (BOTÓN MANUAL) ---
+# --- SISTEMA DE NOTIFICACIONES DUAL (CORREO Y WHATSAPP) ---
 st.markdown("<h4 style='color: #a3ff00; letter-spacing: 1px; font-size: 1.1rem; text-align: center;'>SISTEMA DE NOTIFICACIONES</h4>", unsafe_allow_html=True)
-st.markdown("<p style='color: #888888; font-size: 0.9rem; text-align: center; margin-bottom: 2rem;'>Envía un reporte instantáneo con los tanques en estado Preventivo o Crítico.</p>", unsafe_allow_html=True)
+st.markdown("<p style='color: #888888; font-size: 0.9rem; text-align: center; margin-bottom: 2rem;'>Envía un reporte instantáneo con los tanques en estado Preventivo o Crítico a la gerencia.</p>", unsafe_allow_html=True)
 
-_, col_btn, _ = st.columns([1, 2, 1])
+col_btn_email, col_btn_wpp = st.columns(2)
 
-with col_btn:
-    if st.button("📧 ENVIAR REPORTE DE STATUS AHORA"):
+with col_btn_email:
+    if st.button("📧 ENVIAR REPORTE POR CORREO"):
         try:
-            # Aquí llamaremos a los secretos de Streamlit (credenciales)
-            remitente = st.secrets["email"]["sender"]
-            password = st.secrets["email"]["password"]
-            destinatario = st.secrets["email"]["receiver"]
-            
-            st.success("¡Simulación exitosa! (Falta configurar las credenciales reales en GitHub para enviar correos de verdad).")
-            
+            # Aquí llamaremos a los secretos reales en la nube
+            destinatario_fijo = "aespada@bbo.bo"
+            st.success(f"¡Simulación exitosa! Se enviará el correo de reporte a: {destinatario_fijo} (Requiere credenciales SMTP en GitHub para el envío real).")
         except Exception as e:
-            st.warning("⚠️ El HUB necesita que configuremos las credenciales de correo (Secrets) para disparar el mensaje.")
+            st.warning("⚠️ Faltan credenciales de correo (Secrets) para disparar el mensaje.")
+
+with col_btn_wpp:
+    # Generador de Texto para WhatsApp
+    alertas_cerv = df_cervezas_final[df_cervezas_final['ESTADO'].str.contains('CRÍTICO|PREVENTIVO')] if not df_cervezas_final.empty else pd.DataFrame()
+    alertas_malta = df_malta_final[df_malta_final['ESTADO'].str.contains('CRÍTICO|PREVENTIVO')] if not df_malta_final.empty else pd.DataFrame()
+
+    mensaje_wpp = "*🚨 REPORTE DE ALERTAS - ESTADÍA DE TANQUES*\n\n"
+    if alertas_cerv.empty and alertas_malta.empty:
+        mensaje_wpp += "✅ Todos los tanques se encuentran dentro de los tiempos normales.\n"
+    else:
+        if not alertas_cerv.empty:
+            mensaje_wpp += "*🍺 CERVEZAS (Fin de Reposo)*\n"
+            for _, row in alertas_cerv.iterrows():
+                estado_icono = "🔴 CRÍTICO" if "CRÍTICO" in row['ESTADO'] else "🟡 PREVENTIVO"
+                mensaje_wpp += f"- Lote: {row.get('LOTE FT', '')} | Prod: {row.get('PRODUCTO', '')} | Días: {row.get('DIAS ESTADIA', '')} | {estado_icono}\n"
+            mensaje_wpp += "\n"
+
+        if not alertas_malta.empty:
+            mensaje_wpp += "*🌾 MALTA REAL (Cocimiento)*\n"
+            for _, row in alertas_malta.iterrows():
+                estado_icono = "🔴 CRÍTICO" if "CRÍTICO" in row['ESTADO'] else "🟡 PREVENTIVO"
+                mensaje_wpp += f"- Lote: {row.get('LOTE FT', '')} | Prod: {row.get('PRODUCTO', '')} | Días: {row.get('DIAS ESTADIA', '')} | {estado_icono}\n"
+            mensaje_wpp += "\n"
+            
+    mensaje_wpp += "_Generado automáticamente desde BBO HUB_"
+    url_wpp = f"https://api.whatsapp.com/send?text={urllib.parse.quote(mensaje_wpp)}"
+    
+    # Renderizamos el botón de WhatsApp con la misma clase CSS para que se vea idéntico al de Streamlit
+    st.markdown(f'<a href="{url_wpp}" target="_blank" class="btn-wpp-neon">💬 ENVIAR REPORTE POR WHATSAPP</a>', unsafe_allow_html=True)
