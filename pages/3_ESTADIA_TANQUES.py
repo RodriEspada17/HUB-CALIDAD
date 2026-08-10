@@ -1,5 +1,8 @@
 import streamlit as st
 import pandas as pd
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 from utils.core import aplicar_estilo_neon, generar_url_csv, cargar_datos
 
 # Configuración inicial
@@ -9,7 +12,7 @@ aplicar_estilo_neon()
 # --- CSS AVANZADO: DISEÑO DE DASHBOARD ---
 st.markdown("""
     <style>
-    .stButton > button { background-color: #050505 !important; color: #a3ff00 !important; border: 1px solid #a3ff00 !important; border-radius: 6px !important; font-weight: 600 !important; transition: all 0.3s ease !important; }
+    .stButton > button { background-color: #050505 !important; color: #a3ff00 !important; border: 1px solid #a3ff00 !important; border-radius: 6px !important; font-weight: 600 !important; transition: all 0.3s ease !important; width: 100% !important; padding: 10px !important;}
     .stButton > button:hover { background-color: #a3ff00 !important; color: #050505 !important; box-shadow: 0 0 15px rgba(163, 255, 0, 0.4) !important; transform: translateY(-2px) !important; }
     
     [data-testid="stSidebar"] [data-testid="stPageLink-NavLink"] { background-color: #050505 !important; color: #a3ff00 !important; border: 1px solid #a3ff00 !important; border-radius: 6px !important; padding: 6px 12px !important; margin-bottom: 8px !important; transition: all 0.3s ease !important; display: flex !important; justify-content: center !important; }
@@ -21,6 +24,7 @@ st.markdown("""
     .metric-card:hover { border-color: #333333; }
     .metric-title { color: #888888; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; font-weight: 600; }
     .metric-value-green { color: #a3ff00; font-size: 3rem; font-weight: 700; font-family: 'Space Grotesk', sans-serif; line-height: 1; }
+    .metric-value-yellow { color: #facc15; font-size: 3rem; font-weight: 700; font-family: 'Space Grotesk', sans-serif; line-height: 1; }
     .metric-value-red { color: #f87171; font-size: 3rem; font-weight: 700; font-family: 'Space Grotesk', sans-serif; line-height: 1; }
     </style>
 """, unsafe_allow_html=True)
@@ -32,7 +36,7 @@ st.sidebar.markdown("<br><hr style='border: 1px solid #1a1a1a;'>", unsafe_allow_
 
 # --- CABECERA ---
 st.markdown("<h2 style='text-transform: uppercase; font-size: 1.8rem;'>MÓDULO / <span style='color: #a3ff00;'>ESTADÍA DE TANQUES</span></h2>", unsafe_allow_html=True)
-st.markdown("<p style='color: #888888; font-size: 1rem; margin-bottom: 2rem;'>Monitoreo en tiempo real del tiempo de residencia en tanques clasificado por marca y etapa.</p>", unsafe_allow_html=True)
+st.markdown("<p style='color: #888888; font-size: 1rem; margin-bottom: 2rem;'>Monitoreo en tiempo real y alertas tempranas (24h) de tiempos de residencia.</p>", unsafe_allow_html=True)
 
 # --- CONFIGURACIÓN DE DATOS ---
 URL_BASE = "https://docs.google.com/spreadsheets/d/1YiYwKJZsR7vBrLjCQBbGxzVxlTQEBRJVZEezJyQK3Yw/edit?pli=1&gid="
@@ -58,7 +62,7 @@ df_coc_raw, _ = cargar_datos(generar_url_csv(URL_BASE + GID_COCIMIENTO, GID_COCI
 df_rep_raw, _ = cargar_datos(generar_url_csv(URL_BASE + GID_REPOSO, GID_REPOSO))
 
 total_activos = 0
-total_criticos = 0
+total_alertas = 0
 
 df_cervezas_final = pd.DataFrame()
 df_malta_final = pd.DataFrame()
@@ -93,16 +97,23 @@ if df_coc_raw is not None and not df_coc_raw.empty and df_rep_raw is not None an
         
         if col_llenado and not df_malta.empty:
             df_malta['FECHA_PARSED'] = parsear_fechas_espanol(df_malta[col_llenado])
-            df_malta['DIAS ESTADIA'] = (pd.Timestamp.now() - df_malta['FECHA_PARSED']).dt.total_seconds() / 86400
-            df_malta['ESTADO'] = df_malta['DIAS ESTADIA'].apply(lambda x: '■ CRÍTICO (> 6.5d)' if x >= 6.5 else '■ NORMAL')
-            df_malta = df_malta.dropna(subset=['DIAS ESTADIA'])
-            df_malta['DIAS ESTADIA'] = df_malta['DIAS ESTADIA'].map(lambda x: f"{x:.1f}")
+            df_malta['DIAS ESTADIA_NUM'] = (pd.Timestamp.now() - df_malta['FECHA_PARSED']).dt.total_seconds() / 86400
+            
+            def estado_malta(x):
+                if pd.isna(x): return '■ N/A'
+                if x >= 6.5: return '■ CRÍTICO (> 6.5d)'
+                elif x >= 5.5: return '■ PREVENTIVO (< 24h)'
+                return '■ NORMAL'
+                
+            df_malta['ESTADO'] = df_malta['DIAS ESTADIA_NUM'].apply(estado_malta)
+            df_malta = df_malta.dropna(subset=['DIAS ESTADIA_NUM'])
+            df_malta['DIAS ESTADIA'] = df_malta['DIAS ESTADIA_NUM'].map(lambda x: f"{x:.1f}")
             
             cols_m = [col_lote_coc, col_ft_coc, col_prod_coc, col_llenado, 'DIAS ESTADIA', 'ESTADO']
-            df_malta_final = df_malta[cols_m].sort_values(by='DIAS ESTADIA', ascending=False)
+            df_malta_final = df_malta[cols_m].sort_values(by=['ESTADO', 'DIAS ESTADIA'], ascending=[True, False])
             
             total_activos += len(df_malta_final)
-            total_criticos += len(df_malta_final[df_malta_final['ESTADO'].str.contains('CRÍTICO')])
+            total_alertas += len(df_malta_final[df_malta_final['ESTADO'].str.contains('CRÍTICO|PREVENTIVO')])
 
         # 2. PROCESAR CERVEZAS
         df_cerv = df_activos[~df_activos[col_prod_coc].astype(str).str.upper().str.contains("MALTA", na=False)].copy()
@@ -127,28 +138,32 @@ if df_coc_raw is not None and not df_coc_raw.empty and df_rep_raw is not None an
             
             if not df_merged.empty:
                 df_merged['FECHA_PARSED'] = parsear_fechas_espanol(df_merged['FECHA_REPOSO_CRUCE'])
-                df_merged['DIAS ESTADIA'] = (pd.Timestamp.now() - df_merged['FECHA_PARSED']).dt.total_seconds() / 86400
+                df_merged['DIAS ESTADIA_NUM'] = (pd.Timestamp.now() - df_merged['FECHA_PARSED']).dt.total_seconds() / 86400
                 
                 def get_status_cerv(row):
                     prod = str(row[col_prod_coc]).upper()
-                    dias = row['DIAS ESTADIA']
+                    dias = row['DIAS ESTADIA_NUM']
                     if pd.isna(dias): return '■ N/A'
-                    if "SCHNEIDER" in prod and dias >= 10: return '■ CRÍTICO (> 10d)'
-                    if "AMSTEL" in prod and dias >= 21: return '■ CRÍTICO (> 21d)'
+                    if "SCHNEIDER" in prod:
+                        if dias >= 10: return '■ CRÍTICO (> 10d)'
+                        elif dias >= 9: return '■ PREVENTIVO (< 24h)'
+                    if "AMSTEL" in prod:
+                        if dias >= 21: return '■ CRÍTICO (> 21d)'
+                        elif dias >= 20: return '■ PREVENTIVO (< 24h)'
                     return '■ NORMAL'
                     
                 df_merged['ESTADO'] = df_merged.apply(get_status_cerv, axis=1)
-                df_merged = df_merged.dropna(subset=['DIAS ESTADIA'])
-                df_merged['DIAS ESTADIA'] = df_merged['DIAS ESTADIA'].map(lambda x: f"{x:.1f}")
+                df_merged = df_merged.dropna(subset=['DIAS ESTADIA_NUM'])
+                df_merged['DIAS ESTADIA'] = df_merged['DIAS ESTADIA_NUM'].map(lambda x: f"{x:.1f}")
                 
                 cols_c = [col_lote_coc, col_ft_coc, col_prod_coc, 'FECHA_REPOSO_CRUCE', 'DIAS ESTADIA', 'ESTADO']
-                df_cervezas_final = df_merged[cols_c].sort_values(by='DIAS ESTADIA', ascending=False)
+                df_cervezas_final = df_merged[cols_c].sort_values(by=['ESTADO', 'DIAS ESTADIA'], ascending=[True, False])
                 df_cervezas_final.rename(columns={'FECHA_REPOSO_CRUCE': 'FECHA FIN DE REPOSO'}, inplace=True)
                 
                 total_activos += len(df_cervezas_final)
-                total_criticos += len(df_cervezas_final[df_cervezas_final['ESTADO'].str.contains('CRÍTICO')])
+                total_alertas += len(df_cervezas_final[df_cervezas_final['ESTADO'].str.contains('CRÍTICO|PREVENTIVO')])
 
-# --- TARJETAS DE MÉTRICAS (2 COLUMNAS) ---
+# --- TARJETAS DE MÉTRICAS ---
 col1, col2 = st.columns(2)
 with col1:
     st.markdown(f"""
@@ -158,27 +173,23 @@ with col1:
         </div>
     """, unsafe_allow_html=True)
 with col2:
-    color_crit = "metric-value-red" if total_criticos > 0 else "metric-value-green"
+    color_crit = "metric-value-green"
+    if total_alertas > 0:
+        color_crit = "metric-value-red"
     st.markdown(f"""
         <div class='metric-card'>
-            <div class='metric-title'>Alertas Críticas (Vencidos)</div>
-            <div class='{color_crit}'>{total_criticos}</div>
+            <div class='metric-title'>Tanques con Alerta (Prev/Crítico)</div>
+            <div class='{color_crit}'>{total_alertas}</div>
         </div>
     """, unsafe_allow_html=True)
 
 st.markdown("<br><hr style='border: 1px solid #1a1a1a;'><br>", unsafe_allow_html=True)
 
-# --- PANEL PRINCIPAL DE CONTROL SIMULTÁNEO ---
+# --- PANEL PRINCIPAL HTML PURO ---
 st.markdown("<h4 style='color: #a3ff00; letter-spacing: 1px; font-size: 1.1rem; margin-bottom: 1.5rem;'>TABLEROS DE MONITOREO SIMULTÁNEO</h4>", unsafe_allow_html=True)
 
-col_cerv, col_malt = st.columns(2)
-
-# --- EL ARMA SECRETA: GENERADOR DE TABLA HTML PURA ---
-# Esto evita que Streamlit controle los estilos y nos asegura una estética 100% oscura y corporativa.
 def generar_tabla_html_nativa(df):
-    if df.empty:
-        return ""
-    
+    if df.empty: return ""
     html = """
     <div style="border: 1px solid #1a1a1a; border-radius: 8px; overflow: hidden;">
         <table style="width: 100%; border-collapse: collapse; font-family: 'Space Grotesk', sans-serif; font-size: 0.85rem; color: #e0e0e0; text-align: left;">
@@ -196,39 +207,45 @@ def generar_tabla_html_nativa(df):
             if col == 'ESTADO':
                 if 'CRÍTICO' in val:
                     html += f"<td style='padding: 12px 15px; color: #f87171; font-weight: bold;'>{val}</td>"
-                elif 'NORMAL' in val:
-                    html += f"<td style='padding: 12px 15px; color: #4ade80;'>{val}</td>"
+                elif 'PREVENTIVO' in val:
+                    html += f"<td style='padding: 12px 15px; color: #facc15; font-weight: bold;'>{val}</td>"
                 else:
-                    html += f"<td style='padding: 12px 15px;'>{val}</td>"
+                    html += f"<td style='padding: 12px 15px; color: #4ade80;'>{val}</td>"
             else:
                 html += f"<td style='padding: 12px 15px;'>{val}</td>"
         html += "</tr>"
-        
     html += "</tbody></table></div>"
     return html
 
+col_cerv, col_malt = st.columns(2)
+
 with col_cerv:
-    st.markdown("""
-        <div style='background-color: #0a0a0a; padding: 12px; border-radius: 6px; border: 1px solid #1a1a1a; text-align: center; margin-bottom: 15px;'>
-            <span style='color: #a3ff00; font-weight: bold; letter-spacing: 1px;'>🍺 CERVEZAS</span> <span style='color: #888888;'>(FIN DE REPOSO)</span>
-        </div>
-    """, unsafe_allow_html=True)
-    
-    if not df_cervezas_final.empty:
-        # Imprimimos la tabla HTML directamente en la pantalla
-        st.markdown(generar_tabla_html_nativa(df_cervezas_final), unsafe_allow_html=True)
-    else:
-        st.info("No se encontraron tanques de cerveza activos.")
+    st.markdown("<div style='background-color: #0a0a0a; padding: 12px; border-radius: 6px; border: 1px solid #1a1a1a; text-align: center; margin-bottom: 15px;'><span style='color: #a3ff00; font-weight: bold; letter-spacing: 1px;'>🍺 CERVEZAS</span> <span style='color: #888888;'>(FIN DE REPOSO)</span></div>", unsafe_allow_html=True)
+    if not df_cervezas_final.empty: st.markdown(generar_tabla_html_nativa(df_cervezas_final), unsafe_allow_html=True)
+    else: st.info("No se encontraron tanques de cerveza activos.")
 
 with col_malt:
-    st.markdown("""
-        <div style='background-color: #0a0a0a; padding: 12px; border-radius: 6px; border: 1px solid #1a1a1a; text-align: center; margin-bottom: 15px;'>
-            <span style='color: #a3ff00; font-weight: bold; letter-spacing: 1px;'>🌾 MALTA REAL</span> <span style='color: #888888;'>(COCIMIENTO)</span>
-        </div>
-    """, unsafe_allow_html=True)
-    
-    if not df_malta_final.empty:
-         # Imprimimos la tabla HTML directamente en la pantalla
-        st.markdown(generar_tabla_html_nativa(df_malta_final), unsafe_allow_html=True)
-    else:
-        st.info("No hay tanques de Malta Real activos.")
+    st.markdown("<div style='background-color: #0a0a0a; padding: 12px; border-radius: 6px; border: 1px solid #1a1a1a; text-align: center; margin-bottom: 15px;'><span style='color: #a3ff00; font-weight: bold; letter-spacing: 1px;'>🌾 MALTA REAL</span> <span style='color: #888888;'>(COCIMIENTO)</span></div>", unsafe_allow_html=True)
+    if not df_malta_final.empty: st.markdown(generar_tabla_html_nativa(df_malta_final), unsafe_allow_html=True)
+    else: st.info("No hay tanques de Malta Real activos.")
+
+st.markdown("<br><hr style='border: 1px solid #1a1a1a;'><br>", unsafe_allow_html=True)
+
+# --- SISTEMA DE CORREO (BOTÓN MANUAL) ---
+st.markdown("<h4 style='color: #a3ff00; letter-spacing: 1px; font-size: 1.1rem; text-align: center;'>SISTEMA DE NOTIFICACIONES</h4>", unsafe_allow_html=True)
+st.markdown("<p style='color: #888888; font-size: 0.9rem; text-align: center; margin-bottom: 2rem;'>Envía un reporte instantáneo con los tanques en estado Preventivo o Crítico.</p>", unsafe_allow_html=True)
+
+_, col_btn, _ = st.columns([1, 2, 1])
+
+with col_btn:
+    if st.button("📧 ENVIAR REPORTE DE STATUS AHORA"):
+        try:
+            # Aquí llamaremos a los secretos de Streamlit (credenciales)
+            remitente = st.secrets["email"]["sender"]
+            password = st.secrets["email"]["password"]
+            destinatario = st.secrets["email"]["receiver"]
+            
+            st.success("¡Simulación exitosa! (Falta configurar las credenciales reales en GitHub para enviar correos de verdad).")
+            
+        except Exception as e:
+            st.warning("⚠️ El HUB necesita que configuremos las credenciales de correo (Secrets) para disparar el mensaje.")
