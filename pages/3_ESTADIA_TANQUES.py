@@ -22,7 +22,6 @@ st.markdown("""
     .metric-title { color: #888888; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; font-weight: 600; }
     .metric-value-green { color: #a3ff00; font-size: 3rem; font-weight: 700; font-family: 'Space Grotesk', sans-serif; line-height: 1; }
     .metric-value-red { color: #f87171; font-size: 3rem; font-weight: 700; font-family: 'Space Grotesk', sans-serif; line-height: 1; }
-    .metric-value-neutral { color: #ffffff; font-size: 3rem; font-weight: 700; font-family: 'Space Grotesk', sans-serif; line-height: 1; }
     </style>
 """, unsafe_allow_html=True)
 
@@ -50,7 +49,6 @@ df_rep_raw, _ = cargar_datos(generar_url_csv(URL_BASE + GID_REPOSO, GID_REPOSO))
 
 total_activos = 0
 total_criticos = 0
-promedio_global = 0.0
 
 df_cervezas_final = pd.DataFrame()
 df_malta_final = pd.DataFrame()
@@ -68,7 +66,7 @@ if df_coc_raw is not None and not df_coc_raw.empty and df_rep_raw is not None an
     if not col_lote_coc: col_lote_coc = next((c for c in df_coc.columns if "LOTE" in c), None)
     
     if col_prod_coc and col_ft_coc and col_lote_coc:
-        # DESTRUCTOR DE FILAS FANTASMA: Si no hay FT o Lote, la fila no existe.
+        # DESTRUCTOR DE FILAS FANTASMA
         df_coc = df_coc.dropna(subset=[col_ft_coc, col_lote_coc, col_prod_coc])
         df_coc = df_coc[~df_coc[col_ft_coc].astype(str).str.strip().str.upper().isin(['NAN', 'NONE', 'N/A', ''])]
         
@@ -84,7 +82,7 @@ if df_coc_raw is not None and not df_coc_raw.empty and df_rep_raw is not None an
             df_activos = df_coc.copy()
 
         # ---------------------------------------------
-        # 1. PROCESAR MALTA REAL (Fecha Llenado Cocimiento)
+        # 1. PROCESAR MALTA REAL
         # ---------------------------------------------
         col_llenado = next((c for c in df_activos.columns if "LLENADO" in c), None)
         df_malta = df_activos[df_activos[col_prod_coc].astype(str).str.upper().str.contains("MALTA", na=False)].copy()
@@ -94,7 +92,6 @@ if df_coc_raw is not None and not df_coc_raw.empty and df_rep_raw is not None an
             df_malta['DIAS ESTADIA'] = (pd.Timestamp.now() - df_malta['FECHA_PARSED']).dt.total_seconds() / 86400
             df_malta['ESTADO'] = df_malta['DIAS ESTADIA'].apply(lambda x: '■ CRÍTICO (> 6.5d)' if x >= 6.5 else '■ NORMAL')
             df_malta = df_malta.dropna(subset=['DIAS ESTADIA'])
-            df_malta['DIAS ESTADIA'] = df_malta['DIAS ESTADIA'].round(1)
             
             cols_m = [col_lote_coc, col_ft_coc, col_prod_coc, col_llenado, 'DIAS ESTADIA', 'ESTADO']
             df_malta_final = df_malta[cols_m].sort_values(by='DIAS ESTADIA', ascending=False)
@@ -102,7 +99,7 @@ if df_coc_raw is not None and not df_coc_raw.empty and df_rep_raw is not None an
             total_criticos += len(df_malta_final[df_malta_final['ESTADO'].str.contains('CRÍTICO')])
 
         # ---------------------------------------------
-        # 2. PROCESAR CERVEZAS (Fecha Análisis Fin de Reposo)
+        # 2. PROCESAR CERVEZAS
         # ---------------------------------------------
         df_cerv = df_activos[~df_activos[col_prod_coc].astype(str).str.upper().str.contains("MALTA", na=False)].copy()
         
@@ -112,21 +109,16 @@ if df_coc_raw is not None and not df_coc_raw.empty and df_rep_raw is not None an
         col_fecha_rep = next((c for c in df_rep.columns if "FECHA DE AN" in c or "FECHA" in c), None)
         
         if col_ft_rep and col_lote_rep and col_fecha_rep and not df_cerv.empty:
-            
-            # Limpiamos las llaves para el cruce
             df_cerv['_MATCH_FT'] = limpiar_llave(df_cerv[col_ft_coc])
             df_cerv['_MATCH_LOTE'] = limpiar_llave(df_cerv[col_lote_coc])
             
-            # Purgamos filas basura en reposo y limpiamos llaves
             df_rep = df_rep.dropna(subset=[col_ft_rep, col_lote_rep])
             df_rep['_MATCH_FT'] = limpiar_llave(df_rep[col_ft_rep])
             df_rep['_MATCH_LOTE'] = limpiar_llave(df_rep[col_lote_rep])
             
-            # Quitamos duplicados por si el analista analizó el tanque 2 veces (tomamos el último)
             df_rep_clean = df_rep.drop_duplicates(subset=['_MATCH_FT', '_MATCH_LOTE'], keep='last').copy()
             df_rep_clean.rename(columns={col_fecha_rep: 'FECHA_REPOSO_CRUCE'}, inplace=True)
             
-            # CRUCE: Solo pasan los tanques activos en cocimiento que YA aparezcan en Reposo
             df_merged = pd.merge(df_cerv, df_rep_clean[['_MATCH_FT', '_MATCH_LOTE', 'FECHA_REPOSO_CRUCE']], on=['_MATCH_FT', '_MATCH_LOTE'], how='inner')
             
             if not df_merged.empty:
@@ -143,7 +135,6 @@ if df_coc_raw is not None and not df_coc_raw.empty and df_rep_raw is not None an
                     
                 df_merged['ESTADO'] = df_merged.apply(get_status_cerv, axis=1)
                 df_merged = df_merged.dropna(subset=['DIAS ESTADIA'])
-                df_merged['DIAS ESTADIA'] = df_merged['DIAS ESTADIA'].round(1)
                 
                 cols_c = [col_lote_coc, col_ft_coc, col_prod_coc, 'FECHA_REPOSO_CRUCE', 'DIAS ESTADIA', 'ESTADO']
                 df_cervezas_final = df_merged[cols_c].sort_values(by='DIAS ESTADIA', ascending=False)
@@ -151,15 +142,9 @@ if df_coc_raw is not None and not df_coc_raw.empty and df_rep_raw is not None an
                 
                 total_activos += len(df_cervezas_final)
                 total_criticos += len(df_cervezas_final[df_cervezas_final['ESTADO'].str.contains('CRÍTICO')])
-                
-    # Calcular promedio global de los tanques vivos
-    suma_dias = 0
-    if not df_malta_final.empty: suma_dias += df_malta_final['DIAS ESTADIA'].sum()
-    if not df_cervezas_final.empty: suma_dias += df_cervezas_final['DIAS ESTADIA'].sum()
-    if total_activos > 0: promedio_global = suma_dias / total_activos
 
-# --- TARJETAS DE MÉTRICAS (DINÁMICAS) ---
-col1, col2, col3 = st.columns(3)
+# --- TARJETAS DE MÉTRICAS (2 COLUMNAS) ---
+col1, col2 = st.columns(2)
 with col1:
     st.markdown(f"""
         <div class='metric-card'>
@@ -175,39 +160,49 @@ with col2:
             <div class='{color_crit}'>{total_criticos}</div>
         </div>
     """, unsafe_allow_html=True)
-with col3:
-    st.markdown(f"""
-        <div class='metric-card'>
-            <div class='metric-title'>Promedio Global (Días)</div>
-            <div class='metric-value-neutral'>{promedio_global:.1f}</div>
-        </div>
-    """, unsafe_allow_html=True)
 
 st.markdown("<br><hr style='border: 1px solid #1a1a1a;'><br>", unsafe_allow_html=True)
 
-# --- PANEL PRINCIPAL DE CONTROL ---
-st.markdown("<h4 style='color: #a3ff00; letter-spacing: 1px; font-size: 1.1rem;'>TABLEROS DE MONITOREO</h4>", unsafe_allow_html=True)
+# --- PANEL PRINCIPAL DE CONTROL SIMULTÁNEO ---
+st.markdown("<h4 style='color: #a3ff00; letter-spacing: 1px; font-size: 1.1rem; margin-bottom: 1.5rem;'>TABLEROS DE MONITOREO SIMULTÁNEO</h4>", unsafe_allow_html=True)
 
-tab_cervezas, tab_malta = st.tabs(["CERVEZAS (Fin de Reposo)", "MALTA REAL (Cocimiento)"])
+# Layout de dos columnas grandes en pantalla
+col_cerv, col_malt = st.columns(2)
 
-# Función segura para pintar estados (Actualizada para Pandas moderno)
-def color_estado(val):
-    if 'CRÍTICO' in str(val):
-        return 'color: #f87171; font-weight: bold;'
-    elif 'NORMAL' in str(val):
-        return 'color: #4ade80;'
-    return ''
+# Función de inyección CSS y Formato para que la tabla parezca sacada de la Matrix
+def aplicar_estilo_tabla(df):
+    def color_estado(val):
+        if 'CRÍTICO' in str(val):
+            return 'color: #f87171; font-weight: bold;'
+        elif 'NORMAL' in str(val):
+            return 'color: #4ade80;'
+        return ''
+    
+    return (df.style
+            .set_properties(**{'background-color': '#0f0f0f', 'color': '#e0e0e0', 'border': '1px solid #1a1a1a'})
+            .map(color_estado, subset=['ESTADO'])
+            .format({"DIAS ESTADIA": "{:.1f}"})) # Fuerza el decimal exacto
 
-with tab_cervezas:
+with col_cerv:
+    st.markdown("""
+        <div style='background-color: #0a0a0a; padding: 12px; border-radius: 6px; border: 1px solid #1a1a1a; text-align: center; margin-bottom: 15px;'>
+            <span style='color: #a3ff00; font-weight: bold; letter-spacing: 1px;'>🍺 CERVEZAS</span> <span style='color: #888888;'>(FIN DE REPOSO)</span>
+        </div>
+    """, unsafe_allow_html=True)
+    
     if not df_cervezas_final.empty:
-        # Se reemplaza applymap por map para evitar el error de servidor
-        st.dataframe(df_cervezas_final.style.map(color_estado, subset=['ESTADO']), use_container_width=True, hide_index=True)
+        st.dataframe(aplicar_estilo_tabla(df_cervezas_final), use_container_width=True, hide_index=True)
     else:
-        st.info("No se encontraron tanques de cerveza activos con cruce de Fin de Reposo.")
+        st.info("No se encontraron tanques de cerveza activos.")
 
-with tab_malta:
+with col_malt:
+    st.markdown("""
+        <div style='background-color: #0a0a0a; padding: 12px; border-radius: 6px; border: 1px solid #1a1a1a; text-align: center; margin-bottom: 15px;'>
+            <span style='color: #a3ff00; font-weight: bold; letter-spacing: 1px;'>🌾 MALTA REAL</span> <span style='color: #888888;'>(COCIMIENTO)</span>
+        </div>
+    """, unsafe_allow_html=True)
+    
     if not df_malta_final.empty:
-        # Se reemplaza applymap por map
-        st.dataframe(df_malta_final.style.map(color_estado, subset=['ESTADO']), use_container_width=True, hide_index=True)
+        st.dataframe(aplicar_estilo_tabla(df_malta_final), use_container_width=True, hide_index=True)
     else:
-        st.info("No hay tanques de Malta Real activos en este momento.")
+        st.info("No hay tanques de Malta Real activos.")
