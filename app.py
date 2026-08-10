@@ -1,4 +1,5 @@
 import streamlit as st
+import time
 from utils.core import aplicar_estilo_neon
 
 # Configuración inicial de la página
@@ -17,8 +18,7 @@ st.markdown("""
     /* 1. Destructor total del menú feo por defecto de Streamlit */
     [data-testid="stSidebarNav"] {display: none !important;}
     
-    /* 2. Botones Neón Globales */
-    div[data-testid="stButton"] > button,
+    /* 2. Botón de Iniciar Sesión (Login) */
     div[data-testid="stFormSubmitButton"] > button { 
         background-color: #050505 !important; 
         border: 1px solid #a3ff00 !important; 
@@ -27,7 +27,6 @@ st.markdown("""
         width: 100% !important; 
         padding: 0.8rem 1rem !important; 
     }
-    div[data-testid="stButton"] > button p,
     div[data-testid="stFormSubmitButton"] > button p { 
         color: #a3ff00 !important; 
         font-weight: 600 !important; 
@@ -36,31 +35,56 @@ st.markdown("""
         margin: 0 !important;
         letter-spacing: 1px;
     }
-    div[data-testid="stButton"] > button:hover,
     div[data-testid="stFormSubmitButton"] > button:hover { 
         background-color: #a3ff00 !important; 
         box-shadow: 0 0 15px rgba(163, 255, 0, 0.4) !important; 
         transform: translateY(-2px) !important; 
     }
-    div[data-testid="stButton"] > button:hover p,
     div[data-testid="stFormSubmitButton"] > button:hover p { 
         color: #050505 !important; 
     }
 
-    /* 3. Tarjetas Premium del Dashboard Principal */
-    .dash-card {
+    /* 3. Botón de Cerrar Sesión (Pequeño, inferior izquierdo) */
+    [data-testid="stSidebar"] div[data-testid="stButton"] > button {
+        background-color: transparent !important;
+        border: 1px solid #1a1a1a !important;
+        width: fit-content !important;
+        padding: 4px 12px !important;
+        border-radius: 4px !important;
+        transition: all 0.3s ease !important;
+    }
+    [data-testid="stSidebar"] div[data-testid="stButton"] > button p {
+        color: #555555 !important;
+        font-size: 0.75rem !important;
+        margin: 0 !important;
+        font-weight: bold !important;
+    }
+    [data-testid="stSidebar"] div[data-testid="stButton"] > button:hover {
+        border-color: #f87171 !important;
+        background-color: rgba(248, 113, 113, 0.1) !important;
+    }
+    [data-testid="stSidebar"] div[data-testid="stButton"] > button:hover p {
+        color: #f87171 !important;
+    }
+
+    /* 4. Tarjetas Clickables (Módulos) */
+    .dash-card-link {
+        display: block;
         background-color: #0a0a0a;
         border: 1px solid #1a1a1a;
         padding: 30px;
         border-radius: 12px;
         transition: all 0.3s ease;
         text-align: left;
-        margin-bottom: 15px;
+        margin-bottom: 25px;
         min-height: 180px;
+        text-decoration: none !important;
+        cursor: pointer;
     }
-    .dash-card:hover {
-        border-color: #333333;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    .dash-card-link:hover {
+        border-color: #a3ff00;
+        box-shadow: 0 10px 30px rgba(163, 255, 0, 0.05);
+        transform: translateY(-5px);
     }
     .dash-title {
         color: #a3ff00;
@@ -71,6 +95,10 @@ st.markdown("""
         text-transform: uppercase;
         border-bottom: 1px solid #1a1a1a;
         padding-bottom: 10px;
+        transition: all 0.3s ease;
+    }
+    .dash-card-link:hover .dash-title {
+        border-bottom: 1px solid #a3ff00;
     }
     .dash-desc {
         color: #888888;
@@ -86,11 +114,8 @@ st.markdown("""
 if not st.session_state['autenticado']:
     st.markdown("""
         <style>
-        /* Desaparecer menú lateral en Login */
         [data-testid="collapsedControl"] { display: none !important; }
         [data-testid="stSidebar"] { display: none !important; }
-        
-        /* Caja de Login Premium */
         [data-testid="stForm"] { 
             border: 1px solid #1a1a1a !important; 
             border-radius: 12px !important; 
@@ -106,8 +131,12 @@ if not st.session_state['autenticado']:
     
     with col2:
         with st.form("login_form"):
-            st.markdown("<h1 style='text-align: center; color: #a3ff00; font-size: 3.5rem; letter-spacing: 3px; margin-bottom: 0;'>BBO HUB</h1>", unsafe_allow_html=True)
-            st.markdown("<p style='text-align: center; color: #888888; font-size: 0.9rem; letter-spacing: 2px; margin-bottom: 2.5rem;'>CONTROL CENTRAL DE CALIDAD</p>", unsafe_allow_html=True)
+            # LOGO BBO CENTRADO EN LOGIN
+            col_l1, col_l2, col_l3 = st.columns([1, 2, 1])
+            with col_l2:
+                st.image("LogoBBO.png", use_column_width=True)
+            st.markdown("<h1 style='text-align: center; color: #a3ff00; font-size: 2.5rem; letter-spacing: 5px; margin-top: -15px; margin-bottom: 0;'>HUB</h1>", unsafe_allow_html=True)
+            st.markdown("<p style='text-align: center; color: #888888; font-size: 0.85rem; letter-spacing: 2px; margin-bottom: 2.5rem;'>CONTROL CENTRAL DE CALIDAD</p>", unsafe_allow_html=True)
             
             usuario = st.text_input("Usuario", placeholder="Ingresa tu ID corporativo...")
             password = st.text_input("Contraseña", type="password", placeholder="••••••••")
@@ -130,15 +159,16 @@ if not st.session_state['autenticado']:
 # 🟢 DASHBOARD PRINCIPAL (Modo Acceso)
 # ==========================================
 else:
-    # --- SIDEBAR (Menú Estilizado y Profesional - SIN NAVEGACIÓN) ---
+    # --- SIDEBAR (Limpiado y con botón abajo) ---
     st.sidebar.markdown(f"""
         <div style='background-color: #050505; border: 1px solid #1a1a1a; padding: 15px; border-radius: 8px; text-align: center; margin-bottom: 25px;'>
             <span style='color: #888888; font-size: 0.75rem; letter-spacing: 2px; text-transform: uppercase;'>Sesión Activa</span><br>
-            <span style='color: #a3ff00; font-weight: bold; font-size: 1.2rem; letter-spacing: 1px;'>■ {st.session_state['usuario_actual'].upper()}</span>
+            <span style='color: #a3ff00; font-weight: bold; font-size: 1.1rem; letter-spacing: 1px;'>■ {st.session_state['usuario_actual'].upper()}</span>
         </div>
     """, unsafe_allow_html=True)
     
-    st.sidebar.markdown("<br><br><br><br><br><br><hr style='border: 1px solid #1a1a1a;'><br>", unsafe_allow_html=True)
+    # Empuja el botón de cerrar sesión hacia abajo
+    st.sidebar.markdown("<br>" * 15, unsafe_allow_html=True)
     
     if st.sidebar.button("■ CERRAR SESIÓN"):
         st.session_state['autenticado'] = False
@@ -146,63 +176,51 @@ else:
 
     # --- CONTENIDO PRINCIPAL ---
     st.markdown("<br>", unsafe_allow_html=True)
-    st.markdown("<h1 style='text-align: center; font-size: 4.5rem; letter-spacing: 3px; color: #ffffff; margin-bottom: 0; line-height: 1;'>BBO <span style='color: #a3ff00;'>HUB</span></h1>", unsafe_allow_html=True)
-    st.markdown("<p style='text-align: center; color: #888888; font-size: 1.1rem; letter-spacing: 3px; margin-bottom: 4rem; text-transform: uppercase;'>Centro de Control y Monitoreo</p>", unsafe_allow_html=True)
+    
+    # LOGO BBO CENTRADO EN DASHBOARD
+    col_d1, col_d2, col_d3 = st.columns([1.5, 1, 1.5])
+    with col_d2:
+        st.image("LogoBBO.png", use_column_width=True)
+        
+    st.markdown("<h1 style='text-align: center; font-size: 3rem; letter-spacing: 8px; color: #a3ff00; margin-top: -15px; margin-bottom: 0; line-height: 1;'>HUB</h1>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align: center; color: #888888; font-size: 1rem; letter-spacing: 3px; margin-bottom: 4rem; text-transform: uppercase;'>Centro de Control y Monitoreo</p>", unsafe_allow_html=True)
 
-    # --- CUADRÍCULA DE MÓDULOS (En el centro) ---
+    # --- CUADRÍCULA DE MÓDULOS (TARJETAS CLICKABLES) ---
     col1, col2 = st.columns(2)
     
     # MÓDULO 1: CALIDAD
     with col1:
         st.markdown("""
-            <div class='dash-card'>
+            <a href="CONTROL_CALIDAD" target="_self" class="dash-card-link">
                 <div class='dash-title'>■ CONTROL DE CALIDAD</div>
                 <div class='dash-desc'>Plataforma de monitoreo estadístico avanzado. Analiza tendencias fisicoquímicas en tiempo real, calcula métricas de capacidad (Cp/Cpk) y exporta reportes.</div>
-            </div>
+            </a>
         """, unsafe_allow_html=True)
-        if st.button("ACCEDER A CALIDAD ➔", key="btn_calidad"):
-            st.switch_page("pages/CONTROL_CALIDAD.py")
-        
-        st.markdown("<br><br>", unsafe_allow_html=True)
         
         # MÓDULO 3: ELABORACIÓN
         st.markdown("""
-            <div class='dash-card'>
+            <a href="ELABORACION" target="_self" class="dash-card-link">
                 <div class='dash-title'>■ ELABORACIÓN</div>
                 <div class='dash-desc'>Panel de control para procesos de cocimiento, fermentación y filtración. Monitoreo de mermas, extractos y eficiencias de sala.</div>
-            </div>
+            </a>
         """, unsafe_allow_html=True)
-        if st.button("ACCEDER A ELABORACIÓN ➔", key="btn_elab"):
-            try:
-                st.switch_page("pages/ELABORACION.py")
-            except:
-                st.warning("🚧 Módulo en construcción. Archivo 'ELABORACION.py' aún no creado.")
 
     # MÓDULO 2: ESTADÍA
     with col2:
         st.markdown("""
-            <div class='dash-card'>
+            <a href="3_ESTADIA_TANQUES" target="_self" class="dash-card-link">
                 <div class='dash-title'>■ ESTADÍA DE TANQUES</div>
                 <div class='dash-desc'>Tablero de seguimiento logístico para tiempos de maduración. Cuenta con sistema dual de alertas tempranas, panel de estado crítico y notificaciones.</div>
-            </div>
+            </a>
         """, unsafe_allow_html=True)
-        if st.button("ACCEDER A ESTADÍA ➔", key="btn_estadia"):
-            st.switch_page("pages/3_ESTADIA_TANQUES.py")
-            
-        st.markdown("<br><br>", unsafe_allow_html=True)
         
         # MÓDULO 4: ENVASADO
         st.markdown("""
-            <div class='dash-card'>
+            <a href="ENVASADO" target="_self" class="dash-card-link">
                 <div class='dash-title'>■ ENVASADO</div>
                 <div class='dash-desc'>Supervisión de líneas de llenado, mermas de empaque, control de oxígeno disuelto y eficiencias operativas de turno (OEE).</div>
-            </div>
+            </a>
         """, unsafe_allow_html=True)
-        if st.button("ACCEDER A ENVASADO ➔", key="btn_envasado"):
-            try:
-                st.switch_page("pages/ENVASADO.py")
-            except:
-                st.warning("🚧 Módulo en construcción. Archivo 'ENVASADO.py' aún no creado.")
         
-    st.markdown("<br><br><hr style='border: 1px solid #1a1a1a; margin-top: 3rem;'><br>", unsafe_allow_html=True)
+    st.markdown("<br><br><hr style='border: 1px solid #1a1a1a; margin-top: 2rem;'><br>", unsafe_allow_html=True)
     st.markdown("<p style='text-align: center; color: #333333; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px;'>BBO Cervecería © 2026 - Departamento de Calidad</p>", unsafe_allow_html=True)
