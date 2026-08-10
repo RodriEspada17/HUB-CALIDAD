@@ -3,12 +3,14 @@ import pandas as pd
 import urllib.parse
 from utils.core import aplicar_estilo_neon, generar_url_csv, cargar_datos
 
+# Configuración inicial
 st.set_page_config(page_title="Exportar Datos", layout="wide", initial_sidebar_state="expanded")
 aplicar_estilo_neon()
 
 # --- CSS AVANZADO: ESTANDARIZACIÓN DE BOTONES Y ENLACES NEÓN ---
 st.markdown("""
     <style>
+    /* 1. Botones principales del módulo */
     .stButton > button {
         background-color: #050505 !important;
         color: #a3ff00 !important;
@@ -24,13 +26,14 @@ st.markdown("""
         transform: translateY(-2px) !important;
     }
     
+    /* 2. Transformar los enlaces del Sidebar en Botones Neón (Más compactos) */
     [data-testid="stSidebar"] [data-testid="stPageLink-NavLink"] {
         background-color: #050505 !important;
         color: #a3ff00 !important;
         border: 1px solid #a3ff00 !important;
         border-radius: 6px !important;
-        padding: 8px 16px !important;
-        margin-bottom: 12px !important;
+        padding: 6px 12px !important; /* Relleno reducido para que no sean tan anchos */
+        margin-bottom: 8px !important; /* Margen inferior reducido */
         transition: all 0.3s ease !important;
         display: flex !important;
         justify-content: center !important;
@@ -41,16 +44,18 @@ st.markdown("""
         box-shadow: 0 0 15px rgba(163, 255, 0, 0.4) !important;
         transform: translateY(-2px) !important;
     }
+    /* Matar el gris de fondo que pone Streamlit y forzar color de texto */
     [data-testid="stSidebar"] [data-testid="stPageLink-NavLink"] > div {
         background-color: transparent !important;
     }
     [data-testid="stSidebar"] [data-testid="stPageLink-NavLink"] p {
         color: inherit !important; 
         font-weight: 600 !important;
+        font-size: 0.9rem !important; /* Texto ligeramente más sutil */
         margin: 0 !important;
     }
 
-    /* Botón principal Neón */
+    /* 3. Botón de WhatsApp Neón Principal */
     .btn-wpp-neon {
         display: block !important;
         width: 100% !important;
@@ -65,7 +70,7 @@ st.markdown("""
         text-decoration: none !important;
         border-radius: 6px !important;
         transition: all 0.3s ease !important;
-        margin-top: 1.5rem !important;
+        margin-top: 10px !important;
     }
     .btn-wpp-neon:hover {
         background-color: #a3ff00 !important;
@@ -73,49 +78,18 @@ st.markdown("""
         box-shadow: 0 0 15px rgba(163, 255, 0, 0.4) !important;
         text-decoration: none !important;
     }
-
-    /* Botón Secundario Gris Metálico (Para Grupos) */
-    .btn-wpp-secondary {
-        display: block !important;
-        width: 100% !important;
-        text-align: center !important;
-        background-color: #050505 !important;
-        color: #888888 !important;
-        border: 1px solid #333333 !important;
-        padding: 9px 24px !important;
-        font-family: 'Space Grotesk', sans-serif !important;
-        font-weight: 600 !important;
-        font-size: 1rem !important;
-        text-decoration: none !important;
-        border-radius: 6px !important;
-        transition: all 0.3s ease !important;
-        margin-top: 10px !important;
-    }
-    .btn-wpp-secondary:hover {
-        background-color: #333333 !important;
-        color: #ffffff !important;
-        border: 1px solid #888888 !important;
-        text-decoration: none !important;
-    }
     </style>
 """, unsafe_allow_html=True)
 
-# --- INICIALIZAR LA MEMORIA DEL HUB ---
+# --- INICIALIZAR LA MEMORIA DEL HUB (SESSION STATE) ---
 if "reporte_listo" not in st.session_state:
     st.session_state.reporte_listo = False
 if "mensaje_wpp" not in st.session_state:
     st.session_state.mensaje_wpp = ""
-if "edit_phone" not in st.session_state:
-    st.session_state.edit_phone = False
-if "phone_number" not in st.session_state:
-    st.session_state.phone_number = "59160996560"
 
 def limpiar_estado():
     st.session_state.reporte_listo = False
     st.session_state.mensaje_wpp = ""
-
-def toggle_edit_phone():
-    st.session_state.edit_phone = not st.session_state.edit_phone
 
 # --- DICCIONARIO DE UNIDADES ---
 UNIDADES = {
@@ -259,29 +233,12 @@ if df is not None and not df.empty:
         
         with col_env:
             st.markdown("<h4 style='color: #888888; font-size: 0.9rem; letter-spacing: 1px;'>PARÁMETROS DE ENVÍO</h4>", unsafe_allow_html=True)
+            st.markdown("<p style='color: #888888; font-size: 0.9rem; margin-bottom: 1.5rem;'>Haz clic en el botón inferior para abrir la aplicación de mensajería y seleccionar el grupo o contacto de destino.</p>", unsafe_allow_html=True)
             
-            col_t1, col_t2 = st.columns([3, 1])
-            with col_t1:
-                if st.session_state.edit_phone:
-                    nuevo_num = st.text_input("Número de Destino:", value=st.session_state.phone_number)
-                    st.session_state.phone_number = nuevo_num
-                else:
-                    st.text_input("Número de Destino (Solo Lectura):", value=st.session_state.phone_number, disabled=True)
+            mensaje_codificado = urllib.parse.quote(st.session_state.mensaje_wpp)
+            url_whatsapp_grupos = f"https://api.whatsapp.com/send?text={mensaje_codificado}"
             
-            with col_t2:
-                st.markdown("<br>", unsafe_allow_html=True)
-                st.button("EDITAR", on_click=toggle_edit_phone, use_container_width=True)
-
-            if st.session_state.phone_number:
-                mensaje_codificado = urllib.parse.quote(st.session_state.mensaje_wpp)
-                
-                # Enlace directo al número
-                url_whatsapp_directo = f"https://wa.me/{st.session_state.phone_number}?text={mensaje_codificado}"
-                # Enlace general para elegir grupo o contacto
-                url_whatsapp_grupos = f"https://api.whatsapp.com/send?text={mensaje_codificado}"
-                
-                st.markdown(f'<a href="{url_whatsapp_directo}" target="_blank" class="btn-wpp-neon">ENVIAR A DESTINO FIJO</a>', unsafe_allow_html=True)
-                st.markdown(f'<a href="{url_whatsapp_grupos}" target="_blank" class="btn-wpp-secondary">SELECCIONAR GRUPO O CONTACTO</a>', unsafe_allow_html=True)
+            st.markdown(f'<a href="{url_whatsapp_grupos}" target="_blank" class="btn-wpp-neon">SELECCIONAR GRUPO O CONTACTO</a>', unsafe_allow_html=True)
 
 else:
     st.markdown("<p style='color: #f87171;'>[ERROR] Falla de conexión con la base de datos principal.</p>", unsafe_allow_html=True)
