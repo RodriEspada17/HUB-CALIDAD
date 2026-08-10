@@ -44,7 +44,6 @@ def limpiar_llave(serie):
     return serie.astype(str).str.replace(r'\.0$', '', regex=True).str.strip().str.upper()
 
 def parsear_fechas_espanol(serie):
-    # Diccionario para traducir los meses de Sheets (español) a Pandas (inglés)
     meses_traduccion = {
         'ene': 'jan', 'feb': 'feb', 'mar': 'mar', 'abr': 'apr', 'may': 'may', 'jun': 'jun',
         'jul': 'jul', 'ago': 'aug', 'sep': 'sep', 'oct': 'oct', 'nov': 'nov', 'dic': 'dec'
@@ -77,13 +76,9 @@ if df_coc_raw is not None and not df_coc_raw.empty and df_rep_raw is not None an
     if not col_lote_coc: col_lote_coc = next((c for c in df_coc.columns if "LOTE" in c), None)
     
     if col_prod_coc and col_ft_coc and col_lote_coc:
-        # DESTRUCTOR DE FILAS FANTASMA
         df_coc = df_coc.dropna(subset=[col_ft_coc, col_lote_coc, col_prod_coc])
         df_coc = df_coc[~df_coc[col_ft_coc].astype(str).str.strip().str.upper().isin(['NAN', 'NONE', 'N/A', ''])]
         
-        # ---------------------------------------------
-        # REGLA MAESTRA: ACTIVO/INACTIVO (Según Cocimiento)
-        # ---------------------------------------------
         col_envasado = next((c for c in df_coc.columns if "ENVASADO" in c), None)
         if col_envasado:
             mask_vacio = df_coc[col_envasado].isna()
@@ -92,14 +87,11 @@ if df_coc_raw is not None and not df_coc_raw.empty and df_rep_raw is not None an
         else:
             df_activos = df_coc.copy()
 
-        # ---------------------------------------------
         # 1. PROCESAR MALTA REAL
-        # ---------------------------------------------
         col_llenado = next((c for c in df_activos.columns if "LLENADO" in c), None)
         df_malta = df_activos[df_activos[col_prod_coc].astype(str).str.upper().str.contains("MALTA", na=False)].copy()
         
         if col_llenado and not df_malta.empty:
-            # AQUI USAMOS EL TRADUCTOR DE FECHAS
             df_malta['FECHA_PARSED'] = parsear_fechas_espanol(df_malta[col_llenado])
             df_malta['DIAS ESTADIA'] = (pd.Timestamp.now() - df_malta['FECHA_PARSED']).dt.total_seconds() / 86400
             df_malta['ESTADO'] = df_malta['DIAS ESTADIA'].apply(lambda x: '■ CRÍTICO (> 6.5d)' if x >= 6.5 else '■ NORMAL')
@@ -110,9 +102,7 @@ if df_coc_raw is not None and not df_coc_raw.empty and df_rep_raw is not None an
             total_activos += len(df_malta_final)
             total_criticos += len(df_malta_final[df_malta_final['ESTADO'].str.contains('CRÍTICO')])
 
-        # ---------------------------------------------
         # 2. PROCESAR CERVEZAS
-        # ---------------------------------------------
         df_cerv = df_activos[~df_activos[col_prod_coc].astype(str).str.upper().str.contains("MALTA", na=False)].copy()
         
         col_ft_rep = next((c for c in df_rep.columns if c == "FT"), None)
@@ -134,7 +124,6 @@ if df_coc_raw is not None and not df_coc_raw.empty and df_rep_raw is not None an
             df_merged = pd.merge(df_cerv, df_rep_clean[['_MATCH_FT', '_MATCH_LOTE', 'FECHA_REPOSO_CRUCE']], on=['_MATCH_FT', '_MATCH_LOTE'], how='inner')
             
             if not df_merged.empty:
-                # AQUI TAMBIEN USAMOS EL TRADUCTOR DE FECHAS
                 df_merged['FECHA_PARSED'] = parsear_fechas_espanol(df_merged['FECHA_REPOSO_CRUCE'])
                 df_merged['DIAS ESTADIA'] = (pd.Timestamp.now() - df_merged['FECHA_PARSED']).dt.total_seconds() / 86400
                 
@@ -189,8 +178,8 @@ def aplicar_estilo_tabla(df):
             return 'color: #4ade80;'
         return ''
     
+    # Se eliminó el set_properties para heredar el tema oscuro nativo
     return (df.style
-            .set_properties(**{'background-color': '#0f0f0f', 'color': '#e0e0e0', 'border': '1px solid #1a1a1a'})
             .map(color_estado, subset=['ESTADO'])
             .format({"DIAS ESTADIA": "{:.1f}"}))
 
