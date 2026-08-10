@@ -1,14 +1,20 @@
 import streamlit as st
-from utils.core import aplicar_estilo_neon
+import pandas as pd
+import plotly.express as px
+from utils.core import aplicar_estilo_neon, obtener_limites, generar_url_csv, cargar_datos
 
-# Mantenemos el menú abierto para que pueda regresar al home
-st.set_page_config(page_title="Control de Calidad", layout="wide", page_icon="▪️", initial_sidebar_state="expanded")
+# Forzamos que la barra lateral empiece EXPANDIDA
+st.set_page_config(page_title="Parámetros Críticos", layout="wide", page_icon="▪️", initial_sidebar_state="expanded")
 aplicar_estilo_neon()
 
-# --- NAVEGACIÓN ---
-st.sidebar.page_link("app.py", label="🏠 INICIO")
-st.sidebar.markdown("<hr style='border: 1px solid #1a1a1a;'>", unsafe_allow_html=True)
-st.sidebar.info("Panel de Control de Calidad. Selecciona una herramienta para comenzar.")
+# --- SIDEBAR: NAVEGACIÓN Y FILTROS ---
+# Ahora te damos dos botones para navegar fácilmente por los menús
+st.sidebar.page_link("app.py", label="INICIO")
+st.sidebar.page_link("pages/CONTROL_CALIDAD.py", label="◀ VOLVER A CALIDAD")
+
+st.sidebar.markdown("<br>", unsafe_allow_html=True)
+st.sidebar.markdown("<h3 style='color: #a3ff00; font-size: 1.1rem; letter-spacing: 1px;'>⯈ FILTROS DE DATOS</h3>", unsafe_allow_html=True)
+st.sidebar.markdown("<hr style='border: 1px solid #1a1a1a; margin-top: 0.5rem; margin-bottom: 1.5rem;'>", unsafe_allow_html=True)
 
 st.markdown("""
     <style>
