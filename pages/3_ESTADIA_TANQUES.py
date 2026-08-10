@@ -178,8 +178,13 @@ def aplicar_estilo_tabla(df):
             return 'color: #4ade80;'
         return ''
     
-    # Se eliminó el set_properties para heredar el tema oscuro nativo
+    # Inyectamos el fondo nativo oscuro de Streamlit (#0e1117) y texto blanco hueso (#fafafa)
     return (df.style
+            .set_properties(**{
+                'background-color': '#0e1117', 
+                'color': '#fafafa', 
+                'border-color': '#31333F'
+            })
             .map(color_estado, subset=['ESTADO'])
             .format({"DIAS ESTADIA": "{:.1f}"}))
 
