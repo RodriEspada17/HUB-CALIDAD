@@ -7,10 +7,10 @@ from utils.core import aplicar_estilo_neon, generar_url_csv, cargar_datos
 st.set_page_config(page_title="Exportar Datos", layout="wide", initial_sidebar_state="expanded")
 aplicar_estilo_neon()
 
-# --- CSS AVANZADO: ESTANDARIZACIÓN DE BOTONES Y ENLACES NEÓN ---
+# --- CSS AVANZADO: PURGA DE AZUL Y BOTONES NEÓN EN SIDEBAR ---
 st.markdown("""
     <style>
-    /* Forzar que todos los botones de Streamlit tengan el estilo Neón */
+    /* 1. Botones principales del módulo */
     .stButton > button {
         background-color: #050505 !important;
         color: #a3ff00 !important;
@@ -23,41 +23,59 @@ st.markdown("""
         background-color: #a3ff00 !important;
         color: #050505 !important;
         box-shadow: 0 0 15px rgba(163, 255, 0, 0.4) !important;
+        transform: translateY(-2px) !important;
     }
     
-    /* Forzar que los enlaces de la Sidebar sean Neón */
-    [data-testid="stSidebar"] a {
+    /* 2. Transformar los enlaces del Sidebar en Botones Neón */
+    [data-testid="stSidebar"] [data-testid="stPageLink-NavLink"] {
+        background-color: #050505 !important;
         color: #a3ff00 !important;
-        text-decoration: none !important;
+        border: 1px solid #a3ff00 !important;
+        border-radius: 6px !important;
+        padding: 8px 16px !important;
+        margin-bottom: 12px !important;
         transition: all 0.3s ease !important;
-        font-weight: 600 !important;
+        display: flex !important;
+        justify-content: center !important;
     }
-    [data-testid="stSidebar"] a:hover {
-        color: #ffffff !important;
-        text-shadow: 0 0 10px rgba(163, 255, 0, 0.5) !important;
+    [data-testid="stSidebar"] [data-testid="stPageLink-NavLink"]:hover {
+        background-color: #a3ff00 !important;
+        color: #050505 !important;
+        box-shadow: 0 0 15px rgba(163, 255, 0, 0.4) !important;
+        transform: translateY(-2px) !important;
+    }
+    /* Matar el gris de fondo que pone Streamlit y forzar color de texto */
+    [data-testid="stSidebar"] [data-testid="stPageLink-NavLink"] > div {
+        background-color: transparent !important;
+    }
+    [data-testid="stSidebar"] [data-testid="stPageLink-NavLink"] p {
+        color: inherit !important; 
+        font-weight: 600 !important;
+        margin: 0 !important;
     }
 
-    /* Clase CSS pura para el botón de WhatsApp HTML */
+    /* 3. Botón de WhatsApp a prueba de navegadores (Chao azul feo) */
     .btn-wpp-neon {
-        display: block;
-        width: 100%;
-        text-align: center;
-        background-color: #050505;
-        color: #a3ff00;
-        border: 1px solid #a3ff00;
-        padding: 9px 24px;
-        font-family: 'Space Grotesk', sans-serif;
-        font-weight: 600;
-        font-size: 1rem;
-        text-decoration: none;
-        border-radius: 6px;
-        transition: all 0.3s ease;
-        margin-top: 1.5rem;
+        display: block !important;
+        width: 100% !important;
+        text-align: center !important;
+        background-color: #050505 !important;
+        color: #a3ff00 !important;
+        border: 1px solid #a3ff00 !important;
+        padding: 9px 24px !important;
+        font-family: 'Space Grotesk', sans-serif !important;
+        font-weight: 600 !important;
+        font-size: 1rem !important;
+        text-decoration: none !important;
+        border-radius: 6px !important;
+        transition: all 0.3s ease !important;
+        margin-top: 1.5rem !important;
     }
     .btn-wpp-neon:hover {
-        background-color: #a3ff00;
-        color: #050505;
-        box-shadow: 0 0 15px rgba(163, 255, 0, 0.4);
+        background-color: #a3ff00 !important;
+        color: #050505 !important;
+        box-shadow: 0 0 15px rgba(163, 255, 0, 0.4) !important;
+        text-decoration: none !important;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -80,7 +98,6 @@ def toggle_edit_phone():
     st.session_state.edit_phone = not st.session_state.edit_phone
 
 # --- DICCIONARIO DE UNIDADES ---
-# Mapeo de sufijos automáticos para las métricas
 UNIDADES = {
     "EXTRACTO ORIGINAL": "[°Plato]",
     "EXTRACTO APARENTE": "[%w/w]",
@@ -173,7 +190,6 @@ if df is not None and not df.empty:
             else:
                 registro = df_filtro.iloc[0]
                 
-                # --- FORMATO EXACTO (Con inyección de Unidades) ---
                 mensaje = f"REPORTE DE CALIDAD BBO\n"
                 mensaje += f"Etapa: {etapa_seleccionada}\n"
                 mensaje += f"Producto: {prod_sel}\n"
@@ -189,7 +205,6 @@ if df is not None and not df.empty:
                     if col_upper in [str(col_prod).upper(), str(col_ft).upper(), str(col_lote).upper()]:
                         continue
                     
-                    # Buscar si esta métrica necesita unidad
                     nombre_columna_formateado = col
                     for clave, unidad in UNIDADES.items():
                         if clave in col_upper:
@@ -201,7 +216,6 @@ if df is not None and not df.empty:
                 mensaje += f"-----------------------------------\n"
                 mensaje += f" Generado automáticamente desde BBO HUB"
 
-                # GUARDAR EN MEMORIA
                 st.session_state.mensaje_wpp = mensaje
                 st.session_state.reporte_listo = True
 
@@ -242,7 +256,6 @@ if df is not None and not df.empty:
                 mensaje_codificado = urllib.parse.quote(st.session_state.mensaje_wpp)
                 url_whatsapp = f"https://wa.me/{st.session_state.phone_number}?text={mensaje_codificado}"
                 
-                # Usamos la clase pura de CSS que inyectamos arriba
                 st.markdown(f'<a href="{url_whatsapp}" target="_blank" class="btn-wpp-neon">ENVIAR REPORTE AL DESTINO</a>', unsafe_allow_html=True)
 
 else:
