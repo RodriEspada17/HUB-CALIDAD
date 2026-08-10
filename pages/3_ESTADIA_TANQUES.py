@@ -13,8 +13,8 @@ aplicar_estilo_neon()
 # --- CSS AVANZADO: DISEÑO DE DASHBOARD Y BOTONES ---
 st.markdown("""
     <style>
-    /* Botón nativo de Streamlit (Correo) */
-    .stButton > button { background-color: #050505 !important; color: #a3ff00 !important; border: 1px solid #a3ff00 !important; border-radius: 6px !important; font-weight: 600 !important; transition: all 0.3s ease !important; padding: 0.6rem 1rem !important;}
+    /* Botón nativo de Streamlit (Correo) - AHORA CON LA MISMA FUENTE Y TAMAÑO */
+    .stButton > button { background-color: #050505 !important; color: #a3ff00 !important; border: 1px solid #a3ff00 !important; border-radius: 6px !important; font-weight: 600 !important; transition: all 0.3s ease !important; padding: 0.6rem 1rem !important; font-family: 'Space Grotesk', sans-serif !important; font-size: 1rem !important; line-height: 1.6 !important;}
     .stButton > button:hover { background-color: #a3ff00 !important; color: #050505 !important; box-shadow: 0 0 15px rgba(163, 255, 0, 0.4) !important; transform: translateY(-2px) !important; }
     
     /* Botón HTML enlazado (WhatsApp) */
@@ -241,19 +241,16 @@ st.markdown("<br><hr style='border: 1px solid #1a1a1a;'><br>", unsafe_allow_html
 st.markdown("<h4 style='color: #a3ff00; letter-spacing: 1px; font-size: 1.1rem; text-align: center;'>SISTEMA DE NOTIFICACIONES</h4>", unsafe_allow_html=True)
 st.markdown("<p style='color: #888888; font-size: 0.9rem; text-align: center; margin-bottom: 2rem;'>Envía un reporte instantáneo con los tanques en estado Preventivo o Crítico a la gerencia.</p>", unsafe_allow_html=True)
 
+# Variable para controlar el estado del envío y mostrar el mensaje fuera de las columnas
+correo_enviado = False
+
 col_btn_email, col_btn_wpp = st.columns(2)
 
 with col_btn_email:
-    # EL SECRETO ESTÁ AQUÍ: use_container_width=True hace que ocupe todo el ancho de la columna
     if st.button("📧 ENVIAR REPORTE POR CORREO", use_container_width=True):
-        try:
-            destinatario_fijo = "aespada@bbo.bo"
-            st.success(f"¡Simulación exitosa! Se enviará el correo de reporte a: {destinatario_fijo} (Requiere credenciales SMTP en GitHub para el envío real).")
-        except Exception as e:
-            st.warning("⚠️ Faltan credenciales de correo (Secrets) para disparar el mensaje.")
+        correo_enviado = True
 
 with col_btn_wpp:
-    # Generador de Texto para WhatsApp
     alertas_cerv = df_cervezas_final[df_cervezas_final['ESTADO'].str.contains('CRÍTICO|PREVENTIVO')] if not df_cervezas_final.empty else pd.DataFrame()
     alertas_malta = df_malta_final[df_malta_final['ESTADO'].str.contains('CRÍTICO|PREVENTIVO')] if not df_malta_final.empty else pd.DataFrame()
 
@@ -279,3 +276,12 @@ with col_btn_wpp:
     url_wpp = f"https://api.whatsapp.com/send?text={urllib.parse.quote(mensaje_wpp)}"
     
     st.markdown(f'<a href="{url_wpp}" target="_blank" class="btn-wpp-neon">💬 ENVIAR REPORTE POR WHATSAPP</a>', unsafe_allow_html=True)
+
+# Mensaje de éxito/error renderizado por fuera de las columnas para mantener la simetría
+if correo_enviado:
+    st.markdown("<br>", unsafe_allow_html=True)
+    try:
+        destinatario_fijo = "aespada@bbo.bo"
+        st.success(f"¡Simulación exitosa! Se enviará el correo de reporte a: {destinatario_fijo} (Requiere credenciales SMTP en GitHub para el envío real).")
+    except Exception as e:
+        st.warning("⚠️ Faltan credenciales de correo (Secrets) para disparar el mensaje.")
