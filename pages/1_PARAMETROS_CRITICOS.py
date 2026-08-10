@@ -9,6 +9,7 @@ aplicar_estilo_neon()
 
 # --- SIDEBAR: NAVEGACIÓN Y FILTROS ---
 st.sidebar.page_link("app.py", label="◀ VOLVER AL INICIO")
+st.sidebar.page_link("pages/CONTROL_CALIDAD.py", label="◀ VOLVER A CALIDAD")
 
 st.sidebar.markdown("<br>", unsafe_allow_html=True)
 st.sidebar.markdown("<h3 style='color: #a3ff00; font-size: 1.1rem; letter-spacing: 1px;'>⯈ FILTROS DE DATOS</h3>", unsafe_allow_html=True)
