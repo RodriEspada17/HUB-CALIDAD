@@ -3,7 +3,6 @@ import base64
 import os
 from utils.core import aplicar_estilo_neon
 
-# Forzamos que la barra lateral empiece COLAPSADA
 st.set_page_config(page_title="BBO HUB", layout="wide", page_icon="▪️", initial_sidebar_state="collapsed")
 aplicar_estilo_neon()
 
@@ -13,12 +12,9 @@ def obtener_imagen_base64(ruta_archivo):
             return base64.b64encode(img_file.read()).decode()
     return None
 
-# CSS AVANZADO: Limpio de emojis y bloqueando la flecha del menú en el home
 st.markdown("""
     <style>
-    /* Oculta la flecha superior izquierda del menú lateral SOLO en el Home */
     [data-testid="collapsedControl"] { display: none !important; }
-    
     .grid-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px; margin-top: 2rem; margin-bottom: 3rem; }
     .vercel-card { background-color: #0a0a0a; border: 1px solid #1a1a1a; border-radius: 12px; padding: 24px; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); position: relative; overflow: hidden; text-decoration: none !important; display: flex; flex-direction: column; gap: 12px; min-height: 200px; cursor: pointer; }
     .vercel-card:hover { border-color: #a3ff00; box-shadow: 0 10px 40px -10px rgba(163, 255, 0, 0.3); transform: translateY(-4px); }
@@ -42,10 +38,11 @@ st.markdown("""
 
 st.markdown("""
     <div class="grid-container">
-        <a href="PARAMETROS_CRITICOS" target="_self" class="vercel-card">
+        <!-- AQUÍ CAMBIAMOS EL ENLACE A 'CONTROL_CALIDAD' -->
+        <a href="CONTROL_CALIDAD" target="_self" class="vercel-card">
             <div class="card-icon">///</div>
-            <h3 class="card-title">Dirección de Calidad</h3>
-            <p class="card-desc">Control SPC, análisis de parámetros críticos fisicoquímicos y evaluación de mermas.</p>
+            <h3 class="card-title">Control de Calidad</h3>
+            <p class="card-desc">Portal de parámetros críticos, ingreso de datos, calculadoras y reportes automatizados.</p>
             <div class="status-badge status-active">■ Módulo Activo</div>
         </a>
         <div class="vercel-card">
@@ -69,7 +66,6 @@ st.markdown("""
     </div>
 """, unsafe_allow_html=True)
 
-# IMAGEN: Nuevo nombre, altura de 550px y mucha más claridad (opacity 0.85)
 img_b64 = obtener_imagen_base64("BBO.jpeg")
 
 if img_b64:
@@ -89,5 +85,3 @@ if img_b64:
             box-shadow: 0 0 20px rgba(0,0,0,0.5);
         "></div>
     """, unsafe_allow_html=True)
-else:
-    st.warning("⚠️ No se encontró la foto. Asegúrate de que 'BBO.jpeg' esté subida a la carpeta principal de tu GitHub.")
