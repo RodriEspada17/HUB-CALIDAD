@@ -40,6 +40,11 @@ URL_BASE = "https://docs.google.com/spreadsheets/d/1YiYwKJZsR7vBrLjCQBbGxzVxlTQE
 GID_COCIMIENTO = "1587615990"
 GID_REPOSO = "79058483"
 
+# --- FUNCIÓN LIMPIADORA DE LLAVES ---
+# Elimina los ".0" fantasmas de Pandas para que los FT y Lotes coincidan perfectamente
+def limpiar_llave(serie):
+    return serie.astype(str).str.replace(r'\.0$', '', regex=True).str.strip().str.upper()
+
 # --- LÓGICA DE PROCESAMIENTO ---
 df_coc, _ = cargar_datos(generar_url_csv(URL_BASE + GID_COCIMIENTO, GID_COCIMIENTO))
 df_rep, _ = cargar_datos(generar_url_csv(URL_BASE + GID_REPOSO, GID_REPOSO))
@@ -59,8 +64,8 @@ if df_coc is not None and not df_coc.empty and df_rep is not None and not df_rep
     # Identificar columna ¿Envasado? y filtrar TANQUES ACTIVOS
     col_envasado = next((c for c in df_coc.columns if "ENVASADO" in c), None)
     if col_envasado:
-        # Si está vacío o tiene algo como 'NO' o 'NAN', sigue activo. Si tiene "SI" o "X", lo descartamos.
-        df_activos = df_coc[df_coc[col_envasado].astype(str).str.strip().str.upper().isin(['NAN', 'NONE', 'N/A', '', 'NO', 'FALSE'])]
+        # Añadí '0' y combinaciones extra por si acaso Google Sheets manda un formato raro
+        df_activos = df_coc[df_coc[col_envasado].astype(str).str.strip().str.upper().isin(['NAN', 'NONE', 'N/A', '', 'NO', 'FALSE', '0', ' '])]
     else:
         df_activos = df_coc
 
@@ -108,12 +113,12 @@ if df_coc is not None and not df_coc.empty and df_rep is not None and not df_rep
     col_fecha_rep = next((c for c in df_rep.columns if "FECHA DE AN" in c or "FECHA" in c), None)
     
     if col_ft_coc and col_lote_coc and col_ft_rep and col_lote_rep and col_fecha_rep and not df_cerv.empty:
-        # Cruce de bases usando FT y LOTE FT
-        df_cerv['_MATCH_FT'] = df_cerv[col_ft_coc].astype(str).str.strip().str.upper()
-        df_cerv['_MATCH_LOTE'] = df_cerv[col_lote_coc].astype(str).str.strip().str.upper()
+        # Cruce BLINDADO de bases usando FT y LOTE FT
+        df_cerv['_MATCH_FT'] = limpiar_llave(df_cerv[col_ft_coc])
+        df_cerv['_MATCH_LOTE'] = limpiar_llave(df_cerv[col_lote_coc])
         
-        df_rep['_MATCH_FT'] = df_rep[col_ft_rep].astype(str).str.strip().str.upper()
-        df_rep['_MATCH_LOTE'] = df_rep[col_lote_rep].astype(str).str.strip().str.upper()
+        df_rep['_MATCH_FT'] = limpiar_llave(df_rep[col_ft_rep])
+        df_rep['_MATCH_LOTE'] = limpiar_llave(df_rep[col_lote_rep])
         
         # Inner join: Solo los tanques activos que YA estén en la pestaña de Reposo
         df_merged = pd.merge(df_cerv, df_rep[['_MATCH_FT', '_MATCH_LOTE', col_fecha_rep]], on=['_MATCH_FT', '_MATCH_LOTE'], how='inner')
@@ -191,7 +196,7 @@ with tab_cervezas:
     if not df_cervezas_final.empty:
         st.dataframe(df_cervezas_final, use_container_width=True, hide_index=True)
     else:
-        st.info("No hay tanques de Cerveza activos en etapa de Reposo en este momento, o no se encontró la columna de Envasado.")
+        st.info("No hay tanques de Cerveza activos en etapa de Reposo en este momento, o no se encontró coincidencia de FT/Lote.")
 
 with tab_malta:
     if not df_malta_final.empty:
