@@ -14,11 +14,11 @@ aplicar_estilo_neon()
 st.markdown("""
     <style>
     /* Botón nativo de Streamlit (Correo) */
-    .stButton > button { background-color: #050505 !important; color: #a3ff00 !important; border: 1px solid #a3ff00 !important; border-radius: 6px !important; font-weight: 600 !important; transition: all 0.3s ease !important; width: 100% !important; padding: 10px !important;}
+    .stButton > button { background-color: #050505 !important; color: #a3ff00 !important; border: 1px solid #a3ff00 !important; border-radius: 6px !important; font-weight: 600 !important; transition: all 0.3s ease !important; padding: 0.6rem 1rem !important;}
     .stButton > button:hover { background-color: #a3ff00 !important; color: #050505 !important; box-shadow: 0 0 15px rgba(163, 255, 0, 0.4) !important; transform: translateY(-2px) !important; }
     
     /* Botón HTML enlazado (WhatsApp) */
-    .btn-wpp-neon { display: block !important; background-color: #050505 !important; color: #a3ff00 !important; border: 1px solid #a3ff00 !important; border-radius: 6px !important; font-weight: 600 !important; transition: all 0.3s ease !important; width: 100% !important; padding: 10px !important; text-align: center !important; text-decoration: none !important; box-sizing: border-box !important; font-family: 'Space Grotesk', sans-serif !important; font-size: 1rem !important;}
+    .btn-wpp-neon { display: block !important; background-color: #050505 !important; color: #a3ff00 !important; border: 1px solid #a3ff00 !important; border-radius: 6px !important; font-weight: 600 !important; transition: all 0.3s ease !important; width: 100% !important; padding: 0.6rem 1rem !important; text-align: center !important; text-decoration: none !important; box-sizing: border-box !important; font-family: 'Space Grotesk', sans-serif !important; font-size: 1rem !important; line-height: 1.6 !important;}
     .btn-wpp-neon:hover { background-color: #a3ff00 !important; color: #050505 !important; box-shadow: 0 0 15px rgba(163, 255, 0, 0.4) !important; transform: translateY(-2px) !important; text-decoration: none !important;}
     
     [data-testid="stSidebar"] [data-testid="stPageLink-NavLink"] { background-color: #050505 !important; color: #a3ff00 !important; border: 1px solid #a3ff00 !important; border-radius: 6px !important; padding: 6px 12px !important; margin-bottom: 8px !important; transition: all 0.3s ease !important; display: flex !important; justify-content: center !important; }
@@ -244,9 +244,9 @@ st.markdown("<p style='color: #888888; font-size: 0.9rem; text-align: center; ma
 col_btn_email, col_btn_wpp = st.columns(2)
 
 with col_btn_email:
-    if st.button("📧 ENVIAR REPORTE POR CORREO"):
+    # EL SECRETO ESTÁ AQUÍ: use_container_width=True hace que ocupe todo el ancho de la columna
+    if st.button("📧 ENVIAR REPORTE POR CORREO", use_container_width=True):
         try:
-            # Aquí llamaremos a los secretos reales en la nube
             destinatario_fijo = "aespada@bbo.bo"
             st.success(f"¡Simulación exitosa! Se enviará el correo de reporte a: {destinatario_fijo} (Requiere credenciales SMTP en GitHub para el envío real).")
         except Exception as e:
@@ -278,5 +278,4 @@ with col_btn_wpp:
     mensaje_wpp += "_Generado automáticamente desde BBO HUB_"
     url_wpp = f"https://api.whatsapp.com/send?text={urllib.parse.quote(mensaje_wpp)}"
     
-    # Renderizamos el botón de WhatsApp con la misma clase CSS para que se vea idéntico al de Streamlit
     st.markdown(f'<a href="{url_wpp}" target="_blank" class="btn-wpp-neon">💬 ENVIAR REPORTE POR WHATSAPP</a>', unsafe_allow_html=True)
