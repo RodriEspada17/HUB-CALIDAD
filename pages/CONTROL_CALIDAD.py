@@ -52,11 +52,12 @@ st.markdown("""
             <p class="card-desc">Herramienta predictiva y de ajuste analítico para tiempos de reposo.</p>
             <div class="status-badge status-dev">■ En Desarrollo</div>
         </div>
-        <div class="vercel-card">
+        <!-- 4. WhatsApp: EXPORTAR DATOS -->
+        <a href="EXPORTAR_DATOS" target="_self" class="vercel-card">
             <div class="card-icon">///</div>
-            <h3 class="card-title">Reportes por WhatsApp</h3>
-            <p class="card-desc">Envío automatizado de alarmas SPC y resúmenes diarios a gerencia.</p>
-            <div class="status-badge status-dev">■ En Desarrollo</div>
-        </div>
+            <h3 class="card-title">Exportar Datos (WhatsApp)</h3>
+            <p class="card-desc">Búsqueda rápida de lotes y envío automatizado de reportes vía WhatsApp.</p>
+            <div class="status-badge status-active">■ Módulo Activo</div>
+        </a>
     </div>
 """, unsafe_allow_html=True)
