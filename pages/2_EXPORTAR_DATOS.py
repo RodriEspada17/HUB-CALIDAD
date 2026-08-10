@@ -3,9 +3,64 @@ import pandas as pd
 import urllib.parse
 from utils.core import aplicar_estilo_neon, generar_url_csv, cargar_datos
 
-# Configuración inicial (Cero emojis)
+# Configuración inicial
 st.set_page_config(page_title="Exportar Datos", layout="wide", initial_sidebar_state="expanded")
 aplicar_estilo_neon()
+
+# --- CSS AVANZADO: ESTANDARIZACIÓN DE BOTONES Y ENLACES NEÓN ---
+st.markdown("""
+    <style>
+    /* Forzar que todos los botones de Streamlit tengan el estilo Neón */
+    .stButton > button {
+        background-color: #050505 !important;
+        color: #a3ff00 !important;
+        border: 1px solid #a3ff00 !important;
+        border-radius: 6px !important;
+        font-weight: 600 !important;
+        transition: all 0.3s ease !important;
+    }
+    .stButton > button:hover {
+        background-color: #a3ff00 !important;
+        color: #050505 !important;
+        box-shadow: 0 0 15px rgba(163, 255, 0, 0.4) !important;
+    }
+    
+    /* Forzar que los enlaces de la Sidebar sean Neón */
+    [data-testid="stSidebar"] a {
+        color: #a3ff00 !important;
+        text-decoration: none !important;
+        transition: all 0.3s ease !important;
+        font-weight: 600 !important;
+    }
+    [data-testid="stSidebar"] a:hover {
+        color: #ffffff !important;
+        text-shadow: 0 0 10px rgba(163, 255, 0, 0.5) !important;
+    }
+
+    /* Clase CSS pura para el botón de WhatsApp HTML */
+    .btn-wpp-neon {
+        display: block;
+        width: 100%;
+        text-align: center;
+        background-color: #050505;
+        color: #a3ff00;
+        border: 1px solid #a3ff00;
+        padding: 9px 24px;
+        font-family: 'Space Grotesk', sans-serif;
+        font-weight: 600;
+        font-size: 1rem;
+        text-decoration: none;
+        border-radius: 6px;
+        transition: all 0.3s ease;
+        margin-top: 1.5rem;
+    }
+    .btn-wpp-neon:hover {
+        background-color: #a3ff00;
+        color: #050505;
+        box-shadow: 0 0 15px rgba(163, 255, 0, 0.4);
+    }
+    </style>
+""", unsafe_allow_html=True)
 
 # --- INICIALIZAR LA MEMORIA DEL HUB (SESSION STATE) ---
 if "reporte_listo" not in st.session_state:
@@ -23,6 +78,18 @@ def limpiar_estado():
 
 def toggle_edit_phone():
     st.session_state.edit_phone = not st.session_state.edit_phone
+
+# --- DICCIONARIO DE UNIDADES ---
+# Mapeo de sufijos automáticos para las métricas
+UNIDADES = {
+    "EXTRACTO ORIGINAL": "[°Plato]",
+    "EXTRACTO APARENTE": "[%w/w]",
+    "EXTRACTO REAL": "[%w/w]",
+    "ALCOHOL EN PESO": "[%w/w]",
+    "ALCOHOL EN VOLUMEN": "[%v/v]",
+    "COLOR": "[EBC]",
+    "AMARGO": "[IBU]"
+}
 
 # --- SIDEBAR ---
 st.sidebar.page_link("app.py", label="< VOLVER AL INICIO")
@@ -106,7 +173,7 @@ if df is not None and not df.empty:
             else:
                 registro = df_filtro.iloc[0]
                 
-                # --- FORMATO EXACTO REQUERIDO (Sin Emojis) ---
+                # --- FORMATO EXACTO (Con inyección de Unidades) ---
                 mensaje = f"REPORTE DE CALIDAD BBO\n"
                 mensaje += f"Etapa: {etapa_seleccionada}\n"
                 mensaje += f"Producto: {prod_sel}\n"
@@ -122,7 +189,14 @@ if df is not None and not df.empty:
                     if col_upper in [str(col_prod).upper(), str(col_ft).upper(), str(col_lote).upper()]:
                         continue
                     
-                    mensaje += f"{col}: {val}\n"
+                    # Buscar si esta métrica necesita unidad
+                    nombre_columna_formateado = col
+                    for clave, unidad in UNIDADES.items():
+                        if clave in col_upper:
+                            nombre_columna_formateado = f"{col} {unidad}"
+                            break
+                    
+                    mensaje += f"{nombre_columna_formateado}: {val}\n"
                 
                 mensaje += f"-----------------------------------\n"
                 mensaje += f" Generado automáticamente desde BBO HUB"
@@ -131,10 +205,9 @@ if df is not None and not df.empty:
                 st.session_state.mensaje_wpp = mensaje
                 st.session_state.reporte_listo = True
 
-    # --- MOSTRAR RESULTADOS (ESTILO CONSOLA CORPORATIVA) ---
+    # --- MOSTRAR RESULTADOS ---
     if st.session_state.reporte_listo:
         
-        # CND (Cuadro de Notificación Dinámica) estilo Terminal
         st.markdown("""
             <div style="border-left: 4px solid #a3ff00; padding: 12px 16px; margin-top: 10px; margin-bottom: 25px; background-color: #0a0a0a;">
                 <span style="color: #a3ff00; font-weight: 700; font-family: 'Space Grotesk', sans-serif;">[SISTEMA]</span> 
@@ -146,7 +219,6 @@ if df is not None and not df.empty:
         
         with col_prev:
             st.markdown("<h4 style='color: #888888; font-size: 0.9rem; letter-spacing: 1px;'>VISTA PREVIA DEL DOCUMENTO</h4>", unsafe_allow_html=True)
-            # Bloque de código estilo Consola para la previsualización
             st.markdown(f"""
                 <div style="background-color: #0f0f0f; border: 1px solid #1a1a1a; padding: 15px; border-radius: 6px; color: #a3ff00; font-family: monospace; font-size: 0.9rem; white-space: pre-wrap;">{st.session_state.mensaje_wpp}</div>
             """, unsafe_allow_html=True)
@@ -154,7 +226,6 @@ if df is not None and not df.empty:
         with col_env:
             st.markdown("<h4 style='color: #888888; font-size: 0.9rem; letter-spacing: 1px;'>PARÁMETROS DE ENVÍO</h4>", unsafe_allow_html=True)
             
-            # Formulario de teléfono con botón de edición integrado
             col_t1, col_t2 = st.columns([3, 1])
             with col_t1:
                 if st.session_state.edit_phone:
@@ -171,30 +242,8 @@ if df is not None and not df.empty:
                 mensaje_codificado = urllib.parse.quote(st.session_state.mensaje_wpp)
                 url_whatsapp = f"https://wa.me/{st.session_state.phone_number}?text={mensaje_codificado}"
                 
-                # Botón HTML CSS Puro - Estética BBO HUB
-                boton_html = f"""
-                <div style="margin-top: 1.5rem;">
-                    <a href="{url_whatsapp}" target="_blank" style="
-                        display: block;
-                        width: 100%;
-                        text-align: center;
-                        background-color: transparent;
-                        color: #a3ff00;
-                        border: 1px solid #a3ff00;
-                        padding: 12px;
-                        font-family: 'Space Grotesk', sans-serif;
-                        font-weight: 700;
-                        font-size: 1rem;
-                        text-decoration: none;
-                        border-radius: 6px;
-                        transition: all 0.3s ease;
-                    " onmouseover="this.style.backgroundColor='#a3ff00'; this.style.color='#050505'; this.style.boxShadow='0 0 15px rgba(163, 255, 0, 0.2)';" 
-                       onmouseout="this.style.backgroundColor='transparent'; this.style.color='#a3ff00'; this.style.boxShadow='none';">
-                        ENVIAR REPORTE AL DESTINO
-                    </a>
-                </div>
-                """
-                st.markdown(boton_html, unsafe_allow_html=True)
+                # Usamos la clase pura de CSS que inyectamos arriba
+                st.markdown(f'<a href="{url_whatsapp}" target="_blank" class="btn-wpp-neon">ENVIAR REPORTE AL DESTINO</a>', unsafe_allow_html=True)
 
 else:
     st.markdown("<p style='color: #f87171;'>[ERROR] Falla de conexión con la base de datos principal.</p>", unsafe_allow_html=True)
