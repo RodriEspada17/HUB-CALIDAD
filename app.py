@@ -1,87 +1,99 @@
 import streamlit as st
-import base64
-import os
-from utils.core import aplicar_estilo_neon
+import time
 
-st.set_page_config(page_title="BBO HUB", layout="wide", page_icon="▪️", initial_sidebar_state="collapsed")
-aplicar_estilo_neon()
+# Configuración inicial de la página (Debe ser la primera línea)
+st.set_page_config(page_title="BBO HUB CALIDAD", page_icon="🍺", layout="wide", initial_sidebar_state="collapsed")
 
-def obtener_imagen_base64(ruta_archivo):
-    if os.path.exists(ruta_archivo):
-        with open(ruta_archivo, "rb") as img_file:
-            return base64.b64encode(img_file.read()).decode()
-    return None
+# --- INICIALIZAR ESTADO DE SESIÓN ---
+if 'autenticado' not in st.session_state:
+    st.session_state['autenticado'] = False
 
+# --- CSS GENERAL (Tema Dark Neón) ---
 st.markdown("""
     <style>
-    [data-testid="collapsedControl"] { display: none !important; }
-    .grid-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px; margin-top: 2rem; margin-bottom: 3rem; }
-    .vercel-card { background-color: #0a0a0a; border: 1px solid #1a1a1a; border-radius: 12px; padding: 24px; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); position: relative; overflow: hidden; text-decoration: none !important; display: flex; flex-direction: column; gap: 12px; min-height: 200px; cursor: pointer; }
-    .vercel-card:hover { border-color: #a3ff00; box-shadow: 0 10px 40px -10px rgba(163, 255, 0, 0.3); transform: translateY(-4px); }
-    .card-icon { color: #a3ff00; font-size: 1.2rem; font-weight: 800; letter-spacing: 3px; font-family: monospace; }
-    .card-title { color: #ffffff; font-size: 1.3rem; font-weight: 700; margin: 0; font-family: 'Space Grotesk', sans-serif; }
-    .card-desc { color: #888888; font-size: 0.95rem; margin: 0; line-height: 1.6; }
-    .status-badge { display: inline-block; padding: 6px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; margin-top: auto; width: fit-content; letter-spacing: 0.5px; text-transform: uppercase; }
-    .status-active { background-color: rgba(74, 222, 128, 0.1); color: #4ade80; border: 1px solid rgba(74, 222, 128, 0.2); }
-    .status-dev { background-color: rgba(250, 204, 21, 0.05); color: #888888; border: 1px solid rgba(250, 204, 21, 0.2); }
+    body {background-color: #050505; color: #e0e0e0; font-family: 'Space Grotesk', sans-serif;}
+    .stApp {background-color: #050505;}
+    
+    /* Diseño del panel de Login */
+    .login-box {
+        background-color: #0a0a0a;
+        padding: 40px;
+        border-radius: 10px;
+        border: 1px solid #1a1a1a;
+        box-shadow: 0 0 20px rgba(163, 255, 0, 0.1);
+        text-align: center;
+        max-width: 400px;
+        margin: 50px auto;
+    }
+    
+    /* Botones Neón */
+    .stButton > button { background-color: #050505 !important; color: #a3ff00 !important; border: 1px solid #a3ff00 !important; border-radius: 6px !important; font-weight: 600 !important; transition: all 0.3s ease !important; width: 100%; padding: 10px !important; }
+    .stButton > button:hover { background-color: #a3ff00 !important; color: #050505 !important; box-shadow: 0 0 15px rgba(163, 255, 0, 0.4) !important; transform: translateY(-2px) !important; }
     </style>
 """, unsafe_allow_html=True)
 
-st.markdown("""
-    <div style="margin-top: 2rem; margin-bottom: 2rem;">
-        <p style="color: #a3ff00; font-weight: 600; letter-spacing: 2px; margin-bottom: 0;">SISTEMA OPERATIVO CENTRAL</p>
-        <h1 style="font-size: 4.5rem; font-weight: 700; margin-bottom: 0; line-height: 1.1; color: #ffffff;">
-            Seguridad Primero<br><span style="color: #a3ff00;">Calidad Siempre.</span>
-        </h1>
-    </div>
-""", unsafe_allow_html=True)
+# ==========================================
+# 🛑 PANTALLA DE LOGIN (Si no está autenticado)
+# ==========================================
+if not st.session_state['autenticado']:
+    st.markdown("<br><br>", unsafe_allow_html=True)
+    col1, col2, col3 = st.columns([1, 1.5, 1])
+    
+    with col2:
+        st.markdown("""
+            <div class='login-box'>
+                <h1 style='color: #a3ff00; letter-spacing: 2px; margin-bottom: 5px;'>BBO HUB</h1>
+                <p style='color: #888888; font-size: 0.9rem; margin-bottom: 30px;'>CONTROL CENTRAL DE CALIDAD</p>
+            </div>
+        """, unsafe_allow_html=True)
+        
+        # Formulario de Ingreso
+        with st.form("login_form"):
+            usuario = st.text_input("Usuario", placeholder="Ingresa tu usuario...")
+            password = st.text_input("Contraseña", type="password", placeholder="••••••••")
+            submit = st.form_submit_button("INGRESAR AL SISTEMA")
+            
+            if submit:
+                # Verificar credenciales en los Secretos de Streamlit
+                try:
+                    if usuario in st.secrets["passwords"] and st.secrets["passwords"][usuario] == password:
+                        st.session_state['autenticado'] = True
+                        st.session_state['usuario_actual'] = usuario
+                        st.success("¡Acceso Concedido! Iniciando sistemas...")
+                        time.sleep(1)
+                        st.rerun() # Recarga la página para mostrar el HUB
+                    else:
+                        st.error("❌ Usuario o contraseña incorrectos.")
+                except Exception as e:
+                    st.error("⚠️ Error crítico: No se encontró la Bóveda de Secretos configurada en Streamlit Cloud.")
 
-st.markdown("""
-    <div class="grid-container">
-        <!-- AQUÍ CAMBIAMOS EL ENLACE A 'CONTROL_CALIDAD' -->
-        <a href="CONTROL_CALIDAD" target="_self" class="vercel-card">
-            <div class="card-icon">///</div>
-            <h3 class="card-title">Control de Calidad</h3>
-            <p class="card-desc">Portal de parámetros críticos, ingreso de datos, calculadoras y reportes automatizados.</p>
-            <div class="status-badge status-active">■ Módulo Activo</div>
-        </a>
-        <div class="vercel-card">
-            <div class="card-icon">///</div>
-            <h3 class="card-title">Elaboración</h3>
-            <p class="card-desc">Monitoreo de fermentación, maduración, perfiles térmicos y uso de materias primas.</p>
-            <div class="status-badge status-dev">■ En Desarrollo</div>
-        </div>
-        <div class="vercel-card">
-            <div class="card-icon">///</div>
-            <h3 class="card-title">Líneas de Envasado</h3>
-            <p class="card-desc">Control de OEE, mermas de empaque, eficiencia de llenadoras y rechazos.</p>
-            <div class="status-badge status-dev">■ En Desarrollo</div>
-        </div>
-        <div class="vercel-card">
-            <div class="card-icon">///</div>
-            <h3 class="card-title">Mantenimiento</h3>
-            <p class="card-desc">Gestión de activos, control de paradas de planta y cumplimiento preventivo.</p>
-            <div class="status-badge status-dev">■ Próximamente</div>
-        </div>
-    </div>
-""", unsafe_allow_html=True)
+# ==========================================
+# 🟢 DASHBOARD PRINCIPAL (Si está autenticado)
+# ==========================================
+else:
+    # --- MENÚ LATERAL (SIDEBAR) ---
+    st.sidebar.markdown(f"<div style='text-align: center; color: #a3ff00; font-weight: bold; margin-bottom: 20px;'>👤 USUARIO: {st.session_state['usuario_actual'].upper()}</div>", unsafe_allow_html=True)
+    
+    st.sidebar.page_link("pages/CONTROL_CALIDAD.py", label="🔬 CONTROL DE CALIDAD", icon="📊")
+    st.sidebar.page_link("pages/3_ESTADIA_TANQUES.py", label="⏱️ ESTADÍA DE TANQUES", icon="⏳")
+    
+    st.sidebar.markdown("<br><hr style='border: 1px solid #1a1a1a;'><br>", unsafe_allow_html=True)
+    
+    # Botón de Cerrar Sesión
+    if st.sidebar.button("🔴 CERRAR SESIÓN"):
+        st.session_state['autenticado'] = False
+        st.rerun()
 
-img_b64 = obtener_imagen_base64("BBO.jpeg")
+    # --- CONTENIDO PRINCIPAL ---
+    st.markdown("<h1 style='text-align: center; font-size: 3.5rem; letter-spacing: 2px; color: #ffffff;'>BBO <span style='color: #a3ff00;'>HUB</span></h1>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align: center; color: #888888; font-size: 1.2rem; margin-bottom: 3rem;'>CENTRO DE CONTROL Y MONITOREO DE CALIDAD</p>", unsafe_allow_html=True)
 
-if img_b64:
-    st.markdown(f"""
-        <div style="
-            width: 100%;
-            height: 550px;
-            margin-top: 1rem;
-            border-radius: 12px;
-            background-image: 
-                linear-gradient(to bottom, #050505 0%, rgba(5,5,5,0) 10%, rgba(5,5,5,0) 90%, #050505 100%),
-                linear-gradient(to right, #050505 0%, rgba(5,5,5,0) 10%, rgba(5,5,5,0) 90%, #050505 100%),
-                url('data:image/jpeg;base64,{img_b64}');
-            background-size: cover;
-            background-position: center;
-            opacity: 0.85; 
-            box-shadow: 0 0 20px rgba(0,0,0,0.5);
-        "></div>
-    """, unsafe_allow_html=True)
+    st.markdown("---")
+    
+    st.markdown("<h3 style='color: #a3ff00;'>MÓDULOS ACTIVOS</h3>", unsafe_allow_html=True)
+    
+    col1, col2 = st.columns(2)
+    with col1:
+        st.info("**🔬 Control de Calidad:** Monitoreo estadístico de parámetros fisicoquímicos.")
+    with col2:
+        st.warning("**⏱️ Estadía de Tanques:** Control de tiempos de residencia y alertas tempranas.")
