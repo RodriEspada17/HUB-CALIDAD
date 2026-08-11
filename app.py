@@ -9,8 +9,9 @@ st.set_page_config(page_title="HUB BBO CALIDAD", layout="wide", initial_sidebar_
 if 'autenticado' not in st.session_state:
     st.session_state['autenticado'] = False
 
-# Fecha actual para la última actualización
-fecha_actual = datetime.datetime.now().strftime("%d-%b-%Y %H:%M")
+# Fecha actual para la última actualización (Zona Horaria Bolivia GMT-4)
+bolivia_tz = datetime.timezone(datetime.timedelta(hours=-4))
+fecha_actual = datetime.datetime.now(bolivia_tz).strftime("%d-%b-%Y %H:%M")
 
 # Aplica la tipografía y el fondo base
 aplicar_estilo_neon()
@@ -28,31 +29,30 @@ st.markdown("""
     header[data-testid="stHeader"] { background-color: transparent !important; }
     [data-testid="stSidebarNav"] { display: none !important; }
     
-    /* 2. SIDEBAR Y BOTÓN CERRAR SESIÓN AL FONDO */
+    /* 2. SIDEBAR Y PERFIL */
     section[data-testid="stSidebar"] {
         background-color: #0a0a0a !important;
         border-right: 1px solid #1a1a1a !important;
     }
-    [data-testid="stSidebar"] > div:first-child {
-        display: flex !important;
-        flex-direction: column !important;
-        height: 100vh !important;
-    }
+    
+    /* Botón de Cerrar Sesión (Pequeño y centrado bajo el perfil) */
     div[data-testid="stSidebar"] div[data-testid="stButton"] {
-        margin-top: auto !important;
-        padding-bottom: 25px !important;
+        display: flex !important;
+        justify-content: center !important;
+        margin-top: 10px !important;
+        padding-bottom: 0 !important;
     }
     div[data-testid="stSidebar"] div[data-testid="stButton"] > button {
         background-color: transparent !important;
         border: 1px solid #1a1a1a !important;
-        width: 100% !important;
-        padding: 8px !important;
-        border-radius: 6px !important;
+        width: fit-content !important; 
+        padding: 4px 16px !important;
+        border-radius: 4px !important;
         transition: 0.3s !important;
     }
     div[data-testid="stSidebar"] div[data-testid="stButton"] > button p {
         color: #555555 !important;
-        font-size: 0.8rem !important;
+        font-size: 0.7rem !important;
         margin: 0 !important;
         font-weight: 700 !important;
         letter-spacing: 1px;
@@ -241,7 +241,7 @@ if not st.session_state['autenticado']:
 else:
     # --- MENÚ LATERAL ---
     st.sidebar.markdown(f"""
-        <div style='text-align: center; margin-bottom: 25px;'>
+        <div style='text-align: center; margin-bottom: 5px;'>
             <div style='background-color: #0a0a0a; height: 60px; width: 60px; border-radius: 50%; margin: 0 auto; display: flex; align-items: center; justify-content: center; border: 2px solid #a3ff00; box-shadow: 0 0 10px rgba(163,255,0,0.2);'>
                 <span style='font-size: 1.5rem;'>👤</span>
             </div>
@@ -277,21 +277,19 @@ else:
                 <span style='color: #888888; font-size: 0.85rem; letter-spacing: 2px; text-transform: uppercase;'>Centro de Control y Monitoreo</span>
             </div>
             <div style='color: #555555; font-size: 0.75rem; display: flex; align-items: center; gap: 5px; font-weight: 600;'>
-                <span>🔄 ÚLTIMA ACTUALIZACIÓN: {fecha_actual}</span>
+                <span>ÚLTIMA ACTUALIZACIÓN: {fecha_actual}</span>
             </div>
         </div>
     """, unsafe_allow_html=True)
 
-    # --- SIMULACIÓN DE TABS ---
+    # --- SIMULACIÓN DE TABS LIMPIA ---
     st.markdown("""
         <div style='display: flex; gap: 30px; margin-bottom: 30px;'>
-            <span style='color: #a3ff00; border-bottom: 2px solid #a3ff00; padding-bottom: 5px; font-size: 0.9rem; font-weight: 700; letter-spacing: 1px; cursor: pointer;'>■ DASHBOARD</span>
-            <span style='color: #555555; font-size: 0.9rem; font-weight: 600; letter-spacing: 1px; cursor: pointer;'>REPORTES</span>
-            <span style='color: #555555; font-size: 0.9rem; font-weight: 600; letter-spacing: 1px; cursor: pointer;'>CONFIGURACIÓN</span>
+            <span style='color: #a3ff00; border-bottom: 2px solid #a3ff00; padding-bottom: 5px; font-size: 0.9rem; font-weight: 700; letter-spacing: 1px; cursor: pointer;'>■ MÓDULOS</span>
         </div>
     """, unsafe_allow_html=True)
 
-    # --- CUADRÍCULA DE MÓDULOS EN 4 COLUMNAS (DISEÑO LOBBY) ---
+    # --- CUADRÍCULA DE MÓDULOS EN 4 COLUMNAS ---
     col1, col2, col3, col4 = st.columns(4)
 
     with col1:
@@ -308,13 +306,13 @@ else:
 
     with col2:
         st.markdown("""
-            <a href="3_ESTADIA_TANQUES" target="_self" class="card-module">
+            <a href="MANTENIMIENTO" target="_self" class="card-module">
                 <div>
                     <div class="card-slashes">///</div>
-                    <div class="card-title-text">Control de Estadía</div>
-                    <div class="card-desc-text">Monitoreo de tiempos de residencia de tanques para Malta y Cervezas.</div>
+                    <div class="card-title-text">Mantenimiento</div>
+                    <div class="card-desc-text">Gestión de órdenes de trabajo, paradas de planta, confiabilidad y repuestos.</div>
                 </div>
-                <div><span class="pill-activo">■ MÓDULO ACTIVO</span></div>
+                <div><span class="pill-desarrollo">■ EN DESARROLLO</span></div>
             </a>
         """, unsafe_allow_html=True)
 
@@ -341,5 +339,5 @@ else:
                 <div><span class="pill-desarrollo">■ EN DESARROLLO</span></div>
             </a>
         """, unsafe_allow_html=True)
-            
+
     st.markdown("<br><hr style='border: 1px solid #1a1a1a;'><br>", unsafe_allow_html=True)
