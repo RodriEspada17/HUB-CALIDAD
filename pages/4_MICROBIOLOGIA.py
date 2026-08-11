@@ -47,12 +47,12 @@ URL_BASE = "https://docs.google.com/spreadsheets/d/1CHG6Ndce1Hon9nUFikJqY5YIezYH
 
 # TODO: Necesitamos que pongas el número GID correcto para cada pestaña de tu Google Sheets.
 GIDS = {
-    "1. Control de Propagación": "0",  # GID de prueba (el que me pasaste antes)
-    "2. Análisis de Levadura": "PONER_GID_AQUI", 
-    "3. Cocimiento": "PONER_GID_AQUI",
-    "4. Fermentación": "PONER_GID_AQUI",
-    "5. Filtración": "PONER_GID_AQUI",
-    "6. Envasado": "PONER_GID_AQUI"
+    "1. Control de Propagación": "2050551093",  # GID de prueba (el que me pasaste antes)
+    "2. Análisis de Levadura": "160101583", 
+    "3. Cocimiento": "1413638154",
+    "4. Fermentación": "1692699392",
+    "5. Filtración": "1258366654",
+    "6. Envasado": "1542069577"
 }
 
 # --- SELECTOR DE ETAPA ---
