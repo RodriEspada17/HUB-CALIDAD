@@ -104,31 +104,37 @@ st.markdown("""
 
     /* 4. TARJETAS DE MÓDULOS CON CAPA INVISIBLE CLICKABLE (CORREGIDO) */
     
-    /* Convierte la columna en el ancla del botón */
-    div[data-testid="stColumn"] {
+    /* Convierte la columna de Streamlit en el ancla */
+    div[data-testid="column"] {
         position: relative !important; 
     }
     
     /* El Hover visual reacciona al pasar el ratón por la columna */
-    div[data-testid="stColumn"]:hover .card-module {
+    div[data-testid="column"]:hover .card-module {
         border-color: #a3ff00 !important;
         box-shadow: 0 0 20px rgba(163, 255, 0, 0.15) !important;
         transform: translateY(-4px) !important;
     }
 
-    /* ¡EL BOTÓN INVISIBLE MÁGICO FORZADO A TAMAÑO REAL! */
-    div[data-testid="stColumn"] button[kind="secondary"] {
+    /* ¡EL BOTÓN INVISIBLE ESTIRADO AL 100%! */
+    div[data-testid="column"] div[data-testid="stButton"] {
         position: absolute !important;
         top: 0 !important;
         left: 0 !important;
         width: 100% !important;
-        min-height: 260px !important; /* Fuerza los píxeles reales para que atrape el clic */
+        height: 100% !important;
         z-index: 9999 !important;
-        opacity: 0 !important; /* 100% invisible */
+    }
+    div[data-testid="column"] div[data-testid="stButton"] button {
+        width: 100% !important;
+        height: 100% !important;
+        opacity: 0 !important; /* 100% invisible pero atrapa el clic */
         cursor: pointer !important;
+        background: transparent !important;
+        border: none !important;
     }
 
-    /* Estética visual de la tarjeta que queda abajo */
+    /* Estética visual de la tarjeta HTML que queda abajo */
     .card-module {
         display: flex;
         flex-direction: column;
@@ -141,7 +147,6 @@ st.markdown("""
         min-height: 250px;
         transition: all 0.3s ease;
         box-shadow: 0 5px 15px rgba(0,0,0,0.5);
-        pointer-events: none; /* Deja pasar el click al botón invisible */
     }
     .card-slashes { color: #a3ff00; font-weight: 800; font-size: 1.2rem; letter-spacing: 2px; margin-bottom: 12px; }
     .card-title-text { color: #ffffff; font-size: 1.35rem; font-weight: 700; margin-bottom: 12px; line-height: 1.2; }
@@ -244,6 +249,10 @@ else:
                 <span>ÚLTIMA ACTUALIZACIÓN: {fecha_actual}</span>
             </div>
         </div>
+    """, unsafe_allow_html=True)
+
+    # --- SIMULACIÓN DE TABS LIMPIA ---
+    st.markdown("""
         <div style='display: flex; gap: 30px; margin-bottom: 30px;'>
             <span style='color: #a3ff00; border-bottom: 2px solid #a3ff00; padding-bottom: 5px; font-size: 0.9rem; font-weight: 700; letter-spacing: 1px;'>■ MÓDULOS</span>
         </div>
@@ -263,8 +272,7 @@ else:
                 <div><span class="pill-activo">■ MÓDULO ACTIVO</span></div>
             </div>
         """, unsafe_allow_html=True)
-        # El botón atrapa-clics
-        if st.button(" ", key="btn_cc", use_container_width=True):
+        if st.button(" ", key="btn_cc"):
             st.switch_page("pages/CONTROL_CALIDAD.py")
 
     with col2:
@@ -278,7 +286,7 @@ else:
                 <div><span class="pill-desarrollo">■ EN DESARROLLO</span></div>
             </div>
         """, unsafe_allow_html=True)
-        if st.button(" ", key="btn_mant", use_container_width=True):
+        if st.button(" ", key="btn_mant"):
             try: st.switch_page("pages/MANTENIMIENTO.py")
             except: st.toast("🚧 Módulo de Mantenimiento en desarrollo.", icon="🚧")
 
@@ -293,7 +301,7 @@ else:
                 <div><span class="pill-desarrollo">■ EN DESARROLLO</span></div>
             </div>
         """, unsafe_allow_html=True)
-        if st.button(" ", key="btn_elab", use_container_width=True):
+        if st.button(" ", key="btn_elab"):
             try: st.switch_page("pages/ELABORACION.py")
             except: st.toast("🚧 Módulo de Elaboración en desarrollo.", icon="🚧")
 
@@ -308,7 +316,7 @@ else:
                 <div><span class="pill-desarrollo">■ EN DESARROLLO</span></div>
             </div>
         """, unsafe_allow_html=True)
-        if st.button(" ", key="btn_env", use_container_width=True):
+        if st.button(" ", key="btn_env"):
             try: st.switch_page("pages/ENVASADO.py")
             except: st.toast("🚧 Módulo de Envasado en desarrollo.", icon="🚧")
 
