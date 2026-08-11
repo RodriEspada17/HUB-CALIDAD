@@ -102,39 +102,46 @@ st.markdown("""
         box-shadow: -5px 0 20px rgba(163, 255, 0, 0.3);
     }
 
-    /* 4. TARJETAS DE MÓDULOS CON CAPA INVISIBLE CLICKABLE (CORREGIDO) */
-    
-    /* Convierte la columna de Streamlit en el ancla */
-    div[data-testid="column"] {
-        position: relative !important; 
+    /* 4. TARJETAS DE MÓDULOS Y BOTÓN INVISIBLE DESTRUCTOR DE CUADROS VERDES */
+    div[data-testid="column"] > div[data-testid="stVerticalBlock"] {
+        position: relative !important; /* Ancla maestra */
     }
     
-    /* El Hover visual reacciona al pasar el ratón por la columna */
     div[data-testid="column"]:hover .card-module {
         border-color: #a3ff00 !important;
         box-shadow: 0 0 20px rgba(163, 255, 0, 0.15) !important;
         transform: translateY(-4px) !important;
     }
 
-    /* ¡EL BOTÓN INVISIBLE ESTIRADO AL 100%! */
-    div[data-testid="column"] div[data-testid="stButton"] {
+    /* MATAMOS CUALQUIER RASTRO VISUAL DEL BOTÓN DE STREAMLIT */
+    div[data-testid="column"] div.stButton {
         position: absolute !important;
         top: 0 !important;
         left: 0 !important;
         width: 100% !important;
         height: 100% !important;
-        z-index: 9999 !important;
+        z-index: 999 !important;
     }
-    div[data-testid="column"] div[data-testid="stButton"] button {
+    div[data-testid="column"] div.stButton > button {
         width: 100% !important;
         height: 100% !important;
-        opacity: 0 !important; /* 100% invisible pero atrapa el clic */
-        cursor: pointer !important;
         background: transparent !important;
         border: none !important;
+        color: transparent !important;
+        box-shadow: none !important;
+        opacity: 0 !important;
+        cursor: pointer !important;
+    }
+    div[data-testid="column"] div.stButton > button:hover,
+    div[data-testid="column"] div.stButton > button:active,
+    div[data-testid="column"] div.stButton > button:focus {
+        background: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+        outline: none !important;
+        color: transparent !important;
     }
 
-    /* Estética visual de la tarjeta HTML que queda abajo */
     .card-module {
         display: flex;
         flex-direction: column;
@@ -147,6 +154,7 @@ st.markdown("""
         min-height: 250px;
         transition: all 0.3s ease;
         box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+        pointer-events: none; /* Para que el clic pase al botón invisible */
     }
     .card-slashes { color: #a3ff00; font-weight: 800; font-size: 1.2rem; letter-spacing: 2px; margin-bottom: 12px; }
     .card-title-text { color: #ffffff; font-size: 1.35rem; font-weight: 700; margin-bottom: 12px; line-height: 1.2; }
@@ -154,7 +162,7 @@ st.markdown("""
     .pill-activo { background-color: rgba(163, 255, 0, 0.1); color: #a3ff00; border: 1px solid rgba(163, 255, 0, 0.3); padding: 4px 10px; border-radius: 4px; font-size: 0.7rem; font-weight: 700; letter-spacing: 1px; display: inline-block; }
     .pill-desarrollo { background-color: rgba(250, 204, 21, 0.1); color: #facc15; border: 1px solid rgba(250, 204, 21, 0.3); padding: 4px 10px; border-radius: 4px; font-size: 0.7rem; font-weight: 700; letter-spacing: 1px; display: inline-block; }
 
-    /* 5. BOTÓN DE LOGIN */
+    /* 5. BOTÓN DE LOGIN (Se mantiene intacto) */
     div[data-testid="stFormSubmitButton"] > button { 
         background-color: #050505 !important; 
         border: 1px solid #a3ff00 !important; 
@@ -272,7 +280,7 @@ else:
                 <div><span class="pill-activo">■ MÓDULO ACTIVO</span></div>
             </div>
         """, unsafe_allow_html=True)
-        if st.button(" ", key="btn_cc"):
+        if st.button(" ", key="btn_cc", use_container_width=True):
             st.switch_page("pages/CONTROL_CALIDAD.py")
 
     with col2:
@@ -286,7 +294,7 @@ else:
                 <div><span class="pill-desarrollo">■ EN DESARROLLO</span></div>
             </div>
         """, unsafe_allow_html=True)
-        if st.button(" ", key="btn_mant"):
+        if st.button(" ", key="btn_mant", use_container_width=True):
             try: st.switch_page("pages/MANTENIMIENTO.py")
             except: st.toast("🚧 Módulo de Mantenimiento en desarrollo.", icon="🚧")
 
@@ -301,7 +309,7 @@ else:
                 <div><span class="pill-desarrollo">■ EN DESARROLLO</span></div>
             </div>
         """, unsafe_allow_html=True)
-        if st.button(" ", key="btn_elab"):
+        if st.button(" ", key="btn_elab", use_container_width=True):
             try: st.switch_page("pages/ELABORACION.py")
             except: st.toast("🚧 Módulo de Elaboración en desarrollo.", icon="🚧")
 
@@ -316,7 +324,7 @@ else:
                 <div><span class="pill-desarrollo">■ EN DESARROLLO</span></div>
             </div>
         """, unsafe_allow_html=True)
-        if st.button(" ", key="btn_env"):
+        if st.button(" ", key="btn_env", use_container_width=True):
             try: st.switch_page("pages/ENVASADO.py")
             except: st.toast("🚧 Módulo de Envasado en desarrollo.", icon="🚧")
 
