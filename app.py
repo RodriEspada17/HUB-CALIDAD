@@ -102,47 +102,67 @@ st.markdown("""
         box-shadow: -5px 0 20px rgba(163, 255, 0, 0.3);
     }
 
-    /* 4. TARJETAS VISUALES HTML (CERO HACKS INVISIBLES) */
-    .card-module {
-        display: flex;
-        flex-direction: column;
-        justify-content: space-between;
-        background-color: #0a0a0a;
-        border: 1px solid #1a1a1a;
-        padding: 24px;
-        border-radius: 12px;
-        min-height: 250px;
-        box-shadow: 0 5px 15px rgba(0,0,0,0.5);
-    }
-    .card-slashes { color: #a3ff00; font-weight: 800; font-size: 1.2rem; letter-spacing: 2px; margin-bottom: 12px; }
-    .card-title-text { color: #ffffff; font-size: 1.35rem; font-weight: 700; margin-bottom: 12px; line-height: 1.2; }
-    .card-desc-text { color: #888888; font-size: 0.9rem; line-height: 1.5; margin-bottom: 25px; }
-    .pill-activo { background-color: rgba(163, 255, 0, 0.1); color: #a3ff00; border: 1px solid rgba(163, 255, 0, 0.3); padding: 4px 10px; border-radius: 4px; font-size: 0.7rem; font-weight: 700; letter-spacing: 1px; display: inline-block; }
-    .pill-desarrollo { background-color: rgba(250, 204, 21, 0.1); color: #facc15; border: 1px solid rgba(250, 204, 21, 0.3); padding: 4px 10px; border-radius: 4px; font-size: 0.7rem; font-weight: 700; letter-spacing: 1px; display: inline-block; }
-
-    /* BOTONES DE NAVEGACIÓN ESTÉTICOS DEBAJO DE LAS TARJETAS */
+    /* =======================================================
+       4. CONVERTIR EL BOTÓN NATIVO EN LA TARJETA GIGANTE 
+       ======================================================= */
+       
     div[data-testid="stColumn"] div[data-testid="stButton"] > button {
-        background-color: #050505 !important;
+        background-color: #0a0a0a !important;
         border: 1px solid #1a1a1a !important;
-        border-radius: 8px !important;
+        padding: 24px !important;
+        border-radius: 12px !important;
+        min-height: 250px !important; /* Altura de la tarjeta */
         width: 100% !important;
-        padding: 12px !important;
-        margin-top: 10px !important;
+        display: flex !important;
+        flex-direction: column !important;
+        justify-content: flex-start !important;
+        align-items: flex-start !important;
+        text-align: left !important;
         transition: all 0.3s ease !important;
-    }
-    div[data-testid="stColumn"] div[data-testid="stButton"] > button p {
-        color: #888888 !important;
-        font-weight: 700 !important;
-        font-size: 0.85rem !important;
-        letter-spacing: 2px !important;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.5) !important;
     }
     div[data-testid="stColumn"] div[data-testid="stButton"] > button:hover {
         border-color: #a3ff00 !important;
-        background-color: rgba(163, 255, 0, 0.05) !important;
+        box-shadow: 0 0 20px rgba(163, 255, 0, 0.15) !important;
+        transform: translateY(-4px) !important;
     }
-    div[data-testid="stColumn"] div[data-testid="stButton"] > button:hover p {
+    
+    /* Estilos para el texto interno del botón */
+    div[data-testid="stColumn"] div[data-testid="stButton"] > button p {
+        color: #888888 !important; /* Color gris de la descripción */
+        font-size: 0.9rem !important;
+        line-height: 1.5 !important;
+        font-family: 'Space Grotesk', sans-serif !important;
+        white-space: pre-wrap !important;
+    }
+    /* Estilo para las barritas /// (El primer texto en negrita) */
+    div[data-testid="stColumn"] div[data-testid="stButton"] > button p strong:nth-of-type(1) {
         color: #a3ff00 !important;
+        font-size: 1.2rem !important;
+        letter-spacing: 2px !important;
+        margin-bottom: 5px !important;
+        display: inline-block !important;
     }
+    /* Estilo para el Título (El segundo texto en negrita) */
+    div[data-testid="stColumn"] div[data-testid="stButton"] > button p strong:nth-of-type(2) {
+        color: #ffffff !important;
+        font-size: 1.35rem !important;
+        display: block !important;
+        margin-top: 15px !important;
+        margin-bottom: 10px !important;
+    }
+
+    /* Pastillas (Pills) flotantes */
+    .pill-container {
+        margin-top: -65px; 
+        margin-left: 24px; 
+        margin-bottom: 30px; 
+        pointer-events: none; /* Atraviesa el clic hacia el botón */
+        position: relative;
+        z-index: 10;
+    }
+    .pill-activo { background-color: rgba(163, 255, 0, 0.1); color: #a3ff00; border: 1px solid rgba(163, 255, 0, 0.3); padding: 4px 10px; border-radius: 4px; font-size: 0.7rem; font-weight: 700; letter-spacing: 1px; display: inline-block; }
+    .pill-desarrollo { background-color: rgba(250, 204, 21, 0.1); color: #facc15; border: 1px solid rgba(250, 204, 21, 0.3); padding: 4px 10px; border-radius: 4px; font-size: 0.7rem; font-weight: 700; letter-spacing: 1px; display: inline-block; }
 
     /* 5. BOTÓN DE LOGIN */
     div[data-testid="stFormSubmitButton"] > button { 
@@ -153,9 +173,18 @@ st.markdown("""
         padding: 0.8rem !important; 
         transition: 0.3s !important;
     }
-    div[data-testid="stFormSubmitButton"] > button p { color: #a3ff00 !important; font-weight: 700 !important; letter-spacing: 1px !important; }
-    div[data-testid="stFormSubmitButton"] > button:hover { background-color: #a3ff00 !important; box-shadow: 0 0 15px rgba(163,255,0,0.3) !important; }
-    div[data-testid="stFormSubmitButton"] > button:hover p { color: #050505 !important; }
+    div[data-testid="stFormSubmitButton"] > button p { 
+        color: #a3ff00 !important; 
+        font-weight: 700 !important; 
+        letter-spacing: 1px !important;
+    }
+    div[data-testid="stFormSubmitButton"] > button:hover { 
+        background-color: #a3ff00 !important; 
+        box-shadow: 0 0 15px rgba(163,255,0,0.3) !important;
+    }
+    div[data-testid="stFormSubmitButton"] > button:hover p { 
+        color: #050505 !important; 
+    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -167,7 +196,13 @@ if not st.session_state['autenticado']:
         <style>
         [data-testid="collapsedControl"] { display: none !important; }
         [data-testid="stSidebar"] { display: none !important; }
-        [data-testid="stForm"] { border: 1px solid #1a1a1a !important; border-radius: 12px !important; background-color: #0a0a0a !important; padding: 3rem 2.5rem !important; box-shadow: 0 20px 50px rgba(0,0,0,0.8) !important; }
+        [data-testid="stForm"] { 
+            border: 1px solid #1a1a1a !important; 
+            border-radius: 12px !important; 
+            background-color: #0a0a0a !important; 
+            padding: 3rem 2.5rem !important; 
+            box-shadow: 0 20px 50px rgba(0,0,0,0.8) !important;
+        }
         </style>
     """, unsafe_allow_html=True)
     
@@ -201,7 +236,7 @@ if not st.session_state['autenticado']:
                     st.error("Error: Bóveda de Secretos no configurada.")
 
 # ==========================================
-# 🟢 DASHBOARD PRINCIPAL (NEÓN ESTABLE)
+# 🟢 DASHBOARD PRINCIPAL (NEÓN + UX)
 # ==========================================
 else:
     # --- MENÚ LATERAL ---
@@ -222,9 +257,15 @@ else:
     # --- HERRAMIENTAS FLOTANTES (FAB UX) ---
     st.markdown("""
         <div class="floating-tools">
-            <a href="#" class="tool-btn"><span>🔍 EXPLORAR</span></a>
-            <a href="#" class="tool-btn"><span>🤖 JARVIS</span></a>
-            <a href="#" class="tool-btn"><span>📄 PDF</span></a>
+            <a href="#" class="tool-btn">
+                <span>🔍 EXPLORAR</span>
+            </a>
+            <a href="#" class="tool-btn">
+                <span>🤖 JARVIS</span>
+            </a>
+            <a href="#" class="tool-btn">
+                <span>📄 PDF</span>
+            </a>
         </div>
     """, unsafe_allow_html=True)
 
@@ -241,7 +282,7 @@ else:
         </div>
     """, unsafe_allow_html=True)
 
-    # --- TABS ---
+    # --- SIMULACIÓN DE TABS LIMPIA ---
     st.markdown("""
         <div style='display: flex; gap: 30px; margin-bottom: 30px;'>
             <span style='color: #a3ff00; border-bottom: 2px solid #a3ff00; padding-bottom: 5px; font-size: 0.9rem; font-weight: 700; letter-spacing: 1px;'>■ MÓDULOS</span>
@@ -251,63 +292,33 @@ else:
     # --- CUADRÍCULA DE MÓDULOS EN 4 COLUMNAS ---
     col1, col2, col3, col4 = st.columns(4)
 
+    # Formato de texto Markdown inyectado directo al botón nativo
+    txt_cc = "**///**\n\n**Control de Calidad**\n\nAnálisis SPC, tendencias y resumen de producción mensual.\n\n\n\n\n"
+    txt_mant = "**///**\n\n**Mantenimiento**\n\nGestión de órdenes de trabajo, paradas de planta, confiabilidad y repuestos.\n\n\n\n\n"
+    txt_elab = "**///**\n\n**Elaboración**\n\nControl de procesos de cocimiento, fermentación y filtración. Mermas y eficiencias.\n\n\n\n\n"
+    txt_env = "**///**\n\n**Envasado**\n\nSupervisión de líneas de llenado, mermas de empaque y eficiencias (OEE).\n\n\n\n\n"
+
     with col1:
-        st.markdown("""
-            <div class="card-module">
-                <div>
-                    <div class="card-slashes">///</div>
-                    <div class="card-title-text">Control de Calidad</div>
-                    <div class="card-desc-text">Análisis SPC, tendencias y resumen de producción mensual.</div>
-                </div>
-                <div><span class="pill-activo">■ MÓDULO ACTIVO</span></div>
-            </div>
-        """, unsafe_allow_html=True)
-        if st.button("ACCEDER ➔", key="btn_cc", use_container_width=True):
+        if st.button(txt_cc, use_container_width=True, key="btn_cc"):
             st.switch_page("pages/CONTROL_CALIDAD.py")
+        st.markdown("<div class='pill-container'><span class='pill-activo'>■ MÓDULO ACTIVO</span></div>", unsafe_allow_html=True)
 
     with col2:
-        st.markdown("""
-            <div class="card-module">
-                <div>
-                    <div class="card-slashes">///</div>
-                    <div class="card-title-text">Mantenimiento</div>
-                    <div class="card-desc-text">Gestión de órdenes de trabajo, paradas de planta, confiabilidad y repuestos.</div>
-                </div>
-                <div><span class="pill-desarrollo">■ EN DESARROLLO</span></div>
-            </div>
-        """, unsafe_allow_html=True)
-        if st.button("ACCEDER ➔", key="btn_mant", use_container_width=True):
+        if st.button(txt_mant, use_container_width=True, key="btn_mant"):
             try: st.switch_page("pages/MANTENIMIENTO.py")
             except: st.toast("🚧 Módulo de Mantenimiento en desarrollo.", icon="🚧")
+        st.markdown("<div class='pill-container'><span class='pill-desarrollo'>■ EN DESARROLLO</span></div>", unsafe_allow_html=True)
 
     with col3:
-        st.markdown("""
-            <div class="card-module">
-                <div>
-                    <div class="card-slashes">///</div>
-                    <div class="card-title-text">Elaboración</div>
-                    <div class="card-desc-text">Control de procesos de cocimiento, fermentación y filtración. Mermas y eficiencias.</div>
-                </div>
-                <div><span class="pill-desarrollo">■ EN DESARROLLO</span></div>
-            </div>
-        """, unsafe_allow_html=True)
-        if st.button("ACCEDER ➔", key="btn_elab", use_container_width=True):
+        if st.button(txt_elab, use_container_width=True, key="btn_elab"):
             try: st.switch_page("pages/ELABORACION.py")
             except: st.toast("🚧 Módulo de Elaboración en desarrollo.", icon="🚧")
+        st.markdown("<div class='pill-container'><span class='pill-desarrollo'>■ EN DESARROLLO</span></div>", unsafe_allow_html=True)
 
     with col4:
-        st.markdown("""
-            <div class="card-module">
-                <div>
-                    <div class="card-slashes">///</div>
-                    <div class="card-title-text">Envasado</div>
-                    <div class="card-desc-text">Supervisión de líneas de llenado, mermas de empaque y eficiencias (OEE).</div>
-                </div>
-                <div><span class="pill-desarrollo">■ EN DESARROLLO</span></div>
-            </div>
-        """, unsafe_allow_html=True)
-        if st.button("ACCEDER ➔", key="btn_env", use_container_width=True):
+        if st.button(txt_env, use_container_width=True, key="btn_env"):
             try: st.switch_page("pages/ENVASADO.py")
             except: st.toast("🚧 Módulo de Envasado en desarrollo.", icon="🚧")
+        st.markdown("<div class='pill-container'><span class='pill-desarrollo'>■ EN DESARROLLO</span></div>", unsafe_allow_html=True)
 
     st.markdown("<br><hr style='border: 1px solid #1a1a1a;'><br>", unsafe_allow_html=True)
