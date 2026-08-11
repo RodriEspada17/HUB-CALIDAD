@@ -102,9 +102,9 @@ st.markdown("""
         box-shadow: -5px 0 20px rgba(163, 255, 0, 0.3);
     }
 
-    /* 4. TARJETAS DE MÓDULOS CON CAPA INVISIBLE (UX AVANZADA) */
+    /* 4. TARJETAS DE MÓDULOS CON CAPA INVISIBLE CLICKABLE */
     div[data-testid="stColumn"] {
-        position: relative; /* Clave para el botón transparente */
+        position: relative; /* Clave para anclar el botón transparente */
     }
     .card-module {
         display: flex;
@@ -114,19 +114,20 @@ st.markdown("""
         border: 1px solid #1a1a1a;
         padding: 24px;
         border-radius: 12px;
+        text-decoration: none !important;
         min-height: 250px;
         transition: all 0.3s ease;
         box-shadow: 0 5px 15px rgba(0,0,0,0.5);
-        pointer-events: none; /* Deja pasar el click al botón invisible */
-    }
-    /* Efecto Hover transferido al contenedor de la columna */
-    div[data-testid="stColumn"]:hover .card-module {
-        border-color: #a3ff00 !important;
-        box-shadow: 0 0 20px rgba(163, 255, 0, 0.15) !important;
-        transform: translateY(-4px) !important;
     }
     
-    /* EL BOTÓN INVISIBLE QUE EVITA LA PÉRDIDA DE SESIÓN */
+    /* El Hover reacciona cuando pasas el cursor por la columna */
+    div[data-testid="stColumn"]:hover .card-module {
+        border-color: #a3ff00;
+        box-shadow: 0 0 20px rgba(163, 255, 0, 0.15);
+        transform: translateY(-4px);
+    }
+
+    /* ¡EL BOTÓN INVISIBLE MÁGICO! */
     div[data-testid="stColumn"] div[data-testid="stButton"] {
         position: absolute !important;
         top: 0 !important;
@@ -134,7 +135,7 @@ st.markdown("""
         width: 100% !important;
         height: 100% !important;
         z-index: 99 !important;
-        opacity: 0 !important; /* Totalmente transparente */
+        opacity: 0 !important; /* Lo hace 100% invisible pero atrapa el clic */
     }
     div[data-testid="stColumn"] div[data-testid="stButton"] button {
         width: 100% !important;
@@ -142,12 +143,48 @@ st.markdown("""
         cursor: pointer !important;
     }
 
-    /* ESTÉTICA INTERNA DE LA TARJETA */
-    .card-slashes { color: #a3ff00; font-weight: 800; font-size: 1.2rem; letter-spacing: 2px; margin-bottom: 12px; }
-    .card-title-text { color: #ffffff; font-size: 1.35rem; font-weight: 700; margin-bottom: 12px; line-height: 1.2; }
-    .card-desc-text { color: #888888; font-size: 0.9rem; line-height: 1.5; margin-bottom: 25px; }
-    .pill-activo { background-color: rgba(163, 255, 0, 0.1); color: #a3ff00; border: 1px solid rgba(163, 255, 0, 0.3); padding: 4px 10px; border-radius: 4px; font-size: 0.7rem; font-weight: 700; letter-spacing: 1px; display: inline-block; }
-    .pill-desarrollo { background-color: rgba(250, 204, 21, 0.1); color: #facc15; border: 1px solid rgba(250, 204, 21, 0.3); padding: 4px 10px; border-radius: 4px; font-size: 0.7rem; font-weight: 700; letter-spacing: 1px; display: inline-block; }
+    .card-slashes {
+        color: #a3ff00;
+        font-weight: 800;
+        font-size: 1.2rem;
+        letter-spacing: 2px;
+        margin-bottom: 12px;
+    }
+    .card-title-text {
+        color: #ffffff;
+        font-size: 1.35rem;
+        font-weight: 700;
+        margin-bottom: 12px;
+        line-height: 1.2;
+    }
+    .card-desc-text {
+        color: #888888;
+        font-size: 0.9rem;
+        line-height: 1.5;
+        margin-bottom: 25px;
+    }
+    .pill-activo {
+        background-color: rgba(163, 255, 0, 0.1);
+        color: #a3ff00;
+        border: 1px solid rgba(163, 255, 0, 0.3);
+        padding: 4px 10px;
+        border-radius: 4px;
+        font-size: 0.7rem;
+        font-weight: 700;
+        letter-spacing: 1px;
+        display: inline-block;
+    }
+    .pill-desarrollo {
+        background-color: rgba(250, 204, 21, 0.1);
+        color: #facc15;
+        border: 1px solid rgba(250, 204, 21, 0.3);
+        padding: 4px 10px;
+        border-radius: 4px;
+        font-size: 0.7rem;
+        font-weight: 700;
+        letter-spacing: 1px;
+        display: inline-block;
+    }
 
     /* 5. BOTÓN DE LOGIN */
     div[data-testid="stFormSubmitButton"] > button { 
@@ -158,9 +195,18 @@ st.markdown("""
         padding: 0.8rem !important; 
         transition: 0.3s !important;
     }
-    div[data-testid="stFormSubmitButton"] > button p { color: #a3ff00 !important; font-weight: 700 !important; letter-spacing: 1px !important; }
-    div[data-testid="stFormSubmitButton"] > button:hover { background-color: #a3ff00 !important; box-shadow: 0 0 15px rgba(163,255,0,0.3) !important; }
-    div[data-testid="stFormSubmitButton"] > button:hover p { color: #050505 !important; }
+    div[data-testid="stFormSubmitButton"] > button p { 
+        color: #a3ff00 !important; 
+        font-weight: 700 !important; 
+        letter-spacing: 1px !important;
+    }
+    div[data-testid="stFormSubmitButton"] > button:hover { 
+        background-color: #a3ff00 !important; 
+        box-shadow: 0 0 15px rgba(163,255,0,0.3) !important;
+    }
+    div[data-testid="stFormSubmitButton"] > button:hover p { 
+        color: #050505 !important; 
+    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -172,7 +218,13 @@ if not st.session_state['autenticado']:
         <style>
         [data-testid="collapsedControl"] { display: none !important; }
         [data-testid="stSidebar"] { display: none !important; }
-        [data-testid="stForm"] { border: 1px solid #1a1a1a !important; border-radius: 12px !important; background-color: #0a0a0a !important; padding: 3rem 2.5rem !important; box-shadow: 0 20px 50px rgba(0,0,0,0.8) !important; }
+        [data-testid="stForm"] { 
+            border: 1px solid #1a1a1a !important; 
+            border-radius: 12px !important; 
+            background-color: #0a0a0a !important; 
+            padding: 3rem 2.5rem !important; 
+            box-shadow: 0 20px 50px rgba(0,0,0,0.8) !important;
+        }
         </style>
     """, unsafe_allow_html=True)
     
@@ -227,9 +279,15 @@ else:
     # --- HERRAMIENTAS FLOTANTES (FAB UX) ---
     st.markdown("""
         <div class="floating-tools">
-            <a href="#" class="tool-btn"><span>🔍 EXPLORAR</span></a>
-            <a href="#" class="tool-btn"><span>🤖 JARVIS</span></a>
-            <a href="#" class="tool-btn"><span>📄 PDF</span></a>
+            <a href="#" class="tool-btn">
+                <span>🔍 EXPLORAR</span>
+            </a>
+            <a href="#" class="tool-btn">
+                <span>🤖 JARVIS</span>
+            </a>
+            <a href="#" class="tool-btn">
+                <span>📄 PDF</span>
+            </a>
         </div>
     """, unsafe_allow_html=True)
 
@@ -257,6 +315,7 @@ else:
     col1, col2, col3, col4 = st.columns(4)
 
     with col1:
+        # La tarjeta puramente visual
         st.markdown("""
             <div class="card-module">
                 <div>
@@ -267,7 +326,8 @@ else:
                 <div><span class="pill-activo">■ MÓDULO ACTIVO</span></div>
             </div>
         """, unsafe_allow_html=True)
-        if st.button(" ", key="btn_cc", use_container_width=True):
+        # El botón invisible que ejecuta la acción
+        if st.button(" ", key="btn_cc"):
             st.switch_page("pages/CONTROL_CALIDAD.py")
 
     with col2:
@@ -281,7 +341,7 @@ else:
                 <div><span class="pill-desarrollo">■ EN DESARROLLO</span></div>
             </div>
         """, unsafe_allow_html=True)
-        if st.button(" ", key="btn_mant", use_container_width=True):
+        if st.button(" ", key="btn_mant"):
             try:
                 st.switch_page("pages/MANTENIMIENTO.py")
             except:
@@ -298,7 +358,7 @@ else:
                 <div><span class="pill-desarrollo">■ EN DESARROLLO</span></div>
             </div>
         """, unsafe_allow_html=True)
-        if st.button(" ", key="btn_elab", use_container_width=True):
+        if st.button(" ", key="btn_elab"):
             try:
                 st.switch_page("pages/ELABORACION.py")
             except:
@@ -315,7 +375,7 @@ else:
                 <div><span class="pill-desarrollo">■ EN DESARROLLO</span></div>
             </div>
         """, unsafe_allow_html=True)
-        if st.button(" ", key="btn_env", use_container_width=True):
+        if st.button(" ", key="btn_env"):
             try:
                 st.switch_page("pages/ENVASADO.py")
             except:
