@@ -102,10 +102,33 @@ st.markdown("""
         box-shadow: -5px 0 20px rgba(163, 255, 0, 0.3);
     }
 
-    /* 4. TARJETAS DE MÓDULOS CON CAPA INVISIBLE CLICKABLE */
+    /* 4. TARJETAS DE MÓDULOS CON CAPA INVISIBLE CLICKABLE (CORREGIDO) */
+    
+    /* Convierte la columna en el ancla del botón */
     div[data-testid="stColumn"] {
-        position: relative; /* Clave para anclar el botón transparente */
+        position: relative !important; 
     }
+    
+    /* El Hover visual reacciona al pasar el ratón por la columna */
+    div[data-testid="stColumn"]:hover .card-module {
+        border-color: #a3ff00 !important;
+        box-shadow: 0 0 20px rgba(163, 255, 0, 0.15) !important;
+        transform: translateY(-4px) !important;
+    }
+
+    /* ¡EL BOTÓN INVISIBLE MÁGICO FORZADO A TAMAÑO REAL! */
+    div[data-testid="stColumn"] button[kind="secondary"] {
+        position: absolute !important;
+        top: 0 !important;
+        left: 0 !important;
+        width: 100% !important;
+        min-height: 260px !important; /* Fuerza los píxeles reales para que atrape el clic */
+        z-index: 9999 !important;
+        opacity: 0 !important; /* 100% invisible */
+        cursor: pointer !important;
+    }
+
+    /* Estética visual de la tarjeta que queda abajo */
     .card-module {
         display: flex;
         flex-direction: column;
@@ -118,73 +141,13 @@ st.markdown("""
         min-height: 250px;
         transition: all 0.3s ease;
         box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+        pointer-events: none; /* Deja pasar el click al botón invisible */
     }
-    
-    /* El Hover reacciona cuando pasas el cursor por la columna */
-    div[data-testid="stColumn"]:hover .card-module {
-        border-color: #a3ff00;
-        box-shadow: 0 0 20px rgba(163, 255, 0, 0.15);
-        transform: translateY(-4px);
-    }
-
-    /* ¡EL BOTÓN INVISIBLE MÁGICO! */
-    div[data-testid="stColumn"] div[data-testid="stButton"] {
-        position: absolute !important;
-        top: 0 !important;
-        left: 0 !important;
-        width: 100% !important;
-        height: 100% !important;
-        z-index: 99 !important;
-        opacity: 0 !important; /* Lo hace 100% invisible pero atrapa el clic */
-    }
-    div[data-testid="stColumn"] div[data-testid="stButton"] button {
-        width: 100% !important;
-        height: 100% !important;
-        cursor: pointer !important;
-    }
-
-    .card-slashes {
-        color: #a3ff00;
-        font-weight: 800;
-        font-size: 1.2rem;
-        letter-spacing: 2px;
-        margin-bottom: 12px;
-    }
-    .card-title-text {
-        color: #ffffff;
-        font-size: 1.35rem;
-        font-weight: 700;
-        margin-bottom: 12px;
-        line-height: 1.2;
-    }
-    .card-desc-text {
-        color: #888888;
-        font-size: 0.9rem;
-        line-height: 1.5;
-        margin-bottom: 25px;
-    }
-    .pill-activo {
-        background-color: rgba(163, 255, 0, 0.1);
-        color: #a3ff00;
-        border: 1px solid rgba(163, 255, 0, 0.3);
-        padding: 4px 10px;
-        border-radius: 4px;
-        font-size: 0.7rem;
-        font-weight: 700;
-        letter-spacing: 1px;
-        display: inline-block;
-    }
-    .pill-desarrollo {
-        background-color: rgba(250, 204, 21, 0.1);
-        color: #facc15;
-        border: 1px solid rgba(250, 204, 21, 0.3);
-        padding: 4px 10px;
-        border-radius: 4px;
-        font-size: 0.7rem;
-        font-weight: 700;
-        letter-spacing: 1px;
-        display: inline-block;
-    }
+    .card-slashes { color: #a3ff00; font-weight: 800; font-size: 1.2rem; letter-spacing: 2px; margin-bottom: 12px; }
+    .card-title-text { color: #ffffff; font-size: 1.35rem; font-weight: 700; margin-bottom: 12px; line-height: 1.2; }
+    .card-desc-text { color: #888888; font-size: 0.9rem; line-height: 1.5; margin-bottom: 25px; }
+    .pill-activo { background-color: rgba(163, 255, 0, 0.1); color: #a3ff00; border: 1px solid rgba(163, 255, 0, 0.3); padding: 4px 10px; border-radius: 4px; font-size: 0.7rem; font-weight: 700; letter-spacing: 1px; display: inline-block; }
+    .pill-desarrollo { background-color: rgba(250, 204, 21, 0.1); color: #facc15; border: 1px solid rgba(250, 204, 21, 0.3); padding: 4px 10px; border-radius: 4px; font-size: 0.7rem; font-weight: 700; letter-spacing: 1px; display: inline-block; }
 
     /* 5. BOTÓN DE LOGIN */
     div[data-testid="stFormSubmitButton"] > button { 
@@ -195,18 +158,9 @@ st.markdown("""
         padding: 0.8rem !important; 
         transition: 0.3s !important;
     }
-    div[data-testid="stFormSubmitButton"] > button p { 
-        color: #a3ff00 !important; 
-        font-weight: 700 !important; 
-        letter-spacing: 1px !important;
-    }
-    div[data-testid="stFormSubmitButton"] > button:hover { 
-        background-color: #a3ff00 !important; 
-        box-shadow: 0 0 15px rgba(163,255,0,0.3) !important;
-    }
-    div[data-testid="stFormSubmitButton"] > button:hover p { 
-        color: #050505 !important; 
-    }
+    div[data-testid="stFormSubmitButton"] > button p { color: #a3ff00 !important; font-weight: 700 !important; letter-spacing: 1px !important; }
+    div[data-testid="stFormSubmitButton"] > button:hover { background-color: #a3ff00 !important; box-shadow: 0 0 15px rgba(163,255,0,0.3) !important; }
+    div[data-testid="stFormSubmitButton"] > button:hover p { color: #050505 !important; }
     </style>
 """, unsafe_allow_html=True)
 
@@ -218,13 +172,7 @@ if not st.session_state['autenticado']:
         <style>
         [data-testid="collapsedControl"] { display: none !important; }
         [data-testid="stSidebar"] { display: none !important; }
-        [data-testid="stForm"] { 
-            border: 1px solid #1a1a1a !important; 
-            border-radius: 12px !important; 
-            background-color: #0a0a0a !important; 
-            padding: 3rem 2.5rem !important; 
-            box-shadow: 0 20px 50px rgba(0,0,0,0.8) !important;
-        }
+        [data-testid="stForm"] { border: 1px solid #1a1a1a !important; border-radius: 12px !important; background-color: #0a0a0a !important; padding: 3rem 2.5rem !important; box-shadow: 0 20px 50px rgba(0,0,0,0.8) !important; }
         </style>
     """, unsafe_allow_html=True)
     
@@ -279,15 +227,9 @@ else:
     # --- HERRAMIENTAS FLOTANTES (FAB UX) ---
     st.markdown("""
         <div class="floating-tools">
-            <a href="#" class="tool-btn">
-                <span>🔍 EXPLORAR</span>
-            </a>
-            <a href="#" class="tool-btn">
-                <span>🤖 JARVIS</span>
-            </a>
-            <a href="#" class="tool-btn">
-                <span>📄 PDF</span>
-            </a>
+            <a href="#" class="tool-btn"><span>🔍 EXPLORAR</span></a>
+            <a href="#" class="tool-btn"><span>🤖 JARVIS</span></a>
+            <a href="#" class="tool-btn"><span>📄 PDF</span></a>
         </div>
     """, unsafe_allow_html=True)
 
@@ -302,12 +244,8 @@ else:
                 <span>ÚLTIMA ACTUALIZACIÓN: {fecha_actual}</span>
             </div>
         </div>
-    """, unsafe_allow_html=True)
-
-    # --- SIMULACIÓN DE TABS LIMPIA ---
-    st.markdown("""
         <div style='display: flex; gap: 30px; margin-bottom: 30px;'>
-            <span style='color: #a3ff00; border-bottom: 2px solid #a3ff00; padding-bottom: 5px; font-size: 0.9rem; font-weight: 700; letter-spacing: 1px; cursor: pointer;'>■ MÓDULOS</span>
+            <span style='color: #a3ff00; border-bottom: 2px solid #a3ff00; padding-bottom: 5px; font-size: 0.9rem; font-weight: 700; letter-spacing: 1px;'>■ MÓDULOS</span>
         </div>
     """, unsafe_allow_html=True)
 
@@ -315,7 +253,6 @@ else:
     col1, col2, col3, col4 = st.columns(4)
 
     with col1:
-        # La tarjeta puramente visual
         st.markdown("""
             <div class="card-module">
                 <div>
@@ -326,8 +263,8 @@ else:
                 <div><span class="pill-activo">■ MÓDULO ACTIVO</span></div>
             </div>
         """, unsafe_allow_html=True)
-        # El botón invisible que ejecuta la acción
-        if st.button(" ", key="btn_cc"):
+        # El botón atrapa-clics
+        if st.button(" ", key="btn_cc", use_container_width=True):
             st.switch_page("pages/CONTROL_CALIDAD.py")
 
     with col2:
@@ -341,11 +278,9 @@ else:
                 <div><span class="pill-desarrollo">■ EN DESARROLLO</span></div>
             </div>
         """, unsafe_allow_html=True)
-        if st.button(" ", key="btn_mant"):
-            try:
-                st.switch_page("pages/MANTENIMIENTO.py")
-            except:
-                st.toast("🚧 Módulo de Mantenimiento en desarrollo.", icon="🚧")
+        if st.button(" ", key="btn_mant", use_container_width=True):
+            try: st.switch_page("pages/MANTENIMIENTO.py")
+            except: st.toast("🚧 Módulo de Mantenimiento en desarrollo.", icon="🚧")
 
     with col3:
         st.markdown("""
@@ -358,11 +293,9 @@ else:
                 <div><span class="pill-desarrollo">■ EN DESARROLLO</span></div>
             </div>
         """, unsafe_allow_html=True)
-        if st.button(" ", key="btn_elab"):
-            try:
-                st.switch_page("pages/ELABORACION.py")
-            except:
-                st.toast("🚧 Módulo de Elaboración en desarrollo.", icon="🚧")
+        if st.button(" ", key="btn_elab", use_container_width=True):
+            try: st.switch_page("pages/ELABORACION.py")
+            except: st.toast("🚧 Módulo de Elaboración en desarrollo.", icon="🚧")
 
     with col4:
         st.markdown("""
@@ -375,10 +308,8 @@ else:
                 <div><span class="pill-desarrollo">■ EN DESARROLLO</span></div>
             </div>
         """, unsafe_allow_html=True)
-        if st.button(" ", key="btn_env"):
-            try:
-                st.switch_page("pages/ENVASADO.py")
-            except:
-                st.toast("🚧 Módulo de Envasado en desarrollo.", icon="🚧")
+        if st.button(" ", key="btn_env", use_container_width=True):
+            try: st.switch_page("pages/ENVASADO.py")
+            except: st.toast("🚧 Módulo de Envasado en desarrollo.", icon="🚧")
 
     st.markdown("<br><hr style='border: 1px solid #1a1a1a;'><br>", unsafe_allow_html=True)
