@@ -16,13 +16,14 @@ fecha_actual = datetime.datetime.now(bolivia_tz).strftime("%d-%b-%Y %H:%M")
 # Aplica la tipografía y el fondo base
 aplicar_estilo_neon()
 
-# --- CSS GLOBAL: DARK NEÓN + UX AVANZADA ---
+# --- CSS GLOBAL: DARK NEÓN + UX AVANZADA (TIPOGRAFÍA INTER) ---
 st.markdown("""
     <style>
-    /* 1. TIPOGRAFÍA Y FONDOS NEÓN */
-    @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700;800&display=swap');
+    /* 1. TIPOGRAFÍA INTER Y FONDOS NEÓN */
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+    
     html, body, [class*="css"], .stApp {
-        font-family: 'Space Grotesk', sans-serif !important;
+        font-family: 'Inter', sans-serif !important;
         background-color: #050505 !important;
         color: #e0e0e0 !important;
     }
@@ -35,7 +36,7 @@ st.markdown("""
         border-right: 1px solid #1a1a1a !important;
     }
     
-    /* Botón de Cerrar Sesión (Pequeño y centrado bajo el perfil) */
+    /* Botón de Cerrar Sesión */
     div[data-testid="stSidebar"] div[data-testid="stButton"] {
         display: flex !important;
         justify-content: center !important;
@@ -103,7 +104,7 @@ st.markdown("""
     }
 
     /* =======================================================
-       4. CONVERTIR EL BOTÓN NATIVO EN LA TARJETA GIGANTE 
+       4. EL BOTÓN GIGANTE NATIVO (TARJETAS)
        ======================================================= */
        
     div[data-testid="stColumn"] div[data-testid="stButton"] > button {
@@ -132,13 +133,13 @@ st.markdown("""
         color: #888888 !important; /* Color gris de la descripción */
         font-size: 0.9rem !important;
         line-height: 1.5 !important;
-        font-family: 'Space Grotesk', sans-serif !important;
+        font-family: 'Inter', sans-serif !important;
         white-space: pre-wrap !important;
     }
     /* Estilo para las barritas /// (El primer texto en negrita) */
     div[data-testid="stColumn"] div[data-testid="stButton"] > button p strong:nth-of-type(1) {
         color: #a3ff00 !important;
-        font-size: 1.2rem !important;
+        font-size: 1.15rem !important;
         letter-spacing: 2px !important;
         margin-bottom: 5px !important;
         display: inline-block !important;
@@ -150,6 +151,7 @@ st.markdown("""
         display: block !important;
         margin-top: 15px !important;
         margin-bottom: 10px !important;
+        letter-spacing: -0.5px !important; /* Toque elegante moderno */
     }
 
     /* Pastillas (Pills) flotantes */
@@ -160,6 +162,7 @@ st.markdown("""
         pointer-events: none; /* Atraviesa el clic hacia el botón */
         position: relative;
         z-index: 10;
+        font-family: 'Inter', sans-serif !important;
     }
     .pill-activo { background-color: rgba(163, 255, 0, 0.1); color: #a3ff00; border: 1px solid rgba(163, 255, 0, 0.3); padding: 4px 10px; border-radius: 4px; font-size: 0.7rem; font-weight: 700; letter-spacing: 1px; display: inline-block; }
     .pill-desarrollo { background-color: rgba(250, 204, 21, 0.1); color: #facc15; border: 1px solid rgba(250, 204, 21, 0.3); padding: 4px 10px; border-radius: 4px; font-size: 0.7rem; font-weight: 700; letter-spacing: 1px; display: inline-block; }
@@ -172,6 +175,7 @@ st.markdown("""
         width: 100% !important; 
         padding: 0.8rem !important; 
         transition: 0.3s !important;
+        font-family: 'Inter', sans-serif !important;
     }
     div[data-testid="stFormSubmitButton"] > button p { 
         color: #a3ff00 !important; 
@@ -213,8 +217,8 @@ if not st.session_state['autenticado']:
         with st.form("login_form"):
             st.markdown("""
                 <div style='text-align: center; margin-bottom: 30px;'>
-                    <span style='color: #a3ff00; font-size: 3rem; font-weight: 800; letter-spacing: 5px;'>HUB <span style="color: #ffffff;">BBO</span></span>
-                    <p style='color: #888888; font-size: 0.85rem; letter-spacing: 2px; margin-top: 5px;'>INGRESO SEGURO AL SISTEMA</p>
+                    <span style='color: #a3ff00; font-size: 3rem; font-weight: 800; letter-spacing: 2px;'>HUB <span style="color: #ffffff;">BBO</span></span>
+                    <p style='color: #888888; font-size: 0.85rem; letter-spacing: 2px; margin-top: 5px; font-weight: 500;'>INGRESO SEGURO AL SISTEMA</p>
                 </div>
             """, unsafe_allow_html=True)
             
@@ -246,7 +250,7 @@ else:
                 <span style='font-size: 1.5rem;'>👤</span>
             </div>
             <p style='color: #ffffff; font-weight: 700; margin-top: 12px; margin-bottom: 0; letter-spacing: 1px;'>{st.session_state['usuario_actual'].upper()}</p>
-            <span style='color: #a3ff00; font-size: 0.75rem; letter-spacing: 2px;'>GERENCIA</span>
+            <span style='color: #a3ff00; font-size: 0.75rem; letter-spacing: 2px; font-weight: 600;'>GERENCIA</span>
         </div>
     """, unsafe_allow_html=True)
     
@@ -273,8 +277,8 @@ else:
     st.markdown(f"""
         <div style='display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 1px solid #1a1a1a; padding-bottom: 15px; margin-bottom: 30px; margin-top: 10px;'>
             <div>
-                <h1 style='color: #a3ff00; font-size: 2rem; font-weight: 800; letter-spacing: 4px; margin: 0;'>HUB <span style='color: #ffffff;'>BBO</span></h1>
-                <span style='color: #888888; font-size: 0.85rem; letter-spacing: 2px; text-transform: uppercase;'>Centro de Control y Monitoreo</span>
+                <h1 style='color: #a3ff00; font-size: 2rem; font-weight: 800; letter-spacing: 2px; margin: 0;'>HUB <span style='color: #ffffff;'>BBO</span></h1>
+                <span style='color: #888888; font-size: 0.85rem; letter-spacing: 2px; text-transform: uppercase; font-weight: 500;'>Centro de Control y Monitoreo</span>
             </div>
             <div style='color: #555555; font-size: 0.75rem; display: flex; align-items: center; gap: 5px; font-weight: 600;'>
                 <span>ÚLTIMA ACTUALIZACIÓN: {fecha_actual}</span>
