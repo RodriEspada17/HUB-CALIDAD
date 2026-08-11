@@ -102,11 +102,23 @@ st.markdown("""
         box-shadow: -5px 0 20px rgba(163, 255, 0, 0.3);
     }
 
-    /* =========================================================
-       4. EXTERMINIO DEL CUADRO VERDE Y SUPERPOSICIÓN PERFECTA 
-       ========================================================= */
+    /* =======================================================
+       4. CAPA INVISIBLE Y SUPERPOSICIÓN PERFECTA (ARREGLADO)
+       ======================================================= */
        
-    /* Altura fija de la tarjeta para que coincida matemáticamente con el botón */
+    /* Convierte la columna en la caja madre que contiene todo */
+    div[data-testid="stColumn"] {
+        position: relative !important; 
+    }
+    
+    /* El Hover visual se activa al pasar el mouse por cualquier parte de la columna */
+    div[data-testid="stColumn"]:hover .card-module {
+        border-color: #a3ff00 !important;
+        box-shadow: 0 0 20px rgba(163, 255, 0, 0.15) !important;
+        transform: translateY(-4px) !important;
+    }
+
+    /* ESTÉTICA DE LA TARJETA HTML */
     .card-module {
         display: flex;
         flex-direction: column;
@@ -115,55 +127,36 @@ st.markdown("""
         border: 1px solid #1a1a1a;
         padding: 24px;
         border-radius: 12px;
-        height: 260px !important; /* Altura estricta */
+        min-height: 250px;
         transition: all 0.3s ease;
         box-shadow: 0 5px 15px rgba(0,0,0,0.5);
     }
-    
-    /* El Hover visual reacciona al pasar el ratón por la columna entera */
-    div[data-testid="column"]:hover .card-module {
-        border-color: #a3ff00 !important;
-        box-shadow: 0 0 20px rgba(163, 255, 0, 0.15) !important;
-        transform: translateY(-4px) !important;
-    }
-
-    /* EL BOTÓN CRISTAL INVISIBLE (Cero bordes, cero asco) */
-    div[data-testid="column"] div[data-testid="stButton"] {
-        margin-top: -260px !important; /* Lo jala hacia arriba EXACTAMENTE el tamaño de la tarjeta */
-        height: 260px !important;
-        width: 100% !important;
-        z-index: 999 !important;
-    }
-    div[data-testid="column"] div[data-testid="stButton"] > button {
-        height: 100% !important;
-        width: 100% !important;
-        background: transparent !important; /* Sin fondo */
-        border: none !important; /* EXTERMINA EL BORDE VERDE */
-        box-shadow: none !important;
-        color: transparent !important;
-        cursor: pointer !important;
-    }
-    div[data-testid="column"] div[data-testid="stButton"] > button:hover,
-    div[data-testid="column"] div[data-testid="stButton"] > button:active,
-    div[data-testid="column"] div[data-testid="stButton"] > button:focus {
-        background: transparent !important;
-        border: none !important; /* EXTERMINA EL BORDE AL HACER CLIC */
-        box-shadow: none !important;
-        outline: none !important;
-        color: transparent !important;
-    }
-    div[data-testid="column"] div[data-testid="stButton"] > button p {
-        display: none !important; /* Desaparece cualquier texto interno */
-    }
-
-    /* Estética interna de los textos de la tarjeta */
     .card-slashes { color: #a3ff00; font-weight: 800; font-size: 1.2rem; letter-spacing: 2px; margin-bottom: 12px; }
     .card-title-text { color: #ffffff; font-size: 1.35rem; font-weight: 700; margin-bottom: 12px; line-height: 1.2; }
     .card-desc-text { color: #888888; font-size: 0.9rem; line-height: 1.5; margin-bottom: 25px; }
     .pill-activo { background-color: rgba(163, 255, 0, 0.1); color: #a3ff00; border: 1px solid rgba(163, 255, 0, 0.3); padding: 4px 10px; border-radius: 4px; font-size: 0.7rem; font-weight: 700; letter-spacing: 1px; display: inline-block; }
     .pill-desarrollo { background-color: rgba(250, 204, 21, 0.1); color: #facc15; border: 1px solid rgba(250, 204, 21, 0.3); padding: 4px 10px; border-radius: 4px; font-size: 0.7rem; font-weight: 700; letter-spacing: 1px; display: inline-block; }
 
-    /* 5. BOTÓN DE LOGIN (Este sí mantiene su estilo verde) */
+    /* EL BOTÓN INVISIBLE QUE ATRAPA EL CLIC SOBRE LA TARJETA */
+    div[data-testid="stColumn"] div.stButton {
+        position: absolute !important;
+        top: 0 !important;
+        left: 0 !important;
+        width: 100% !important;
+        height: 100% !important;
+        z-index: 999 !important;
+    }
+    div[data-testid="stColumn"] div.stButton > button {
+        width: 100% !important;
+        height: 100% !important;
+        opacity: 0.01 !important; /* 100% Invisible pero recibe clics */
+        cursor: pointer !important;
+        background: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+    }
+
+    /* 5. BOTÓN DE LOGIN */
     div[data-testid="stFormSubmitButton"] > button { 
         background-color: #050505 !important; 
         border: 1px solid #a3ff00 !important; 
@@ -281,7 +274,7 @@ else:
                 <div><span class="pill-activo">■ MÓDULO ACTIVO</span></div>
             </div>
         """, unsafe_allow_html=True)
-        if st.button("btn_cc_invisible", key="btn_cc"):
+        if st.button(" ", key="btn_cc", use_container_width=True):
             st.switch_page("pages/CONTROL_CALIDAD.py")
 
     with col2:
@@ -295,7 +288,7 @@ else:
                 <div><span class="pill-desarrollo">■ EN DESARROLLO</span></div>
             </div>
         """, unsafe_allow_html=True)
-        if st.button("btn_mant_invisible", key="btn_mant"):
+        if st.button(" ", key="btn_mant", use_container_width=True):
             try: st.switch_page("pages/MANTENIMIENTO.py")
             except: st.toast("🚧 Módulo de Mantenimiento en desarrollo.", icon="🚧")
 
@@ -310,7 +303,7 @@ else:
                 <div><span class="pill-desarrollo">■ EN DESARROLLO</span></div>
             </div>
         """, unsafe_allow_html=True)
-        if st.button("btn_elab_invisible", key="btn_elab"):
+        if st.button(" ", key="btn_elab", use_container_width=True):
             try: st.switch_page("pages/ELABORACION.py")
             except: st.toast("🚧 Módulo de Elaboración en desarrollo.", icon="🚧")
 
@@ -325,7 +318,7 @@ else:
                 <div><span class="pill-desarrollo">■ EN DESARROLLO</span></div>
             </div>
         """, unsafe_allow_html=True)
-        if st.button("btn_env_invisible", key="btn_env"):
+        if st.button(" ", key="btn_env", use_container_width=True):
             try: st.switch_page("pages/ENVASADO.py")
             except: st.toast("🚧 Módulo de Envasado en desarrollo.", icon="🚧")
 
