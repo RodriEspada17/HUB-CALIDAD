@@ -141,15 +141,17 @@ with col1:
 
 with col2:
     if st.button(txt_mic, use_container_width=True, key="btn_mic"):
-        try: st.switch_page("pages/4_MICROBIOLOGIA.py")
-        except: st.toast("🚧 Módulo de Micro en desarrollo.", icon="🚧")
+        # Le quité la protección para que te lance el error real si el nombre no coincide
+        st.switch_page("pages/4_MICROBIOLOGIA.py") 
     st.markdown("<div class='pill-container'><span class='pill-activo'>■ NUEVO MÓDULO</span></div>", unsafe_allow_html=True)
     
-    if st.button(txt_ing, use_container_width=True, key="btn_ing"): pass
+    if st.button(txt_ing, use_container_width=True, key="btn_ing"): 
+        pass
     st.markdown("<div class='pill-container'><span class='pill-desarrollo'>■ EN DESARROLLO</span></div>", unsafe_allow_html=True)
 
 with col3:
-    if st.button(txt_exp, use_container_width=True, key="btn_exp"): pass
+    if st.button(txt_exp, use_container_width=True, key="btn_exp"): 
+        # 👇 CAMBIA "EXPORTAR_DATOS.py" POR EL NOMBRE EXACTO DE TU ARCHIVO DE WHATSAPP
+        st.switch_page("pages/2_EXPORTAR_DATOS.py") 
     st.markdown("<div class='pill-container'><span class='pill-activo'>■ MÓDULO ACTIVO</span></div>", unsafe_allow_html=True)
-
 st.markdown("<br><br>", unsafe_allow_html=True)
