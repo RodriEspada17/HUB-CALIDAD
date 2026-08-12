@@ -88,24 +88,6 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# --- VERIFICACIÓN DE SESIÓN EN LA MISMA ESTÉTICA ---
-if 'autenticado' not in st.session_state or not st.session_state['autenticado']:
-    st.markdown("<br><br><br><h1 style='text-align: center; color: #f87171; letter-spacing: 2px;'>⚠️ ACCESO DENEGADO</h1>", unsafe_allow_html=True)
-    st.markdown("<p style='text-align: center; color: #888888; font-size: 1.1rem;'>El sistema requiere validación de credenciales.</p><br>", unsafe_allow_html=True)
-    col1, col2, col3 = st.columns([1, 1, 1])
-    with col2:
-        st.markdown("""
-            <style>
-            div[data-testid="stButton"] > button { background-color: #050505 !important; border: 1px solid #a3ff00 !important; width: 100% !important; border-radius: 6px !important; padding: 0.8rem !important; }
-            div[data-testid="stButton"] > button p { color: #a3ff00 !important; font-weight: 700 !important; letter-spacing: 1px !important; }
-            div[data-testid="stButton"] > button:hover { background-color: #a3ff00 !important; }
-            div[data-testid="stButton"] > button:hover p { color: #050505 !important; }
-            </style>
-        """, unsafe_allow_html=True)
-        if st.button("VOLVER AL LOGIN", use_container_width=True):
-            st.switch_page("app.py")
-    st.stop()
-
 # ==========================================
 # 🟢 LOBBY CALIDAD
 # ==========================================

@@ -29,11 +29,6 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# Verificación de Seguridad
-if 'autenticado' not in st.session_state or not st.session_state['autenticado']:
-    st.error("⚠️ Acceso denegado. Vuelve al inicio y loguéate.")
-    st.stop()
-
 # --- ENCABEZADO ---
 st.markdown('<a href="CONTROL_CALIDAD" target="_self" class="btn-volver">◀ VOLVER A CALIDAD</a>', unsafe_allow_html=True)
 st.markdown("<h1 style='color: #a3ff00; font-size: 2.2rem; font-weight: 800; letter-spacing: 2px; margin: 0;'>ANÁLISIS MICROBIOLÓGICOS <span style='color: #ffffff;'>(SPC)</span></h1>", unsafe_allow_html=True)
