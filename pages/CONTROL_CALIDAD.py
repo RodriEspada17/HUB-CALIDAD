@@ -38,6 +38,18 @@ st.markdown("""
         color: #a3ff00 !important; 
     }
     
+    /* ELIMINAR EL FOCO PERMANENTE DESPUÉS DEL CLIC */
+    div[data-testid="stButton"] > button:focus {
+        box-shadow: none !important;
+        outline: none !important;
+    }
+    div[data-testid="stButton"] > button:focus:not(:hover) {
+        border-color: #1a1a1a !important;
+        background-color: transparent !important;
+    }
+    div[data-testid="stButton"] > button:focus:not(:hover) p {
+        color: #888888 !important;
+    }
     
     /* =======================================================
        TARJETAS GIGANTES NATIVAS (CABALLO DE TROYA)
@@ -76,11 +88,11 @@ st.markdown("""
         color: #ffffff !important; font-size: 1.35rem !important; display: block !important; margin-top: 15px !important; margin-bottom: 10px !important; letter-spacing: -0.5px !important;
     }
 
-    /* 🔥 LA MAGIA: PASTILLA VERDE (Transforma los bloques de código `...`) */
+    /* 🔥 LA MAGIA: PASTILLA VERDE */
     div[data-testid="stColumn"] div[data-testid="stButton"] > button code {
         position: absolute !important;
-        bottom: 24px !important; /* Clavada matemáticamente al fondo */
-        left: 24px !important;   /* Clavada matemáticamente a la izquierda */
+        bottom: 24px !important; 
+        left: 24px !important;   
         background-color: rgba(163, 255, 0, 0.1) !important;
         color: #a3ff00 !important;
         border: 1px solid rgba(163, 255, 0, 0.3) !important;
@@ -92,12 +104,12 @@ st.markdown("""
         font-family: 'Inter', sans-serif !important;
     }
 
-    /* 🔥 LA MAGIA: PASTILLA AMARILLA (Transforma los textos tachados ~~...~~) */
+    /* 🔥 LA MAGIA: PASTILLA AMARILLA */
     div[data-testid="stColumn"] div[data-testid="stButton"] > button del {
         position: absolute !important;
         bottom: 24px !important; 
         left: 24px !important;   
-        text-decoration: none !important; /* Quitamos la raya de tachado */
+        text-decoration: none !important; 
         background-color: rgba(250, 204, 21, 0.1) !important;
         color: #facc15 !important;
         border: 1px solid rgba(250, 204, 21, 0.3) !important;
@@ -124,8 +136,8 @@ st.sidebar.markdown(f"""
 st.markdown("<br>", unsafe_allow_html=True)
 
 # --- NUEVO BOTÓN DE VOLVER ---
-if st.button("◀ VOLVER A CALIDAD"):
-    st.switch_page("pages/CONTROL_CALIDAD.py")
+if st.button("◀ VOLVER AL INICIO"):
+    st.switch_page("app.py")
 
 st.markdown("<h1 style='color: #ffffff; font-size: 2.2rem; font-weight: 800; letter-spacing: 2px; margin: 0;'>DEPARTAMENTO / <span style='color: #a3ff00;'>CONTROL DE CALIDAD</span></h1>", unsafe_allow_html=True)
 st.markdown("<p style='color: #888888; font-size: 0.95rem; margin-bottom: 3rem;'>Selecciona la herramienta o módulo que deseas operar:</p>", unsafe_allow_html=True)
@@ -139,7 +151,7 @@ txt_mic = "**///**\n\n**ANÁLISIS MICROBIOLÓGICOS**\n\nSPC para recuento de lev
 txt_ing = "**///**\n\n**INGRESO DE DATOS**\n\nCarga directa de variables desde el HUB sin usar Google Sheets.\n\n~~■ EN DESARROLLO~~"
 txt_exp = "**///**\n\n**EXPORTAR REPORTES**\n\nBúsqueda rápida de lotes y envío automatizado vía WhatsApp.\n\n`■ MÓDULO ACTIVO`"
 
-# CÓDIGO PYTHON SÚPER LIMPIO (Cero divs falsos)
+# CÓDIGO PYTHON SÚPER LIMPIO
 with col1:
     if st.button(txt_fq, use_container_width=True, key="btn_fq"): st.switch_page("pages/1_PARAMETROS_CRITICOS.py")
     if st.button(txt_est, use_container_width=True, key="btn_est"): st.switch_page("pages/3_ESTADIA_TANQUES.py")
