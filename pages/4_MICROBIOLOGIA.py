@@ -9,7 +9,7 @@ from utils.core import aplicar_estilo_neon, generar_url_csv, cargar_datos
 st.set_page_config(page_title="Microbiología SPC", layout="wide", initial_sidebar_state="collapsed")
 aplicar_estilo_neon()
 
-# --- CSS GLOBAL (INTER + NEÓN + SELECTBOX READONLY) ---
+# --- CSS GLOBAL (INTER + NEÓN) ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
@@ -43,14 +43,10 @@ st.markdown("""
     div[data-testid="stButton"] > button:focus:not(:hover) { border-color: #1a1a1a !important; background-color: transparent !important; }
     div[data-testid="stButton"] > button:focus:not(:hover) p { color: #888888 !important; }
     
-    /* BLOQUEAR ESCRITURA / TECLADO EN DESPLEGABLES (Ocultar Input nativo) */
+    /* DESPLEGABLES NATIVOS */
     div[data-baseweb="select"] input {
-        width: 0px !important;
-        opacity: 0 !important;
-        position: absolute !important;
-        pointer-events: none !important;
+        caret-color: transparent !important;
     }
-    div[data-baseweb="select"], div[data-baseweb="select"] * { cursor: pointer !important; }
     
     .stSelectbox label { color: #888888 !important; font-weight: 600 !important; letter-spacing: 1px; font-size: 0.85rem !important; }
     </style>
@@ -66,7 +62,7 @@ SPECS_TEMP = {
 
 # --- ESTÁNDARES DE PARÁMETROS GENERALES ---
 SPECS_PARAMETROS = {
-    "recuento": {"type": "min", "val": 100.0, "label": "> 100 mill. Cel/ml", "unit": "mill. Cel/ml"},
+    "recuento": {"type": "min", "val": 80.0, "label": "> 80 mill. Cel/ml", "unit": "mill. Cel/ml"}, # 🔥 CAMBIADO A 80 MILLONES
     "extracto original": {"type": "range", "min": 9.9, "max": 11.5, "label": "9.9 - 11.5 °P", "unit": "°P"},
     "alcohol": {"type": "max", "val": 3.0, "label": "< 3 %", "unit": "%"},
     "muerta": {"type": "max", "val": 0.0, "label": "0 %", "unit": "%"},
@@ -272,7 +268,7 @@ else:
                 if lote_sel != "Todas las Propagaciones":
                     df_limpio = df_limpio[df_limpio['Propagacion'] == lote_sel]
 
-        # 1. IDENTIFICAR COLUMNAS NUMÉRICAS REALES (FILTRANDO VOLUMEN Y UNNAMED)
+        # 1. IDENTIFICAR COLUMNAS NUMÉRICAS REALES
         cols_numericas = df_limpio.select_dtypes(include=[np.number]).columns.tolist()
         cols_prohibidas_graf = ['semana', 'lote', 'ft', 'batch_id', 'etapa', 'escala', 'escala_fase', 'hora', 'volumen', 'unnamed']
         cols_graficables = [c for c in cols_numericas if not any(ex in c.lower() for ex in cols_prohibidas_graf)]
@@ -396,13 +392,12 @@ else:
                 st.warning("No se encontraron columnas numéricas analizables en esta etapa.")
                 
         with col_tabla:
-            st.markdown("<h3 style='color: #ffffff; font-size: 1.1rem; margin-bottom: 15px;'>■ ÚLTIMOS REGISTROS</h3>", unsafe_allow_html=True)
+            st.markdown("<h3 style='color: #ffffff; font-size: 1.1rem; margin-bottom: 15px;'>■ REGISTROS DEL LOTE</h3>", unsafe_allow_html=True)
             
-            # 🔥 LÓGICA DE TABLA DE APOYO (CONTEXTO + PARÁMETRO SELECCIONADO)
-            claves_fijas = ['fecha', 'hora', 'escala', 'etapa', 'lote'] # FUERA PROPAGACIÓN
+            # 🔥 LÓGICA DE TABLA DE APOYO
+            claves_fijas = ['fecha', 'hora', 'escala', 'etapa', 'lote']
             cols_fijas = [c for c in df_limpio.columns if any(k in c.lower() for k in claves_fijas)]
             
-            # Excluir las creadas en código fuente para que no se vean
             cols_fijas = [c for c in cols_fijas if c not in ['FECHA_DT', 'batch_id', 'fase_block', 'Escala_Fase', 'Propagacion']]
             
             cols_mostrar = cols_fijas.copy()
@@ -410,10 +405,23 @@ else:
             if 'parametro_a_graficar' in locals() and parametro_a_graficar not in cols_mostrar:
                 cols_mostrar.append(parametro_a_graficar)
                 
-            df_mostrar = df_limpio[cols_mostrar].tail(10)
+            # MOSTRAR TODAS LAS FILAS DEL LOTE (INCLUYENDO LABORATORIO)
+            df_mostrar = df_limpio[cols_mostrar].copy()
             
-            # Aplicar Semáforo y dibujar
-            st.dataframe(df_mostrar.style.apply(aplicar_semaforo_tabla, axis=1), use_container_width=True, height=450)
+            # Limpiar columna Etapa para que no muestre decimales (1.000000 -> 1)
+            for c in df_mostrar.columns:
+                if "etapa" in c.lower():
+                    df_mostrar[c] = df_mostrar[c].apply(
+                        lambda x: f"{int(float(x))}" if pd.notna(x) and str(x).strip() != "" and str(x).replace('.','',1).replace('-','',1).isdigit() else ("" if pd.isna(x) else str(x))
+                    )
+            
+            # Aplicar Semáforo y formatear números a MÁXIMO 2 DECIMALES
+            st.dataframe(
+                df_mostrar.style.apply(aplicar_semaforo_tabla, axis=1)
+                                .format(precision=2, na_rep=""),
+                use_container_width=True,
+                height=450
+            )
             
     else:
         st.warning("La base de datos se cargó pero está vacía o sin datos válidos.")
