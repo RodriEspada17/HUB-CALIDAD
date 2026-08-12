@@ -59,6 +59,7 @@ st.markdown("""
         text-align: left !important;
         transition: all 0.3s ease !important;
         box-shadow: 0 5px 15px rgba(0,0,0,0.5) !important;
+        margin-bottom: 0 !important;
     }
     div[data-testid="stColumn"] div[data-testid="stButton"] > button:hover {
         border-color: #a3ff00 !important;
@@ -91,7 +92,7 @@ st.markdown("""
     }
 
     .pill-container { 
-               margin-top: -65px; 
+               margin-top: -75px; 
                margin-left: 24px; 
                margin-bottom: 30px; 
                pointer-events: none; 
