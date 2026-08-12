@@ -86,7 +86,7 @@ st.markdown(f"""
 
 col1, col2, col3, col4 = st.columns(4)
 
-txt_cc = "**///**\n\n**Control de Calidad**\n\nAnálisis SPC, tendencias y resumen de producción mensual.\n\n\n\n\n"
+txt_cc = "**///**\n\n**CONTROL DE CALIDAD**\n\nAnálisis SPC, tendencias y resumen de producción mensual.\n\n\n\n\n"
 txt_mant = "**///**\n\n**Mantenimiento**\n\nGestión de órdenes de trabajo, paradas de planta, confiabilidad y repuestos.\n\n\n\n\n"
 txt_elab = "**///**\n\n**Elaboración**\n\nControl de procesos de cocimiento, fermentación y filtración. Mermas y eficiencias.\n\n\n\n\n"
 txt_env = "**///**\n\n**Envasado**\n\nSupervisión de líneas de llenado, mermas de empaque y eficiencias (OEE).\n\n\n\n\n"
