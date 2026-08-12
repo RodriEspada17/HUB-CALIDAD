@@ -9,7 +9,7 @@ from utils.core import aplicar_estilo_neon, generar_url_csv, cargar_datos
 st.set_page_config(page_title="Microbiología SPC", layout="wide", initial_sidebar_state="collapsed")
 aplicar_estilo_neon()
 
-# --- CSS GLOBAL (INTER + NEÓN) ---
+# --- CSS GLOBAL (INTER + NEÓN + SELECTBOX READONLY) ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
@@ -129,21 +129,70 @@ def clasificar_escala(df):
                 num = int(float(raw_etapa.replace(',', '.')))
                 if num in [1, 2, 3]:
                     etapa_num = str(num)
-            except:
-                pass
+            except: pass
         
         if "lab" in val_escala:
             fases.append("Laboratorio")
         elif "ind" in val_escala or "plant" in val_escala or "tanque" in val_escala:
             fases.append(f"Industrial {etapa_num}")
         else:
-            if idx < 4:
-                fases.append("Laboratorio")
-            else:
-                fases.append(f"Industrial {etapa_num}")
+            if idx < 4: fases.append("Laboratorio")
+            else: fases.append(f"Industrial {etapa_num}")
                 
     df['Escala_Fase'] = fases
     return df
+
+# --- SEMÁFORO PARA LA TABLA DE APOYO ---
+def aplicar_semaforo_tabla(row):
+    estilos = [''] * len(row)
+    
+    col_escala = next((c for c in row.index if "escala" in str(c).lower()), None)
+    col_etapa = next((c for c in row.index if "etapa" in str(c).lower()), None)
+    
+    val_escala = str(row[col_escala]).strip().lower() if col_escala else ""
+    val_etapa = str(row[col_etapa]).strip() if col_etapa else ""
+    
+    fase = "General"
+    if 'lab' in val_escala: 
+        fase = "Laboratorio"
+    elif 'ind' in val_escala or 'plant' in val_escala or 'tanque' in val_escala:
+        etapa_num = "".join(filter(str.isdigit, val_etapa))
+        if etapa_num in ["1", "2", "3"]: fase = f"Industrial {etapa_num}"
+        else: fase = "Industrial 1"
+        
+    for i, col in enumerate(row.index):
+        val = row[col]
+        if pd.isna(val) or str(val).strip().upper() in ['NONE', 'NAN', 'N/A', '']: 
+            continue
+            
+        es_temperatura = "temp" in str(col).lower()
+        spec_gen = obtener_spec_parametro(str(col)) if not es_temperatura else None
+        spec_t = SPECS_TEMP.get(fase, None)
+        
+        cumple = True
+        has_spec = False
+        
+        if es_temperatura and spec_t and spec_t.get("min") is not None:
+            has_spec = True
+            try:
+                v = float(str(val).replace(',', '.'))
+                if not (spec_t["min"] <= v <= spec_t["max"]): cumple = False
+            except: pass
+        elif spec_gen:
+            has_spec = True
+            try:
+                v = float(str(val).replace(',', '.'))
+                if spec_gen["type"] == "min" and v < spec_gen["val"]: cumple = False
+                elif spec_gen["type"] == "max" and v > spec_gen["val"]: cumple = False
+                elif spec_gen["type"] == "range" and not (spec_gen["min"] <= v <= spec_gen["max"]): cumple = False
+            except: pass
+        
+        if has_spec:
+            if not cumple:
+                estilos[i] = 'background-color: #3b181a; color: #f87171;' # Rojo tenue
+            else:
+                estilos[i] = 'background-color: #143324; color: #4ade80;' # Verde tenue
+    return estilos
 
 # --- NAV ---
 col_b1, col_b2, _ = st.columns([1.5, 1.5, 7])
@@ -189,7 +238,6 @@ def cargar_y_limpiar_microbiologia(gid):
         if len(columnas_fecha) > 0:
             df = df.dropna(subset=[columnas_fecha[0]])
             
-        # Filtramos columnas que no queremos que Streamlit detecte como numéricas
         columnas_excluidas = ['fecha', 'hora', 'semana', 'lote', 'escala', 'etapa', 'analista', 'producto', 'procedencia', 'tipo', 'generación', 'tanque', 'observaciones', 'ft', 'tp', 'muestra', 'sector', 'estado', 'calibre', 'propagacion', 'batch_id', 'fecha_dt', 'escala_fase']
         for col in df.columns:
             if not any(excl in col.lower() for excl in columnas_excluidas):
@@ -246,7 +294,7 @@ else:
                 
                 fig = go.Figure()
 
-                # 🔥 SOMBRAS Y FRANJAS DE TOLERANCIA
+                # 🔥 2. SOMBRAS Y FRANJAS DE TOLERANCIA
                 if 'Escala_Fase' in df_limpio.columns:
                     df_limpio['fase_block'] = (df_limpio['Escala_Fase'] != df_limpio['Escala_Fase'].shift()).cumsum()
                     for _, sub_block in df_limpio.groupby('fase_block'):
@@ -276,13 +324,13 @@ else:
                         fig.add_hline(y=spec_gen["min"], line_dash="dash", line_color="#4ade80", annotation_text=f"LSL: {spec_gen['min']}")
                         fig.add_hline(y=spec_gen["max"], line_dash="dash", line_color="#4ade80", annotation_text=f"USL: {spec_gen['max']}")
 
-                # 🔥 LÍNEA CONTINUA CONECTORA
+                # 🔥 3. LÍNEA CONTINUA QUE CONECTA TODOS LOS PUNTOS
                 fig.add_trace(go.Scatter(
                     x=df_limpio['FECHA_DT'], y=df_limpio[parametro_a_graficar], mode='lines',
                     line=dict(color='rgba(255, 255, 255, 0.35)', width=1.5, dash='dot'), showlegend=False, hoverinfo='none'
                 ))
 
-                # 🔥 DIBUJAR PUNTOS Y EVALUAR ESTÁNDAR
+                # 🔥 4. DIBUJAR PUNTOS Y EVALUAR ESTÁNDAR
                 escala_orden = ["Laboratorio", "Industrial 1", "Industrial 2", "Industrial 3"]
                 fases_presentes = [f for f in escala_orden if f in df_limpio['Escala_Fase'].values] if 'Escala_Fase' in df_limpio.columns else ["General"]
 
@@ -350,20 +398,22 @@ else:
         with col_tabla:
             st.markdown("<h3 style='color: #ffffff; font-size: 1.1rem; margin-bottom: 15px;'>■ ÚLTIMOS REGISTROS</h3>", unsafe_allow_html=True)
             
-            # 🔥 NUEVA LÓGICA DE TABLA DE APOYO (CONTEXTO + PARÁMETRO SELECCIONADO)
-            claves_fijas = ['fecha', 'hora', 'escala', 'etapa', 'lote', 'propagacion']
+            # 🔥 LÓGICA DE TABLA DE APOYO (CONTEXTO + PARÁMETRO SELECCIONADO)
+            claves_fijas = ['fecha', 'hora', 'escala', 'etapa', 'lote'] # FUERA PROPAGACIÓN
             cols_fijas = [c for c in df_limpio.columns if any(k in c.lower() for k in claves_fijas)]
             
-            # Excluimos las técnicas del código
-            cols_fijas = [c for c in cols_fijas if c not in ['FECHA_DT', 'batch_id', 'fase_block', 'Escala_Fase']]
+            # Excluir las creadas en código fuente para que no se vean
+            cols_fijas = [c for c in cols_fijas if c not in ['FECHA_DT', 'batch_id', 'fase_block', 'Escala_Fase', 'Propagacion']]
             
             cols_mostrar = cols_fijas.copy()
             
-            # Agregamos EXCLUSIVAMENTE el parámetro que se está viendo en el gráfico
             if 'parametro_a_graficar' in locals() and parametro_a_graficar not in cols_mostrar:
                 cols_mostrar.append(parametro_a_graficar)
                 
-            st.dataframe(df_limpio[cols_mostrar].tail(10), use_container_width=True, height=450)
+            df_mostrar = df_limpio[cols_mostrar].tail(10)
+            
+            # Aplicar Semáforo y dibujar
+            st.dataframe(df_mostrar.style.apply(aplicar_semaforo_tabla, axis=1), use_container_width=True, height=450)
             
     else:
         st.warning("La base de datos se cargó pero está vacía o sin datos válidos.")
