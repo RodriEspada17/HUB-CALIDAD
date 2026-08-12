@@ -66,7 +66,7 @@ with col_b1:
     if st.button("◀ VOLVER A CALIDAD"):
         st.switch_page("pages/CONTROL_CALIDAD.py")
 with col_b2:
-    if st.button("🏠 VOLVER AL INICIO"):
+    if st.button("◀ VOLVER AL INICIO"):
         st.switch_page("app.py")
 
 st.markdown("<h1 style='color: #a3ff00; font-size: 2.2rem; font-weight: 800; letter-spacing: 2px; margin: 0;'>ANÁLISIS MICROBIOLÓGICOS <span style='color: #ffffff;'>(SPC)</span></h1>", unsafe_allow_html=True)
