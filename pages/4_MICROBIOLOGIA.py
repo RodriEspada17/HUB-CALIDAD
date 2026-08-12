@@ -16,43 +16,37 @@ st.markdown("""
     html, body, [class*="css"], .stApp { font-family: 'Inter', sans-serif !important; background-color: #050505 !important; color: #e0e0e0 !important; }
     header[data-testid="stHeader"] { background-color: transparent !important; }
     
-    //* BOTÓN VOLVER PRINCIPAL */
-        div[data-testid="stButton"] > button { 
-            background-color: transparent !important; 
-            border: 1px solid #1a1a1a !important; 
-            width: fit-content !important; 
-            padding: 6px 16px !important; 
-            border-radius: 6px !important; 
-            transition: 0.3s !important; 
-            margin-bottom: 10px !important;
-        }
-        div[data-testid="stButton"] > button p { 
-            color: #888888 !important; font-weight: 700 !important; font-size: 0.8rem !important; letter-spacing: 1px !important; 
-        }
-        div[data-testid="stButton"] > button:hover { 
-            border-color: #a3ff00 !important; background-color: rgba(163, 255, 0, 0.05) !important; 
-        }
-        div[data-testid="stButton"] > button:hover p { 
-            color: #a3ff00 !important; 
-        }
+    /* BOTÓN VOLVER PRINCIPAL */
+    div[data-testid="stButton"] > button { 
+        background-color: transparent !important; 
+        border: 1px solid #1a1a1a !important; 
+        width: fit-content !important; 
+        padding: 6px 16px !important; 
+        border-radius: 6px !important; 
+        transition: 0.3s !important; 
+        margin-bottom: 10px !important;
+    }
+    div[data-testid="stButton"] > button p { 
+        color: #888888 !important; font-weight: 700 !important; font-size: 0.8rem !important; letter-spacing: 1px !important; 
+    }
+    div[data-testid="stButton"] > button:hover { 
+        border-color: #a3ff00 !important; background-color: rgba(163, 255, 0, 0.05) !important; 
+    }
+    div[data-testid="stButton"] > button:hover p { 
+        color: #a3ff00 !important; 
+    }
         
+    /* ELIMINAR EL FOCO PERMANENTE DESPUÉS DEL CLIC */
     div[data-testid="stButton"] > button:focus,
-        div[data-testid="stButton"] > button:active {
-            box-shadow: none !important;
-            outline: none !important;
-            border-color: #1a1a1a !important;
-        }
-        div[data-testid="stButton"] > button:focus p {
-            color: #888888 !important;
-        }
-
-        /* ELIMINAR EL FOCO PERMANENTE DESPUÉS DEL CLIC */
-    div[data-testid="stButton"] > button:focus {
+    div[data-testid="stButton"] > button:active {
         box-shadow: none !important;
         outline: none !important;
+        border-color: #1a1a1a !important;
     }
-    
-    /* Si está enfocado pero el mouse YA NO está encima, lo apagamos a gris */
+    div[data-testid="stButton"] > button:focus p {
+        color: #888888 !important;
+    }
+
     div[data-testid="stButton"] > button:focus:not(:hover) {
         border-color: #1a1a1a !important;
         background-color: transparent !important;
@@ -66,10 +60,14 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# --- ENCABEZADO ---
-# --- NUEVO BOTÓN DE VOLVER ---
-if st.button("◀ VOLVER A CALIDAD"):
-    st.switch_page("pages/CONTROL_CALIDAD.py")
+# --- ENCABEZADO Y BOTONES DE NAVEGACIÓN ---
+col_b1, col_b2, _ = st.columns([1.5, 1.5, 7])
+with col_b1:
+    if st.button("◀ VOLVER A CALIDAD"):
+        st.switch_page("pages/CONTROL_CALIDAD.py")
+with col_b2:
+    if st.button("🏠 VOLVER AL INICIO"):
+        st.switch_page("app.py")
 
 st.markdown("<h1 style='color: #a3ff00; font-size: 2.2rem; font-weight: 800; letter-spacing: 2px; margin: 0;'>ANÁLISIS MICROBIOLÓGICOS <span style='color: #ffffff;'>(SPC)</span></h1>", unsafe_allow_html=True)
 st.markdown("<p style='color: #888888; font-size: 0.95rem; margin-bottom: 2rem;'>Monitoreo estadístico de recuentos celulares y contaminación.</p>", unsafe_allow_html=True)
@@ -143,7 +141,6 @@ else:
         
         # 1. IDENTIFICAR COLUMNAS NUMÉRICAS PARA GRAFICAR
         cols_numericas = df_limpio.select_dtypes(include=[np.number]).columns.tolist()
-        # Filtramos 'semana' u otros números que no sean métricas biológicas
         cols_graficables = [c for c in cols_numericas if "semana" not in c.lower() and "lote" not in c.lower() and "ft" not in c.lower()]
         
         # 2. INTERFAZ DIVIDIDA: GRÁFICO (Izquierda) / TABLA (Derecha)
@@ -154,21 +151,40 @@ else:
             
             if cols_graficables:
                 parametro_a_graficar = st.selectbox("Selecciona el parámetro a analizar:", cols_graficables, label_visibility="collapsed")
-                
-                # Eje X: Buscamos una columna de fecha, si no hay, usamos el índice
                 col_fecha = next((col for col in df_limpio.columns if "fecha" in col.lower()), df_limpio.index)
                 
-                # Crear gráfico Neón con Plotly
-                fig = px.line(df_limpio, x=col_fecha, y=parametro_a_graficar, markers=True)
-                fig.update_traces(line_color='#a3ff00', marker=dict(size=8, color='#a3ff00', line=dict(width=2, color='#050505')))
+                # --- MATEMÁTICA SPC INYECTADA ---
+                promedio = df_limpio[parametro_a_graficar].mean()
+                desviacion = df_limpio[parametro_a_graficar].std()
+                lcs = promedio + (3 * desviacion) # Límite Superior de Control
+                
+                # Alerta Roja si supera el límite o es un DNPC encubierto
+                colores_puntos = np.where(df_limpio[parametro_a_graficar] >= lcs, '#f87171', '#a3ff00')
+                
+                fig = go.Figure()
+                
+                # Dibujar la línea principal
+                fig.add_trace(go.Scatter(
+                    x=df_limpio[col_fecha], y=df_limpio[parametro_a_graficar],
+                    mode='lines+markers', name='Medición',
+                    line=dict(color='rgba(163, 255, 0, 0.4)', width=2),
+                    marker=dict(size=8, color=colores_puntos, line=dict(width=1, color='#050505'))
+                ))
+                
+                # Trazar el Promedio
+                fig.add_hline(y=promedio, line_dash="dash", line_color="#888888", 
+                              annotation_text=f"Promedio: {promedio:.1f}", annotation_position="bottom right")
+                
+                # Trazar el Límite Crítico
+                fig.add_hline(y=lcs, line_dash="dot", line_color="#f87171", 
+                              annotation_text=f"LCS: {lcs:.1f}", annotation_position="top right", annotation_font_color="#f87171")
                 
                 fig.update_layout(
-                    template="plotly_dark",
-                    plot_bgcolor="rgba(0,0,0,0)",
-                    paper_bgcolor="rgba(0,0,0,0)",
+                    template="plotly_dark", plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)",
                     xaxis=dict(showgrid=True, gridcolor="#1a1a1a", title=""),
                     yaxis=dict(showgrid=True, gridcolor="#1a1a1a", title="UFC / Medición"),
-                    margin=dict(l=0, r=0, t=30, b=0)
+                    margin=dict(l=0, r=0, t=30, b=0),
+                    showlegend=False, hovermode="x unified"
                 )
                 st.plotly_chart(fig, use_container_width=True)
             else:
