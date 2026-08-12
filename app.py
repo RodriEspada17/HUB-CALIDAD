@@ -31,32 +31,15 @@ st.markdown("""
     div[data-testid="stColumn"] div[data-testid="stButton"] > button {
         background-color: #0a0a0a !important; border: 1px solid #1a1a1a !important; padding: 24px !important; border-radius: 12px !important; min-height: 250px !important; width: 100% !important; display: flex !important; flex-direction: column !important; justify-content: flex-start !important; align-items: flex-start !important; text-align: left !important; transition: all 0.3s ease !important; box-shadow: 0 5px 15px rgba(0,0,0,0.5) !important; font-family: 'Inter', sans-serif !important;
     }
-    div[data-testid="stColumn"] div[data-testid="stButton"] > button { border-color: #a3ff00 !important; box-shadow: 0 0 20px rgba(163, 255, 0, 0.15) !important; transform: translateY(-4px) !important; }
+    div[data-testid="stColumn"] div[data-testid="stButton"] > button:hover { border-color: #a3ff00 !important; box-shadow: 0 0 20px rgba(163, 255, 0, 0.15) !important; transform: translateY(-4px) !important; }
     div[data-testid="stColumn"] div[data-testid="stButton"] > button p { color: #888888 !important; font-size: 0.9rem !important; line-height: 1.5 !important; white-space: pre-wrap !important; }
     div[data-testid="stColumn"] div[data-testid="stButton"] > button p strong:nth-of-type(1) { color: #a3ff00 !important; font-size: 1.15rem !important; letter-spacing: 2px !important; margin-bottom: 5px !important; display: inline-block !important; }
     div[data-testid="stColumn"] div[data-testid="stButton"] > button p strong:nth-of-type(2) { color: #ffffff !important; font-size: 1.35rem !important; display: block !important; margin-top: 15px !important; margin-bottom: 10px !important; letter-spacing: -0.5px !important; }
 
-    /* Pastillas (Pills) con transición fluida */
-    .pill-container { 
-        margin-top: -65px; 
-        margin-left: 24px; 
-        margin-bottom: 30px; 
-        pointer-events: none; 
-        position: relative; 
-        z-index: 10; 
-        font-family: 'Inter', sans-serif !important; 
-        transition: all 0.3s ease !important; /* <--- Agregamos esto para que sea suave */
-    }
-    
-    /* EFECTO HOVER CONJUNTO (Tarjeta y pastilla se levantan juntas) */
-    div[data-testid="stColumn"]:hover div[data-testid="stButton"] > button {
-        border-color: #a3ff00 !important;
-        box-shadow: 0 0 20px rgba(163, 255, 0, 0.15) !important;
-        transform: translateY(-4px) !important;
-    }
-    div[data-testid="stColumn"]:hover .pill-container {
-        transform: translateY(-4px) !important; /* <--- Levanta la pastilla al mismo tiempo */
-    }
+    .pill-container { margin-top: -65px; margin-left: 24px; margin-bottom: 30px; pointer-events: none; position: relative; z-index: 10; font-family: 'Inter', sans-serif !important; }
+    .pill-activo { background-color: rgba(163, 255, 0, 0.1); color: #a3ff00; border: 1px solid rgba(163, 255, 0, 0.3); padding: 4px 10px; border-radius: 4px; font-size: 0.7rem; font-weight: 700; letter-spacing: 1px; display: inline-block; }
+    .pill-desarrollo { background-color: rgba(250, 204, 21, 0.1); color: #facc15; border: 1px solid rgba(250, 204, 21, 0.3); padding: 4px 10px; border-radius: 4px; font-size: 0.7rem; font-weight: 700; letter-spacing: 1px; display: inline-block; }
+    </style>
 """, unsafe_allow_html=True)
 
 st.sidebar.markdown(f"""
