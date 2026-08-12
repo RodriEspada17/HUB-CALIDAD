@@ -9,7 +9,7 @@ from utils.core import aplicar_estilo_neon, generar_url_csv, cargar_datos
 st.set_page_config(page_title="Microbiología SPC", layout="wide", initial_sidebar_state="collapsed")
 aplicar_estilo_neon()
 
-# --- CSS GLOBAL (INTER + NEÓN) ---
+# --- CSS GLOBAL (INTER + NEÓN + SELECTBOX READONLY) ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
@@ -43,6 +43,12 @@ st.markdown("""
     div[data-testid="stButton"] > button:focus:not(:hover) { border-color: #1a1a1a !important; background-color: transparent !important; }
     div[data-testid="stButton"] > button:focus:not(:hover) p { color: #888888 !important; }
     
+    /* BLOQUEAR ESCRITURA / TECLADO EN DESPLEGABLES (SELECTBOX READONLY) */
+    div[data-baseweb="select"] input {
+        caret-color: transparent !important;
+        pointer-events: none !important;
+    }
+    
     .stSelectbox label { color: #888888 !important; font-weight: 600 !important; letter-spacing: 1px; font-size: 0.85rem !important; }
     </style>
 """, unsafe_allow_html=True)
@@ -55,12 +61,12 @@ SPECS_TEMP = {
     "Industrial 3": {"target": 14.0, "tol": 0.5, "min": 13.5, "max": 14.5, "color": "#f97316", "bg": "rgba(249, 115, 22, 0.06)", "symbol": "triangle-up"}
 }
 
-# --- ESTÁNDARES DE PARÁMETROS GENERALES ---
+# --- ESTÁNDARES DE PARÁMETROS GENERALES (EVALUACIÓN ESPECÍFICA) ---
 SPECS_PARAMETROS = {
     "recuento": {"type": "min", "val": 100.0, "label": "> 100 mill. Cel/ml", "unit": "mill. Cel/ml"},
-    "extracto": {"type": "range", "min": 9.9, "max": 11.5, "label": "9.9 - 11.5 °P", "unit": "°P"},
+    "extracto original": {"type": "range", "min": 9.9, "max": 11.5, "label": "9.9 - 11.5 °P", "unit": "°P"}, # EXCLUSIVO EXTRACTO ORIGINAL
     "alcohol": {"type": "max", "val": 3.0, "label": "< 3 %", "unit": "%"},
-    "muerta": {"type": "max", "val": 0.0, "label": "0", "unit": "%"},
+    "muerta": {"type": "max", "val": 0.0, "label": "0 %", "unit": "%"},
     "wld": {"type": "max", "val": 0.0, "label": "0 UFC/ml", "unit": "UFC/ml"},
     "aerobio": {"type": "max", "val": 0.0, "label": "0 UFC/ml", "unit": "UFC/ml"},
     "salvaje": {"type": "max", "val": 1.0, "label": "≤ 1 UFC/ml", "unit": "UFC/ml"},
@@ -214,9 +220,9 @@ else:
                 if lote_sel != "Todas las Propagaciones":
                     df_limpio = df_limpio[df_limpio['Propagacion'] == lote_sel]
 
-        # 1. IDENTIFICAR COLUMNAS NUMÉRICAS REALES
+        # 1. IDENTIFICAR COLUMNAS NUMÉRICAS REALES (FILTRANDO VOLUMEN Y UNNAMED)
         cols_numericas = df_limpio.select_dtypes(include=[np.number]).columns.tolist()
-        cols_prohibidas_graf = ['semana', 'lote', 'ft', 'batch_id', 'etapa', 'escala', 'escala_fase', 'hora']
+        cols_prohibidas_graf = ['semana', 'lote', 'ft', 'batch_id', 'etapa', 'escala', 'escala_fase', 'hora', 'volumen', 'unnamed']
         cols_graficables = [c for c in cols_numericas if not any(ex in c.lower() for ex in cols_prohibidas_graf)]
         
         col_grafico, col_tabla = st.columns([2.5, 1.2])
@@ -245,10 +251,8 @@ else:
                         x_min = sub_block['FECHA_DT'].min()
                         x_max = sub_block['FECHA_DT'].max()
                         
-                        # Fondo de la etapa
                         fig.add_vrect(x0=x_min, x1=x_max, fillcolor=spec_info.get('bg', 'rgba(255,255,255,0.02)'), layer="below", line_width=0)
                         
-                        # Tolerancia de temperatura (si se analiza temperatura)
                         if es_temperatura and spec_info.get('min') is not None:
                             fig.add_shape(
                                 type="rect", x0=x_min, x1=x_max, y0=spec_info['min'], y1=spec_info['max'],
@@ -268,7 +272,7 @@ else:
                         fig.add_hline(y=spec_gen["min"], line_dash="dash", line_color="#4ade80", annotation_text=f"LSL: {spec_gen['min']}")
                         fig.add_hline(y=spec_gen["max"], line_dash="dash", line_color="#4ade80", annotation_text=f"USL: {spec_gen['max']}")
 
-                # 🔥 3. LÍNEA CONTINUA QUE CONECTA TODOS LOS PUNTOS DE LA PROPAGACIÓN
+                # 🔥 3. LÍNEA CONTINUA QUE CONECTA TODOS LOS PUNTOS
                 fig.add_trace(go.Scatter(
                     x=df_limpio['FECHA_DT'],
                     y=df_limpio[parametro_a_graficar],
@@ -278,7 +282,7 @@ else:
                     hoverinfo='none'
                 ))
 
-                # 🔥 4. DIBUJAR PUNTOS Y EVALUAR ESTÁNDAR POR ETAPA / PARÁMETRO
+                # 🔥 4. DIBUJAR PUNTOS Y EVALUAR ESTÁNDAR
                 escala_orden = ["Laboratorio", "Industrial 1", "Industrial 2", "Industrial 3"]
                 fases_presentes = [f for f in escala_orden if f in df_limpio['Escala_Fase'].values] if 'Escala_Fase' in df_limpio.columns else ["General"]
 
@@ -314,7 +318,7 @@ else:
                             colores_puntos.append(spec_t["color"])
                             estado_txt = "<span style='color: #4ade80;'><b>✅ DENTRO DE STD</b></span>"
                         else:
-                            colores_puntos.append('#f87171') # Rojo si fuera de norma
+                            colores_puntos.append('#f87171')
                             estado_txt = "<span style='color: #f87171;'><b>🚨 FUERA DE STD</b></span>"
                             
                         target_info = f"<br>{std_label_txt}<br>Estado: {estado_txt}" if std_label_txt else ""
