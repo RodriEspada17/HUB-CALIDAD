@@ -101,7 +101,7 @@ with col_b1:
     if st.button("◀ VOLVER A CALIDAD", key="btn_back_qc"):
         st.switch_page("pages/CONTROL_CALIDAD.py")
 with col_b2:
-    if st.button("🏠 VOLVER AL INICIO", key="btn_back_home"):
+    if st.button("◀ VOLVER AL INICIO", key="btn_back_home"):
         st.switch_page("app.py")
 
 # --- CABECERA PRINCIPAL ---
