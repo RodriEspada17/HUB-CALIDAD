@@ -10,11 +10,53 @@ from utils.core import aplicar_estilo_neon, generar_url_csv, cargar_datos
 st.set_page_config(page_title="Estadía de Tanques", layout="wide", initial_sidebar_state="expanded")
 aplicar_estilo_neon()
 
-# --- CSS AVANZADO: DISEÑO DE DASHBOARD Y BOTONES ---
+# --- CSS AVANZADO: DISEÑO DE DASHBOARD Y BOTONES NEÓN ---
 st.markdown("""
     <style>
-    /* Botón nativo de Streamlit (Correo) - SEPARANDO CAJA Y TEXTO */
-    div[data-testid="stButton"] > button { 
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+    
+    html, body, [class*="css"], .stApp { 
+        font-family: 'Inter', sans-serif !important; 
+        background-color: #050505 !important; 
+        color: #e0e0e0 !important; 
+    }
+    header[data-testid="stHeader"] { background-color: transparent !important; }
+    
+    /* BOTONES NEÓN EXCLUSIVOS PARA EL SIDEBAR */
+    div[data-testid="stSidebar"] div[data-testid="stButton"] > button { 
+        background-color: transparent !important; 
+        border: 1px solid #1a1a1a !important; 
+        width: 100% !important; 
+        padding: 8px 16px !important; 
+        border-radius: 6px !important; 
+        transition: 0.3s !important; 
+        margin-bottom: 5px !important;
+    }
+    div[data-testid="stSidebar"] div[data-testid="stButton"] > button p { 
+        color: #888888 !important; font-weight: 700 !important; font-size: 0.8rem !important; letter-spacing: 1px !important; text-align: left !important;
+    }
+    div[data-testid="stSidebar"] div[data-testid="stButton"] > button:hover { 
+        border-color: #a3ff00 !important; background-color: rgba(163, 255, 0, 0.05) !important; 
+    }
+    div[data-testid="stSidebar"] div[data-testid="stButton"] > button:hover p { 
+        color: #a3ff00 !important; 
+    }
+    
+    /* ELIMINAR EL FOCO PERMANENTE DESPUÉS DEL CLIC EN SIDEBAR */
+    div[data-testid="stSidebar"] div[data-testid="stButton"] > button:focus {
+        box-shadow: none !important;
+        outline: none !important;
+    }
+    div[data-testid="stSidebar"] div[data-testid="stButton"] > button:focus:not(:hover) {
+        border-color: #1a1a1a !important;
+        background-color: transparent !important;
+    }
+    div[data-testid="stSidebar"] div[data-testid="stButton"] > button:focus:not(:hover) p {
+        color: #888888 !important;
+    }
+
+    /* BOTONES DE ACCIÓN PRINCIPALES (Correo y Notificaciones) */
+    div[data-testid="stMainBlockContainer"] div[data-testid="stButton"] > button { 
         background-color: #050505 !important; 
         border: 1px solid #a3ff00 !important; 
         border-radius: 6px !important; 
@@ -22,43 +64,41 @@ st.markdown("""
         width: 100% !important; 
         padding: 0.6rem 1rem !important; 
     }
-    div[data-testid="stButton"] > button p { 
+    div[data-testid="stMainBlockContainer"] div[data-testid="stButton"] > button p { 
         color: #a3ff00 !important; 
         font-weight: 600 !important; 
-        font-family: 'Space Grotesk', sans-serif !important; 
+        font-family: 'Inter', sans-serif !important; 
         font-size: 1rem !important; 
         margin: 0 !important;
     }
-    div[data-testid="stButton"] > button:hover { 
+    div[data-testid="stMainBlockContainer"] div[data-testid="stButton"] > button:hover { 
         background-color: #a3ff00 !important; 
         box-shadow: 0 0 15px rgba(163, 255, 0, 0.4) !important; 
         transform: translateY(-2px) !important; 
     }
-    div[data-testid="stButton"] > button:hover p { 
+    div[data-testid="stMainBlockContainer"] div[data-testid="stButton"] > button:hover p { 
         color: #050505 !important; 
     }
     
     /* Botón HTML enlazado (WhatsApp) */
-    .btn-wpp-neon { display: block !important; background-color: #050505 !important; color: #a3ff00 !important; border: 1px solid #a3ff00 !important; border-radius: 6px !important; font-weight: 600 !important; transition: all 0.3s ease !important; width: 100% !important; padding: 0.6rem 1rem !important; text-align: center !important; text-decoration: none !important; box-sizing: border-box !important; font-family: 'Space Grotesk', sans-serif !important; font-size: 1rem !important; line-height: 1.6 !important;}
+    .btn-wpp-neon { display: block !important; background-color: #050505 !important; color: #a3ff00 !important; border: 1px solid #a3ff00 !important; border-radius: 6px !important; font-weight: 600 !important; transition: all 0.3s ease !important; width: 100% !important; padding: 0.6rem 1rem !important; text-align: center !important; text-decoration: none !important; box-sizing: border-box !important; font-family: 'Inter', sans-serif !important; font-size: 1rem !important; line-height: 1.6 !important;}
     .btn-wpp-neon:hover { background-color: #a3ff00 !important; color: #050505 !important; box-shadow: 0 0 15px rgba(163, 255, 0, 0.4) !important; transform: translateY(-2px) !important; text-decoration: none !important;}
     
-    [data-testid="stSidebar"] [data-testid="stPageLink-NavLink"] { background-color: #050505 !important; color: #a3ff00 !important; border: 1px solid #a3ff00 !important; border-radius: 6px !important; padding: 6px 12px !important; margin-bottom: 8px !important; transition: all 0.3s ease !important; display: flex !important; justify-content: center !important; }
-    [data-testid="stSidebar"] [data-testid="stPageLink-NavLink"]:hover { background-color: #a3ff00 !important; color: #050505 !important; box-shadow: 0 0 15px rgba(163, 255, 0, 0.4) !important; transform: translateY(-2px) !important; }
-    [data-testid="stSidebar"] [data-testid="stPageLink-NavLink"] > div { background-color: transparent !important; }
-    [data-testid="stSidebar"] [data-testid="stPageLink-NavLink"] p { color: inherit !important; font-weight: 600 !important; font-size: 0.9rem !important; margin: 0 !important; }
-    
+    /* Tarjetas de Métricas */
     .metric-card { background-color: #0a0a0a; border: 1px solid #1a1a1a; padding: 24px; border-radius: 8px; text-align: center; transition: all 0.3s ease; }
     .metric-card:hover { border-color: #333333; }
     .metric-title { color: #888888; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; font-weight: 600; }
-    .metric-value-green { color: #a3ff00; font-size: 3rem; font-weight: 700; font-family: 'Space Grotesk', sans-serif; line-height: 1; }
-    .metric-value-yellow { color: #facc15; font-size: 3rem; font-weight: 700; font-family: 'Space Grotesk', sans-serif; line-height: 1; }
-    .metric-value-red { color: #f87171; font-size: 3rem; font-weight: 700; font-family: 'Space Grotesk', sans-serif; line-height: 1; }
+    .metric-value-green { color: #a3ff00; font-size: 3rem; font-weight: 700; font-family: 'Inter', sans-serif; line-height: 1; }
+    .metric-value-red { color: #f87171; font-size: 3rem; font-weight: 700; font-family: 'Inter', sans-serif; line-height: 1; }
     </style>
 """, unsafe_allow_html=True)
 
-# --- SIDEBAR ---
-st.sidebar.page_link("app.py", label="< VOLVER AL INICIO")
-st.sidebar.page_link("pages/CONTROL_CALIDAD.py", label="< VOLVER A CALIDAD")
+# --- SIDEBAR (NAVEGACIÓN HOMOGÉNEA) ---
+if st.sidebar.button("🏠 VOLVER AL INICIO", use_container_width=True):
+    st.switch_page("app.py")
+if st.sidebar.button("◀ VOLVER A CALIDAD", use_container_width=True):
+    st.switch_page("pages/CONTROL_CALIDAD.py")
+
 st.sidebar.markdown("<br><hr style='border: 1px solid #1a1a1a;'>", unsafe_allow_html=True)
 
 # --- CABECERA ---
@@ -219,7 +259,7 @@ def generar_tabla_html_nativa(df):
     if df.empty: return ""
     html = """
     <div style="border: 1px solid #1a1a1a; border-radius: 8px; overflow: hidden;">
-        <table style="width: 100%; border-collapse: collapse; font-family: 'Space Grotesk', sans-serif; font-size: 0.85rem; color: #e0e0e0; text-align: left;">
+        <table style="width: 100%; border-collapse: collapse; font-family: 'Inter', sans-serif; font-size: 0.85rem; color: #e0e0e0; text-align: left;">
             <thead>
                 <tr style="background-color: #050505; border-bottom: 1px solid #1a1a1a;">
     """
