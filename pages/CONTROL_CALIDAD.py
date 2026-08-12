@@ -18,12 +18,29 @@ st.markdown("""
     [data-testid="stSidebarNav"] { display: none !important; }
     section[data-testid="stSidebar"] { background-color: #0a0a0a !important; border-right: 1px solid #1a1a1a !important; }
     
-    /* BOTÓN DE VOLVER AL INICIO */
-    div[data-testid="stSidebar"] div[data-testid="stButton"] { display: flex !important; justify-content: center !important; margin-top: 10px !important; padding-bottom: 0 !important; }
-    div[data-testid="stSidebar"] div[data-testid="stButton"] > button { background-color: transparent !important; border: 1px solid #1a1a1a !important; width: fit-content !important; padding: 4px 16px !important; border-radius: 4px !important; transition: 0.3s !important; font-family: 'Inter', sans-serif !important; }
-    div[data-testid="stSidebar"] div[data-testid="stButton"] > button p { color: #555555 !important; font-size: 0.7rem !important; margin: 0 !important; font-weight: 700 !important; letter-spacing: 1px; }
-    div[data-testid="stSidebar"] div[data-testid="stButton"] > button:hover { border-color: #a3ff00 !important; background-color: rgba(163, 255, 0, 0.1) !important; }
-    div[data-testid="stSidebar"] div[data-testid="stButton"] > button:hover p { color: #a3ff00 !important; }
+    /* BOTÓN VOLVER PRINCIPAL (Afecta solo a los botones fuera de columnas) */
+    div[data-testid="stButton"] > button { 
+        background-color: transparent !important; 
+        border: 1px solid #1a1a1a !important; 
+        width: fit-content !important; 
+        padding: 6px 16px !important; 
+        border-radius: 6px !important; 
+        transition: 0.3s !important; 
+        margin-bottom: 10px !important;
+    }
+    div[data-testid="stButton"] > button p { 
+        color: #888888 !important; 
+        font-weight: 700 !important; 
+        font-size: 0.8rem !important; 
+        letter-spacing: 1px !important; 
+    }
+    div[data-testid="stButton"] > button:hover { 
+        border-color: #a3ff00 !important; 
+        background-color: rgba(163, 255, 0, 0.05) !important; 
+    }
+    div[data-testid="stButton"] > button:hover p { 
+        color: #a3ff00 !important; 
+    }
     
     /* =======================================================
        TARJETAS GIGANTES NATIVAS (CERO TRUCOS)
@@ -104,10 +121,12 @@ st.sidebar.markdown(f"""
     </div>
 """, unsafe_allow_html=True)
 
-if st.sidebar.button("◀ VOLVER AL INICIO"):
+st.markdown("<br>", unsafe_allow_html=True)
+
+# --- NUEVO BOTÓN DE VOLVER ---
+if st.button("◀ VOLVER AL INICIO"):
     st.switch_page("app.py")
 
-st.markdown("<br>", unsafe_allow_html=True)
 st.markdown("<h1 style='color: #ffffff; font-size: 2.2rem; font-weight: 800; letter-spacing: 2px; margin: 0;'>DEPARTAMENTO / <span style='color: #a3ff00;'>CONTROL DE CALIDAD</span></h1>", unsafe_allow_html=True)
 st.markdown("<p style='color: #888888; font-size: 0.95rem; margin-bottom: 3rem;'>Selecciona la herramienta o módulo que deseas operar:</p>", unsafe_allow_html=True)
 
