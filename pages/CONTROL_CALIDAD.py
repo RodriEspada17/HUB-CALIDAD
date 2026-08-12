@@ -38,6 +38,16 @@ st.markdown("""
         color: #a3ff00 !important; 
     }
     
+div[data-testid="stButton"] > button:focus,
+    div[data-testid="stButton"] > button:active {
+        box-shadow: none !important;
+        outline: none !important;
+        border-color: #1a1a1a !important;
+    }
+    div[data-testid="stButton"] > button:focus p {
+        color: #888888 !important;
+    }
+
     /* =======================================================
        TARJETAS GIGANTES NATIVAS (CABALLO DE TROYA)
        ======================================================= */
