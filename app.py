@@ -31,7 +31,7 @@ st.markdown("""
     div[data-testid="stColumn"] div[data-testid="stButton"] > button {
         background-color: #0a0a0a !important; border: 1px solid #1a1a1a !important; padding: 24px !important; border-radius: 12px !important; min-height: 250px !important; width: 100% !important; display: flex !important; flex-direction: column !important; justify-content: flex-start !important; align-items: flex-start !important; text-align: left !important; transition: all 0.3s ease !important; box-shadow: 0 5px 15px rgba(0,0,0,0.5) !important; font-family: 'Inter', sans-serif !important;
     }
-    div[data-testid="stColumn"] div[data-testid="stButton"] > button:hover { border-color: #a3ff00 !important; box-shadow: 0 0 20px rgba(163, 255, 0, 0.15) !important; transform: translateY(-4px) !important; }
+    div[data-testid="stColumn"] div[data-testid="stButton"] > button { border-color: #a3ff00 !important; box-shadow: 0 0 20px rgba(163, 255, 0, 0.15) !important; transform: translateY(-4px) !important; }
     div[data-testid="stColumn"] div[data-testid="stButton"] > button p { color: #888888 !important; font-size: 0.9rem !important; line-height: 1.5 !important; white-space: pre-wrap !important; }
     div[data-testid="stColumn"] div[data-testid="stButton"] > button p strong:nth-of-type(1) { color: #a3ff00 !important; font-size: 1.15rem !important; letter-spacing: 2px !important; margin-bottom: 5px !important; display: inline-block !important; }
     div[data-testid="stColumn"] div[data-testid="stButton"] > button p strong:nth-of-type(2) { color: #ffffff !important; font-size: 1.35rem !important; display: block !important; margin-top: 15px !important; margin-bottom: 10px !important; letter-spacing: -0.5px !important; }
