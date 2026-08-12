@@ -43,14 +43,14 @@ st.markdown("""
     }
     
     /* =======================================================
-       TARJETAS GIGANTES NATIVAS (CERO TRUCOS)
+       TARJETAS GIGANTES NATIVAS (ALTURA FIJA Y CERO TRUCOS)
        ======================================================= */
     div[data-testid="stColumn"] div[data-testid="stButton"] > button {
         background-color: #0a0a0a !important;
         border: 1px solid #1a1a1a !important;
         padding: 24px !important;
         border-radius: 12px !important;
-        height: 270px !important;
+        height: 270px !important; /* Altura estricta para alinear pastillas */
         width: 100% !important;
         display: flex !important;
         flex-direction: column !important;
@@ -62,12 +62,10 @@ st.markdown("""
         margin-bottom: 0 !important;
     }
 
-    
-/* Aseguramos que el texto por dentro no tenga márgenes rebeldes */
+    /* Aseguramos que el texto por dentro no tenga márgenes rebeldes */
     div[data-testid="stColumn"] div[data-testid="stButton"] > button div[data-testid="stMarkdownContainer"] {
         width: 100% !important; text-align: left !important;
     }
-
 
     div[data-testid="stColumn"] div[data-testid="stButton"] > button:hover {
         border-color: #a3ff00 !important;
@@ -99,20 +97,20 @@ st.markdown("""
         letter-spacing: -0.5px !important;
     }
 
+    /* PASTILLAS PERFECTAMENTE ALINEADAS */
     .pill-container { 
-               margin-top: -75px; 
-               margin-left: 24px;
-               left: !important; 
-               margin-bottom: 30px; 
-               pointer-events: none; 
-               position: relative; 
-               z-index: 10; 
-               font-family: 'Inter', sans-serif !important;
-               transition: transform 0.3s ease !important; /* <--- Esto hace que el movimiento sea suave */
-           }
+        margin-top: -70px !important; 
+        margin-left: 24px !important; 
+        margin-bottom: 30px !important; 
+        pointer-events: none !important; 
+        position: relative !important; 
+        z-index: 10 !important; 
+        font-family: 'Inter', sans-serif !important;
+        transition: transform 0.3s ease !important; 
+    }
     .pill-activo { background-color: rgba(163, 255, 0, 0.1); color: #a3ff00; border: 1px solid rgba(163, 255, 0, 0.3); padding: 4px 10px; border-radius: 4px; font-size: 0.7rem; font-weight: 700; letter-spacing: 1px; display: inline-block; }
     .pill-desarrollo { background-color: rgba(250, 204, 21, 0.1); color: #facc15; border: 1px solid rgba(250, 204, 21, 0.3); padding: 4px 10px; border-radius: 4px; font-size: 0.7rem; font-weight: 700; letter-spacing: 1px; display: inline-block; }
-               
+                
     /* MAGIA: Solo levanta la pastilla de la tarjeta específica que estás tocando */
     div.element-container:has(button:hover) + div.element-container .pill-container {
         transform: translateY(-4px) !important;
@@ -142,7 +140,7 @@ st.markdown("<p style='color: #888888; font-size: 0.95rem; margin-bottom: 3rem;'
 
 col1, col2, col3 = st.columns(3)
 
-# Textos Nativos
+# Textos Nativos limpios
 txt_fq = "**///**\n\n**PARÁMETROS FISICOQUÍMICOS**\n\nAnálisis SPC, Cp/Cpk y resumen de producción mensual."
 txt_est = "**///**\n\n**CONTROL DE TANQUES**\n\nMonitoreo logístico y alertas tempranas en tanques."
 txt_mic = "**///**\n\n**ANÁLISIS MICROBIOLÓGICOS**\n\nSPC para recuento de levaduras, bacterias y aerobios totales."
@@ -158,7 +156,6 @@ with col1:
 
 with col2:
     if st.button(txt_mic, use_container_width=True, key="btn_mic"):
-        # Le quité la protección para que te lance el error real si el nombre no coincide
         st.switch_page("pages/4_MICROBIOLOGIA.py") 
     st.markdown("<div class='pill-container'><span class='pill-activo'>■ NUEVO MÓDULO</span></div>", unsafe_allow_html=True)
     
@@ -168,7 +165,7 @@ with col2:
 
 with col3:
     if st.button(txt_exp, use_container_width=True, key="btn_exp"): 
-        # 👇 CAMBIA "EXPORTAR_DATOS.py" POR EL NOMBRE EXACTO DE TU ARCHIVO DE WHATSAPP
         st.switch_page("pages/2_EXPORTAR_DATOS.py") 
     st.markdown("<div class='pill-container'><span class='pill-activo'>■ MÓDULO ACTIVO</span></div>", unsafe_allow_html=True)
+    
 st.markdown("<br><br>", unsafe_allow_html=True)
