@@ -123,8 +123,8 @@ st.sidebar.markdown(f"""
 st.markdown("<br>", unsafe_allow_html=True)
 
 # --- NUEVO BOTÓN DE VOLVER ---
-if st.button("◀ VOLVER AL INICIO"):
-    st.switch_page("app.py")
+if st.button("◀ VOLVER A CALIDAD"):
+    st.switch_page("pages/CONTROL_CALIDAD.py")
 
 st.markdown("<h1 style='color: #ffffff; font-size: 2.2rem; font-weight: 800; letter-spacing: 2px; margin: 0;'>DEPARTAMENTO / <span style='color: #a3ff00;'>CONTROL DE CALIDAD</span></h1>", unsafe_allow_html=True)
 st.markdown("<p style='color: #888888; font-size: 0.95rem; margin-bottom: 3rem;'>Selecciona la herramienta o módulo que deseas operar:</p>", unsafe_allow_html=True)
