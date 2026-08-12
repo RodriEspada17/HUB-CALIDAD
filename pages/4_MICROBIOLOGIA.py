@@ -52,7 +52,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# --- ESTÁNDARES DE TEMPERATURA POR ETAPA ---
+# --- ESTÁNDARES DE TEMPERATURA POR ETAPA (SOLO PROPAGACIÓN) ---
 SPECS_TEMP = {
     "Laboratorio": {"target": 25.0, "tol": 0.5, "min": 24.5, "max": 25.5, "color": "#60a5fa", "bg": "rgba(96, 165, 250, 0.06)", "symbol": "circle"},
     "Industrial 1": {"target": 18.0, "tol": 0.5, "min": 17.5, "max": 18.5, "color": "#a3ff00", "bg": "rgba(163, 255, 0, 0.06)", "symbol": "diamond"},
@@ -62,7 +62,7 @@ SPECS_TEMP = {
 
 # --- ESTÁNDARES DE PARÁMETROS GENERALES ---
 SPECS_PARAMETROS = {
-    "recuento": {"type": "min", "val": 80.0, "label": "> 80 mill. Cel/ml", "unit": "mill. Cel/ml"}, # 🔥 CAMBIADO A 80 MILLONES
+    "recuento": {"type": "min", "val": 80.0, "label": "> 80 mill. Cel/ml", "unit": "mill. Cel/ml"},
     "extracto original": {"type": "range", "min": 9.9, "max": 11.5, "label": "9.9 - 11.5 °P", "unit": "°P"},
     "alcohol": {"type": "max", "val": 3.0, "label": "< 3 %", "unit": "%"},
     "muerta": {"type": "max", "val": 0.0, "label": "0 %", "unit": "%"},
@@ -82,18 +82,8 @@ def obtener_spec_parametro(col_nombre):
     return None
 
 def agrupar_por_propagaciones(df):
-    col_fecha = next((c for c in df.columns if "fecha" in c.lower()), None)
-    col_hora = next((c for c in df.columns if "hora" in c.lower()), None)
-    
-    if not col_fecha: return df
-    
-    if col_hora:
-        df['FECHA_DT'] = pd.to_datetime(df[col_fecha].astype(str) + ' ' + df[col_hora].astype(str), errors='coerce', dayfirst=True)
-    else:
-        df['FECHA_DT'] = pd.to_datetime(df[col_fecha], dayfirst=True, errors='coerce')
-        
-    df = df.dropna(subset=['FECHA_DT']).sort_values('FECHA_DT').reset_index(drop=True)
-    if df.empty: return df
+    if 'FECHA_DT' not in df.columns or df['FECHA_DT'].dropna().empty: 
+        return df
 
     diferencias = df['FECHA_DT'].dt.date.diff().apply(lambda x: x.days if pd.notna(x) else 0)
     df['batch_id'] = (diferencias > 1).cumsum()
@@ -185,9 +175,9 @@ def aplicar_semaforo_tabla(row):
         
         if has_spec:
             if not cumple:
-                estilos[i] = 'background-color: #3b181a; color: #f87171;' # Rojo tenue
+                estilos[i] = 'background-color: #3b181a; color: #f87171;'
             else:
-                estilos[i] = 'background-color: #143324; color: #4ade80;' # Verde tenue
+                estilos[i] = 'background-color: #143324; color: #4ade80;'
     return estilos
 
 # --- NAV ---
@@ -255,6 +245,20 @@ else:
         st.error(f"Error de conexión: {df_limpio}")
     elif df_limpio is not None and not df_limpio.empty:
         
+        # 🔥 CREACIÓN UNIVERSAL DE LA FECHA TÉCNICA (FECHA_DT) PARA TODAS LAS PESTAÑAS
+        col_fecha_orig = next((c for c in df_limpio.columns if "fecha" in c.lower()), None)
+        col_hora_str = next((c for c in df_limpio.columns if "hora" in c.lower()), None)
+        
+        if col_fecha_orig:
+            if col_hora_str and col_hora_str in df_limpio.columns:
+                df_limpio['FECHA_DT'] = pd.to_datetime(df_limpio[col_fecha_orig].astype(str) + ' ' + df_limpio[col_hora_str].astype(str), errors='coerce', dayfirst=True)
+            else:
+                df_limpio['FECHA_DT'] = pd.to_datetime(df_limpio[col_fecha_orig], errors='coerce', dayfirst=True)
+            df_limpio = df_limpio.dropna(subset=['FECHA_DT']).sort_values('FECHA_DT').reset_index(drop=True)
+        else:
+            df_limpio['FECHA_DT'] = df_limpio.index
+
+        # LOGICA ESPECÍFICA DE CONTROL DE PROPAGACIÓN
         if etapa_seleccionada == "1. Control de Propagación":
             df_limpio = agrupar_por_propagaciones(df_limpio)
             df_limpio = clasificar_escala(df_limpio)
@@ -267,10 +271,15 @@ else:
                 
                 if lote_sel != "Todas las Propagaciones":
                     df_limpio = df_limpio[df_limpio['Propagacion'] == lote_sel]
+        else:
+            df_limpio['Escala_Fase'] = "General"
 
-        # 1. IDENTIFICAR COLUMNAS NUMÉRICAS REALES
+        # 1. IDENTIFICAR COLUMNAS NUMÉRICAS REALES (PURGA COMPLETA DE COLUMNAS TEXTUALES)
         cols_numericas = df_limpio.select_dtypes(include=[np.number]).columns.tolist()
-        cols_prohibidas_graf = ['semana', 'lote', 'ft', 'batch_id', 'etapa', 'escala', 'escala_fase', 'hora', 'volumen', 'unnamed']
+        cols_prohibidas_graf = [
+            'semana', 'lote', 'ft', 'batch_id', 'etapa', 'escala', 'escala_fase', 'hora', 'volumen', 
+            'unnamed', 'procedencia', 'producto', 'analista', 'tipo', 'tanque', 'observaciones', 'tp', 'muestra', 'sector', 'estado'
+        ]
         cols_graficables = [c for c in cols_numericas if not any(ex in c.lower() for ex in cols_prohibidas_graf)]
         
         col_grafico, col_tabla = st.columns([2.5, 1.2])
@@ -282,16 +291,14 @@ else:
                 idx_default = next((i for i, c in enumerate(cols_graficables) if "temp" in c.lower()), 0)
                 parametro_a_graficar = st.selectbox("Selecciona el parámetro a analizar:", cols_graficables, index=idx_default, label_visibility="collapsed")
                 
-                col_fecha_orig = next((col for col in df_limpio.columns if "fecha" in col.lower()), "FECHA_DT")
-                col_hora_str = next((col for col in df_limpio.columns if "hora" in col.lower()), None)
-                
+                col_fecha_label = col_fecha_orig if col_fecha_orig else "FECHA_DT"
                 es_temperatura = "temp" in parametro_a_graficar.lower()
                 spec_gen = obtener_spec_parametro(parametro_a_graficar) if not es_temperatura else None
                 
                 fig = go.Figure()
 
-                # 🔥 2. SOMBRAS Y FRANJAS DE TOLERANCIA
-                if 'Escala_Fase' in df_limpio.columns:
+                # 🔥 2. SOMBRAS Y FRANJAS DE TOLERANCIA (SOLO PROPAGACIÓN)
+                if etapa_seleccionada == "1. Control de Propagación" and 'Escala_Fase' in df_limpio.columns:
                     df_limpio['fase_block'] = (df_limpio['Escala_Fase'] != df_limpio['Escala_Fase'].shift()).cumsum()
                     for _, sub_block in df_limpio.groupby('fase_block'):
                         fase_name = sub_block['Escala_Fase'].iloc[0]
@@ -308,7 +315,7 @@ else:
                                 layer="below"
                             )
 
-                # 🔥 LÍNEAS DE OBJETIVO
+                # 🔥 LÍNEAS DE OBJETIVO PARA PARÁMETROS GENERALES
                 if spec_gen:
                     if spec_gen["type"] == "min":
                         fig.add_hline(y=spec_gen["val"], line_dash="dash", line_color="#4ade80", 
@@ -327,11 +334,14 @@ else:
                 ))
 
                 # 🔥 4. DIBUJAR PUNTOS Y EVALUAR ESTÁNDAR
-                escala_orden = ["Laboratorio", "Industrial 1", "Industrial 2", "Industrial 3"]
-                fases_presentes = [f for f in escala_orden if f in df_limpio['Escala_Fase'].values] if 'Escala_Fase' in df_limpio.columns else ["General"]
+                if etapa_seleccionada == "1. Control de Propagación":
+                    escala_orden = ["Laboratorio", "Industrial 1", "Industrial 2", "Industrial 3"]
+                    fases_presentes = [f for f in escala_orden if f in df_limpio['Escala_Fase'].values]
+                else:
+                    fases_presentes = ["General"]
 
                 for fase_tipo in fases_presentes:
-                    group = df_limpio[df_limpio['Escala_Fase'] == fase_tipo] if 'Escala_Fase' in df_limpio.columns else df_limpio
+                    group = df_limpio[df_limpio['Escala_Fase'] == fase_tipo] if etapa_seleccionada == "1. Control de Propagación" else df_limpio
                     spec_t = SPECS_TEMP.get(fase_tipo, {"color": "#a3ff00", "symbol": "circle", "target": None, "min": None, "max": None})
                     
                     colores_puntos = []
@@ -340,6 +350,7 @@ else:
                     for idx, row in group.iterrows():
                         val = row[parametro_a_graficar]
                         hora_txt = f" {row[col_hora_str]}" if col_hora_str and pd.notna(row[col_hora_str]) else ""
+                        fecha_val = row[col_fecha_label] if col_fecha_label in row else row['FECHA_DT']
                         
                         cumple = True
                         std_label_txt = ""
@@ -366,13 +377,13 @@ else:
                         target_info = f"<br>{std_label_txt}<br>Estado: {estado_txt}" if std_label_txt else ""
 
                         hover_text.append(
-                            f"Fecha: {row[col_fecha_orig]}{hora_txt}<br>Lote: {row.get('Propagacion', 'N/A')}<br>Etapa: <b>{fase_tipo}</b><br>"
+                            f"Fecha: {fecha_val}{hora_txt}<br>Lote: {row.get('Propagacion', 'N/A')}<br>Etapa: <b>{fase_tipo}</b><br>"
                             f"Valor: <b>{val} {spec_gen['unit'] if spec_gen else ''}</b>{target_info}"
                         )
 
                     fig.add_trace(go.Scatter(
                         x=group['FECHA_DT'], y=group[parametro_a_graficar],
-                        mode='lines+markers', name=f"{fase_tipo} ({spec_t['target']}°C)" if es_temperatura and spec_t['target'] else fase_tipo,
+                        mode='lines+markers', name=f"{fase_tipo} ({spec_t['target']}°C)" if es_temperatura and spec_t['target'] else (parametro_a_graficar if fase_tipo == "General" else fase_tipo),
                         hovertext=hover_text, hoverinfo="text",
                         line=dict(color=spec_t["color"], width=2),
                         marker=dict(size=9, symbol=spec_t["symbol"], color=colores_puntos, line=dict(width=1, color='#050505'))
@@ -385,17 +396,18 @@ else:
                     xaxis=dict(showgrid=True, gridcolor="#1a1a1a", title="", tickformat="%d-%b"),
                     yaxis=dict(showgrid=True, gridcolor="#1a1a1a", title=unit_label),
                     margin=dict(l=0, r=0, t=30, b=0),
-                    showlegend=True, legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
+                    showlegend=(etapa_seleccionada == "1. Control de Propagación"),
+                    legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
                 )
                 st.plotly_chart(fig, use_container_width=True)
             else:
                 st.warning("No se encontraron columnas numéricas analizables en esta etapa.")
                 
         with col_tabla:
-            st.markdown("<h3 style='color: #ffffff; font-size: 1.1rem; margin-bottom: 15px;'>■ REGISTROS DEL LOTE</h3>", unsafe_allow_html=True)
+            st.markdown("<h3 style='color: #ffffff; font-size: 1.1rem; margin-bottom: 15px;'>■ REGISTROS DE LA ETAPA</h3>", unsafe_allow_html=True)
             
-            # 🔥 LÓGICA DE TABLA DE APOYO
-            claves_fijas = ['fecha', 'hora', 'escala', 'etapa', 'lote']
+            # LÓGICA DE TABLA DE APOYO
+            claves_fijas = ['fecha', 'hora', 'escala', 'etapa', 'lote', 'procedencia', 'tipo', 'tanque']
             cols_fijas = [c for c in df_limpio.columns if any(k in c.lower() for k in claves_fijas)]
             
             cols_fijas = [c for c in cols_fijas if c not in ['FECHA_DT', 'batch_id', 'fase_block', 'Escala_Fase', 'Propagacion']]
@@ -405,20 +417,21 @@ else:
             if 'parametro_a_graficar' in locals() and parametro_a_graficar not in cols_mostrar:
                 cols_mostrar.append(parametro_a_graficar)
                 
-            # MOSTRAR TODAS LAS FILAS DEL LOTE (INCLUYENDO LABORATORIO)
             df_mostrar = df_limpio[cols_mostrar].copy()
             
-            # Limpiar columna Etapa para que no muestre decimales (1.000000 -> 1)
+            # Limpiar columna Etapa si es decimal
             for c in df_mostrar.columns:
                 if "etapa" in c.lower():
                     df_mostrar[c] = df_mostrar[c].apply(
                         lambda x: f"{int(float(x))}" if pd.notna(x) and str(x).strip() != "" and str(x).replace('.','',1).replace('-','',1).isdigit() else ("" if pd.isna(x) else str(x))
                     )
             
-            # Aplicar Semáforo y formatear números a MÁXIMO 2 DECIMALES
+            # Muestra las últimas 15 filas si no es propagación, o todas si es propagación
+            df_tabla_final = df_mostrar if etapa_seleccionada == "1. Control de Propagación" else df_mostrar.tail(15)
+
             st.dataframe(
-                df_mostrar.style.apply(aplicar_semaforo_tabla, axis=1)
-                                .format(precision=2, na_rep=""),
+                df_tabla_final.style.apply(aplicar_semaforo_tabla, axis=1)
+                                   .format(precision=2, na_rep=""),
                 use_container_width=True,
                 height=450
             )
