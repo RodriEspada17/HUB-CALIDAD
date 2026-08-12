@@ -61,7 +61,7 @@ def agrupar_por_propagaciones(df):
     
     if not col_fecha: return df
     
-    # Fusión Fecha + Hora para ordenamiento exacto por minuto
+    # Fusión exacta Fecha + Hora
     if col_hora:
         df['FECHA_DT'] = pd.to_datetime(df[col_fecha].astype(str) + ' ' + df[col_hora].astype(str), errors='coerce', dayfirst=True)
     else:
@@ -85,7 +85,7 @@ def agrupar_por_propagaciones(df):
     df['Propagacion'] = df['batch_id'].map(mapa_etiquetas)
     return df
 
-# 🔥 CLASIFICACIÓN PRECISA LEYENDO LAS COLUMNAS 'ESCALA' Y 'ETAPA'
+# 🔥 CLASIFICACIÓN DE ESCALA Y ETAPA A PRUEBA DE NÚMEROS FLOTANTES
 def clasificar_escala(df):
     col_escala = next((c for c in df.columns if "escala" in c.lower()), None)
     col_etapa = next((c for c in df.columns if "etapa" in c.lower()), None)
@@ -93,22 +93,28 @@ def clasificar_escala(df):
     fases = []
     for idx, row in df.iterrows():
         val_escala = str(row[col_escala]).strip().lower() if col_escala and pd.notna(row[col_escala]) else ""
-        val_etapa = str(row[col_etapa]).strip() if col_etapa and pd.notna(row[col_etapa]) else ""
         
-        etapa_num = "".join(filter(str.isdigit, val_etapa))
+        # Extraer el número entero de la Etapa de forma limpia
+        etapa_num = "1"
+        if col_etapa and pd.notna(row[col_etapa]):
+            raw_etapa = str(row[col_etapa]).strip()
+            try:
+                num = int(float(raw_etapa.replace(',', '.')))
+                if num in [1, 2, 3]:
+                    etapa_num = str(num)
+            except:
+                pass
         
         if "lab" in val_escala:
             fases.append("Laboratorio")
         elif "ind" in val_escala or "plant" in val_escala or "tanque" in val_escala:
-            if etapa_num in ["1", "2", "3"]:
-                fases.append(f"Industrial {etapa_num}")
-            else:
-                fases.append("Industrial 1")
+            fases.append(f"Industrial {etapa_num}")
         else:
-            if etapa_num in ["1", "2", "3"]:
-                fases.append(f"Industrial {etapa_num}")
+            # Fallback en caso de que la celda de Escala esté vacía
+            if idx < 4:
+                fases.append("Laboratorio")
             else:
-                fases.append("Laboratorio" if idx < 4 else "Industrial 1")
+                fases.append(f"Industrial {etapa_num}")
                 
     df['Escala_Fase'] = fases
     return df
@@ -231,7 +237,7 @@ else:
                                 layer="below"
                             )
 
-                # 🔥 3. DIBUJAR PUNTOS Y EVALUAR ESTÁNDAR
+                # 🔥 3. DIBUJAR PUNTOS Y EVALUAR ESTÁNDAR POR ETAPA REAL
                 escala_orden = ["Laboratorio", "Industrial 1", "Industrial 2", "Industrial 3"]
                 fases_presentes = [f for f in escala_orden if f in df_limpio['Escala_Fase'].values] if 'Escala_Fase' in df_limpio.columns else ["General"]
 
@@ -251,7 +257,7 @@ else:
                                 colores_puntos.append(spec["color"])
                                 estado_txt = "<span style='color: #4ade80;'><b>✅ DENTRO DE STD</b></span>"
                             else:
-                                colores_puntos.append('#f87171') # Rojo fuera de norma
+                                colores_puntos.append('#f87171') # Rojo si sale de la tolerancia de su etapa
                                 estado_txt = "<span style='color: #f87171;'><b>🚨 FUERA DE STD</b></span>"
                                 
                             target_txt = f"<br>STD Objetivos: <b>{spec['target']} ± {spec['tol']}°C</b><br>Estado: {estado_txt}"
@@ -275,7 +281,7 @@ else:
                         marker=dict(size=9, symbol=spec["symbol"], color=colores_puntos, line=dict(width=1, color='#050505'))
                     ))
 
-                # 🔥 4. FORMATO EJE X (CRONOLÓGICO Y LIMPIO)
+                # 🔥 4. FORMATO EJE X CRONOLÓGICO Y LIMPIO
                 fig.update_layout(
                     template="plotly_dark", plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)",
                     xaxis=dict(showgrid=True, gridcolor="#1a1a1a", title="", tickformat="%d-%b"),
