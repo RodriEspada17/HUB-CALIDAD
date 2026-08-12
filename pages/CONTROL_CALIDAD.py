@@ -18,36 +18,50 @@ st.markdown("""
     [data-testid="stSidebarNav"] { display: none !important; }
     section[data-testid="stSidebar"] { background-color: #0a0a0a !important; border-right: 1px solid #1a1a1a !important; }
     
-    /* BOTÓN VOLVER PRINCIPAL */
-    div[data-testid="stButton"] > button { 
-        background-color: transparent !important; 
-        border: 1px solid #1a1a1a !important; 
-        width: fit-content !important; 
-        padding: 6px 16px !important; 
-        border-radius: 6px !important; 
-        transition: 0.3s !important; 
-        margin-bottom: 10px !important;
-    }
-    div[data-testid="stButton"] > button p { 
-        color: #888888 !important; font-weight: 700 !important; font-size: 0.8rem !important; letter-spacing: 1px !important; 
-    }
-    div[data-testid="stButton"] > button:hover { 
-        border-color: #a3ff00 !important; background-color: rgba(163, 255, 0, 0.05) !important; 
-    }
-    div[data-testid="stButton"] > button:hover p { 
-        color: #a3ff00 !important; 
-    }
+    //* BOTÓN VOLVER PRINCIPAL */
+            div[data-testid="stButton"] > button { 
+                background-color: transparent !important; 
+                border: 1px solid #1a1a1a !important; 
+                width: fit-content !important; 
+                padding: 6px 16px !important; 
+                border-radius: 6px !important; 
+                transition: 0.3s !important; 
+                margin-bottom: 10px !important;
+            }
+            div[data-testid="stButton"] > button p { 
+                color: #888888 !important; font-weight: 700 !important; font-size: 0.8rem !important; letter-spacing: 1px !important; 
+            }
+            div[data-testid="stButton"] > button:hover { 
+                border-color: #a3ff00 !important; background-color: rgba(163, 255, 0, 0.05) !important; 
+            }
+            div[data-testid="stButton"] > button:hover p { 
+                color: #a3ff00 !important; 
+            }
+            
+        div[data-testid="stButton"] > button:focus,
+            div[data-testid="stButton"] > button:active {
+                box-shadow: none !important;
+                outline: none !important;
+                border-color: #1a1a1a !important;
+            }
+            div[data-testid="stButton"] > button:focus p {
+                color: #888888 !important;
+            }
     
-div[data-testid="stButton"] > button:focus,
-    div[data-testid="stButton"] > button:active {
-        box-shadow: none !important;
-        outline: none !important;
-        border-color: #1a1a1a !important;
-    }
-    div[data-testid="stButton"] > button:focus p {
-        color: #888888 !important;
-    }
-
+            /* ELIMINAR EL FOCO PERMANENTE DESPUÉS DEL CLIC */
+        div[data-testid="stButton"] > button:focus {
+            box-shadow: none !important;
+            outline: none !important;
+        }
+        
+        /* Si está enfocado pero el mouse YA NO está encima, lo apagamos a gris */
+        div[data-testid="stButton"] > button:focus:not(:hover) {
+            border-color: #1a1a1a !important;
+            background-color: transparent !important;
+        }
+        div[data-testid="stButton"] > button:focus:not(:hover) p {
+            color: #888888 !important;
+        }
     /* =======================================================
        TARJETAS GIGANTES NATIVAS (CABALLO DE TROYA)
        ======================================================= */
