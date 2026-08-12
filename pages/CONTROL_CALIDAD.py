@@ -93,7 +93,8 @@ st.markdown("""
 
     .pill-container { 
                margin-top: -75px; 
-               margin-left: 24px; 
+               margin-left: 24px;
+               left: !important; 
                margin-bottom: 30px; 
                pointer-events: none; 
                position: relative; 
