@@ -91,22 +91,16 @@ st.markdown("""
         letter-spacing: -0.5px !important;
     }
 
-    /* Convertimos la columna en el ancla fija */
-    div[data-testid="stColumn"] {
-        position: relative !important;
-    }
-
-    /* Clavamos la pastilla de forma absoluta al fondo izquierdo */
     .pill-container { 
-        position: absolute !important;
-        bottom: 24px !important; /* Distancia exacta desde abajo */
-        left: 24px !important;   /* Distancia exacta desde la izquierda */
-        margin: 0 !important;    /* Adiós a los márgenes negativos */
-        pointer-events: none; 
-        z-index: 10; 
-        font-family: 'Inter', sans-serif !important;
-        transition: transform 0.3s ease !important; 
-    }
+               margin-top: -75px; 
+               margin-left: 24px; 
+               margin-bottom: 30px; 
+               pointer-events: none; 
+               position: relative; 
+               z-index: 10; 
+               font-family: 'Inter', sans-serif !important;
+               transition: transform 0.3s ease !important; /* <--- Esto hace que el movimiento sea suave */
+           }
     .pill-activo { background-color: rgba(163, 255, 0, 0.1); color: #a3ff00; border: 1px solid rgba(163, 255, 0, 0.3); padding: 4px 10px; border-radius: 4px; font-size: 0.7rem; font-weight: 700; letter-spacing: 1px; display: inline-block; }
     .pill-desarrollo { background-color: rgba(250, 204, 21, 0.1); color: #facc15; border: 1px solid rgba(250, 204, 21, 0.3); padding: 4px 10px; border-radius: 4px; font-size: 0.7rem; font-weight: 700; letter-spacing: 1px; display: inline-block; }
                
