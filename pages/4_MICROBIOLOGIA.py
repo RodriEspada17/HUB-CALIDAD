@@ -9,7 +9,7 @@ from utils.core import aplicar_estilo_neon, generar_url_csv, cargar_datos
 st.set_page_config(page_title="Microbiología SPC", layout="wide", initial_sidebar_state="collapsed")
 aplicar_estilo_neon()
 
-# --- CSS GLOBAL (INTER + NEÓN) ---
+# --- CSS GLOBAL (INTER + NEÓN + SELECTBOX READONLY) ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
@@ -31,8 +31,9 @@ st.markdown("""
     div[data-testid="stButton"] > button:focus:not(:hover) { border-color: #1a1a1a !important; background-color: transparent !important; }
     div[data-testid="stButton"] > button:focus:not(:hover) p { color: #888888 !important; }
     
-    /* DESPLEGABLES NATIVOS */
-    div[data-baseweb="select"] input { caret-color: transparent !important; }
+    /* BLOQUEAR ESCRITURA / TECLADO EN DESPLEGABLES (Ocultar Input nativo) */
+    div[data-baseweb="select"] input { width: 0px !important; opacity: 0 !important; position: absolute !important; pointer-events: none !important; }
+    div[data-baseweb="select"], div[data-baseweb="select"] * { cursor: pointer !important; }
     
     .stSelectbox label { color: #888888 !important; font-weight: 600 !important; letter-spacing: 1px; font-size: 0.85rem !important; }
     </style>
@@ -250,14 +251,12 @@ else:
             if not col_ft: col_ft = next((c for c in df_limpio.columns if "ft" in c.lower()), None)
             
             if col_ft:
-                # 🔥 LIMPIAR FTs PARA QUE SEAN NÚMEROS ENTEROS LIMPIOS (ej: 123 en vez de 123.0)
+                # 🔥 LIMPIAR FTs PARA QUE SEAN NÚMEROS ENTEROS LIMPIOS
                 def limpiar_ft_entero(val):
                     if pd.isna(val): return ""
                     raw = str(val).strip()
-                    try:
-                        return str(int(float(raw.replace(',', '.'))))
-                    except:
-                        return raw.upper()
+                    try: return str(int(float(raw.replace(',', '.'))))
+                    except: return raw.upper()
 
                 df_limpio[col_ft] = df_limpio[col_ft].apply(limpiar_ft_entero)
                 df_valid_ft = df_limpio[~df_limpio[col_ft].isin(["", "NAN", "NONE", "N/A"])]
@@ -276,9 +275,15 @@ else:
         cols_prohibidas_graf = ['semana', 'lote', 'ft', 'batch_id', 'etapa', 'escala', 'escala_fase', 'hora', 'volumen', 'unnamed', 'procedencia', 'producto', 'analista', 'tipo', 'tanque', 'observaciones', 'tp', 'muestra', 'sector', 'estado']
         cols_graficables = [c for c in cols_numericas if not any(ex in c.lower() for ex in cols_prohibidas_graf)]
         
-        # 🔥 FILTRADO EXCLUSIVO PARA FERMENTACIÓN: SOLO AEROBIOS WLD Y LEVADURA SALVAJE YM
+        # 🔥 FILTRADO EXCLUSIVO PARA FERMENTACIÓN: GUILLOTINA A TESTIGOS Y CARACTERÍSTICAS
         if etapa_seleccionada == "4. Fermentación":
-            cols_graficables = [c for c in cols_graficables if any(k in c.lower() for k in ["wld", "aerobio", "salvaje", "ym"])]
+            cols_permitidas = []
+            for c in cols_graficables:
+                cl = c.lower()
+                if "wld" in cl or "aerobio" in cl or "salvaje" in cl or "ym" in cl:
+                    if "testigo" not in cl and "caracter" not in cl and "anaerobio" not in cl:
+                        cols_permitidas.append(c)
+            cols_graficables = cols_permitidas
         
         col_grafico, col_tabla = st.columns([2.5, 1.2])
         
@@ -286,7 +291,8 @@ else:
             st.markdown(f"<h3 style='color: #ffffff; font-size: 1.1rem; margin-bottom: 15px;'>■ GRÁFICO DE CONTROL (SPC) {'MULTI-ESCALA' if etapa_seleccionada == '1. Control de Propagación' else ''}</h3>", unsafe_allow_html=True)
             
             if cols_graficables:
-                parametro_a_graficar = st.selectbox("Selecciona el parámetro a analizar:", cols_graficables, index=0, label_visibility="collapsed")
+                idx_default = next((i for i, c in enumerate(cols_graficables) if "temp" in c.lower()), 0)
+                parametro_a_graficar = st.selectbox("Selecciona el parámetro a analizar:", cols_graficables, index=idx_default, label_visibility="collapsed")
                 
                 col_fecha_label = col_fecha_orig if col_fecha_orig else "FECHA_DT"
                 es_temperatura = "temp" in parametro_a_graficar.lower()
@@ -309,6 +315,7 @@ else:
                         fig.add_hline(y=spec_gen["min"], line_dash="dash", line_color="#4ade80", annotation_text=f"LSL: {spec_gen['min']}")
                         fig.add_hline(y=spec_gen["max"], line_dash="dash", line_color="#4ade80", annotation_text=f"USL: {spec_gen['max']}")
                 elif not (es_temperatura and "1. Control de Propagación" in etapa_seleccionada):
+                    # Si no hay spec, mostrar líneas SPC dinámicas naturales
                     fig.add_hline(y=promedio_global, line_dash="dash", line_color="#888888", annotation_text=f"Prom: {promedio_global:.1f}")
                     if pd.notna(lcs_global) and lcs_global > promedio_global:
                         fig.add_hline(y=lcs_global, line_dash="dot", line_color="#f87171", annotation_text=f"LCS: {lcs_global:.1f}", annotation_font_color="#f87171")
@@ -332,7 +339,7 @@ else:
                         line=dict(color='rgba(255, 255, 255, 0.35)', width=1.5, dash='dot'), showlegend=False, hoverinfo='none'
                     ))
                 else:
-                    # Línea continua para Fermentación
+                    # Línea continua para Fermentación y otras etapas
                     fig.add_trace(go.Scatter(
                         x=df_limpio['FECHA_DT'], y=df_limpio[parametro_a_graficar], mode='lines',
                         line=dict(color='rgba(163, 255, 0, 0.35)', width=1.5, dash='dot'), showlegend=False, hoverinfo='none'
@@ -368,6 +375,7 @@ else:
                                 elif spec_gen["type"] == "max" and float_v > spec_gen["val"]: cumple = False
                                 elif spec_gen["type"] == "range" and not (spec_gen["min"] <= float_v <= spec_gen["max"]): cumple = False
                         else:
+                            # Sin norma estática -> Aplicar la norma dinámica del SPC (+3 Sigma)
                             if pd.notna(val) and pd.notna(lcs_global) and float(val) > lcs_global:
                                 cumple = False
                                 std_label_txt = f"Alerta SPC (LCS: {lcs_global:.1f})"
@@ -381,11 +389,18 @@ else:
                             
                         target_info = f"<br>{std_label_txt}<br>Estado: {estado_txt}" if std_label_txt else ""
                         etapa_info = f"Etapa: <b>{fase_tipo}</b><br>" if "1. Control de Propagación" in etapa_seleccionada else ""
+                        
                         col_ft_ref = next((c for c in row.index if c.lower() == 'ft'), None)
-                        lote_txt = row.get('Propagacion', row.get(col_ft_ref, 'N/A'))
+                        col_lote_ref = next((c for c in row.index if "lote" in c.lower() and c.lower() != 'lote'), None)
+                        if not col_lote_ref: col_lote_ref = next((c for c in row.index if "lote" in c.lower()), None)
+                        
+                        lote_str = row.get(col_lote_ref, '') if col_lote_ref else ''
+                        ft_str = row.get(col_ft_ref, '') if col_ft_ref else ''
+                        
+                        lote_txt = row.get('Propagacion', f"{lote_str} / FT {ft_str}".strip(' /'))
 
                         hover_text.append(
-                            f"Fecha: {fecha_val}{hora_txt}<br>Lote/FT: {lote_txt}<br>{etapa_info}"
+                            f"Fecha: {fecha_val}{hora_txt}<br>Lote: {lote_txt}<br>{etapa_info}"
                             f"Valor: <b>{val} {spec_gen['unit'] if spec_gen else ''}</b>{target_info}"
                         )
 
@@ -414,8 +429,12 @@ else:
         with col_tabla:
             st.markdown("<h3 style='color: #ffffff; font-size: 1.1rem; margin-bottom: 15px;'>■ REGISTROS DE LA ETAPA</h3>", unsafe_allow_html=True)
             
-            # 🔥 LÓGICA DE TABLA DE APOYO
-            claves_fijas = ['fecha', 'hora', 'ft', 'escala', 'etapa', 'lote', 'procedencia', 'tipo', 'tanque']
+            # 🔥 LÓGICA DE TABLA DE APOYO (CONTEXTO + PARÁMETRO SELECCIONADO)
+            if etapa_seleccionada == "4. Fermentación":
+                claves_fijas = ['fecha', 'ft', 'lote'] # SOLO FECHA, FT, LOTE PARA FERMENTACIÓN
+            else:
+                claves_fijas = ['fecha', 'hora', 'ft', 'escala', 'etapa', 'lote', 'procedencia', 'tipo', 'tanque']
+                
             cols_fijas = [c for c in df_limpio.columns if any(k in c.lower() for k in claves_fijas)]
             cols_fijas = [c for c in cols_fijas if c not in ['FECHA_DT', 'batch_id', 'fase_block', 'Escala_Fase', 'Propagacion']]
             
@@ -425,9 +444,8 @@ else:
                 
             df_mostrar = df_limpio[cols_mostrar].copy()
             
-            # Limpiar columnas FT y Etapa para formatear enteros
             for c in df_mostrar.columns:
-                if "etapa" in c.lower() or c.lower() == "ft" or "ft" in c.lower():
+                if "etapa" in c.lower():
                     df_mostrar[c] = df_mostrar[c].apply(
                         lambda x: f"{int(float(x))}" if pd.notna(x) and str(x).strip() != "" and str(x).replace('.','',1).replace('-','',1).isdigit() else ("" if pd.isna(x) else str(x))
                     )
