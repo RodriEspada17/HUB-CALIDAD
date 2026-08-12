@@ -65,21 +65,9 @@ st.markdown("""
     }
     
     /* Estilos del texto */
-    /* =======================================================
-       RESET AGRESIVO DE MÁRGENES FANTASMAS (Para la 1ra Columna)
-       ======================================================= */
-    div[data-testid="stColumn"] div[data-testid="stButton"] > button div[data-testid="stMarkdownContainer"],
     div[data-testid="stColumn"] div[data-testid="stButton"] > button p {
-        margin: 0 !important;
-        padding: 0 !important;
-        width: 100% !important;
-        color: #888888 !important; 
-        font-size: 0.9rem !important; 
-        line-height: 1.5 !important; 
-        font-family: 'Inter', sans-serif !important; 
-        white-space: pre-wrap !important;
+        color: #888888 !important; font-size: 0.9rem !important; line-height: 1.5 !important; font-family: 'Inter', sans-serif !important; white-space: pre-wrap !important; width: 100% !important;
     }
-
     div[data-testid="stColumn"] div[data-testid="stButton"] > button p strong:nth-of-type(1) {
         color: #a3ff00 !important; font-size: 1.15rem !important; letter-spacing: 2px !important; margin-bottom: 5px !important; display: inline-block !important;
     }
@@ -91,8 +79,7 @@ st.markdown("""
     div[data-testid="stColumn"] div[data-testid="stButton"] > button code {
         position: absolute !important;
         bottom: 24px !important; /* Clavada matemáticamente al fondo */
-        left: 24px !important;  /* Misma distancia que el padding del botón */
-        margin: 0 !important;
+        left: 24px !important;   /* Clavada matemáticamente a la izquierda */
         background-color: rgba(163, 255, 0, 0.1) !important;
         color: #a3ff00 !important;
         border: 1px solid rgba(163, 255, 0, 0.3) !important;
@@ -108,8 +95,7 @@ st.markdown("""
     div[data-testid="stColumn"] div[data-testid="stButton"] > button del {
         position: absolute !important;
         bottom: 24px !important; 
-        left: 24px !important;  /* Misma distancia que el padding del botón */
-        margin: 0 !important;
+        left: 24px !important;   
         text-decoration: none !important; /* Quitamos la raya de tachado */
         background-color: rgba(250, 204, 21, 0.1) !important;
         color: #facc15 !important;
