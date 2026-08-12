@@ -49,10 +49,10 @@ st.markdown("""
 
 # --- ESTÁNDARES DE TEMPERATURA POR ETAPA ---
 SPECS_TEMP = {
-    "Laboratorio": {"target": 25.0, "tol": 0.5, "min": 24.5, "max": 25.5, "color": "#60a5fa", "bg": "rgba(96, 165, 250, 0.05)", "symbol": "circle"},
-    "Industrial 1": {"target": 18.0, "tol": 0.5, "min": 17.5, "max": 18.5, "color": "#a3ff00", "bg": "rgba(163, 255, 0, 0.05)", "symbol": "diamond"},
-    "Industrial 2": {"target": 16.0, "tol": 0.5, "min": 15.5, "max": 16.5, "color": "#facc15", "bg": "rgba(250, 204, 21, 0.05)", "symbol": "square"},
-    "Industrial 3": {"target": 14.0, "tol": 0.5, "min": 13.5, "max": 14.5, "color": "#f97316", "bg": "rgba(249, 115, 22, 0.05)", "symbol": "triangle-up"}
+    "Laboratorio": {"target": 25.0, "tol": 0.5, "min": 24.5, "max": 25.5, "color": "#60a5fa", "bg": "rgba(96, 165, 250, 0.06)", "symbol": "circle"},
+    "Industrial 1": {"target": 18.0, "tol": 0.5, "min": 17.5, "max": 18.5, "color": "#a3ff00", "bg": "rgba(163, 255, 0, 0.06)", "symbol": "diamond"},
+    "Industrial 2": {"target": 16.0, "tol": 0.5, "min": 15.5, "max": 16.5, "color": "#facc15", "bg": "rgba(250, 204, 21, 0.06)", "symbol": "square"},
+    "Industrial 3": {"target": 14.0, "tol": 0.5, "min": 13.5, "max": 14.5, "color": "#f97316", "bg": "rgba(249, 115, 22, 0.06)", "symbol": "triangle-up"}
 }
 
 def agrupar_por_propagaciones(df):
@@ -61,6 +61,7 @@ def agrupar_por_propagaciones(df):
     
     if not col_fecha: return df
     
+    # Fusión Fecha + Hora para ordenamiento exacto por minuto
     if col_hora:
         df['FECHA_DT'] = pd.to_datetime(df[col_fecha].astype(str) + ' ' + df[col_hora].astype(str), errors='coerce', dayfirst=True)
     else:
@@ -84,33 +85,31 @@ def agrupar_por_propagaciones(df):
     df['Propagacion'] = df['batch_id'].map(mapa_etiquetas)
     return df
 
+# 🔥 CLASIFICACIÓN PRECISA LEYENDO LAS COLUMNAS 'ESCALA' Y 'ETAPA'
 def clasificar_escala(df):
-    col_escala = next((c for c in df.columns if "escala" in c.lower() or "etapa" in c.lower() or "fase" in c.lower()), None)
-    col_temp = next((c for c in df.columns if "temp" in c.lower()), None)
+    col_escala = next((c for c in df.columns if "escala" in c.lower()), None)
+    col_etapa = next((c for c in df.columns if "etapa" in c.lower()), None)
     
     fases = []
     for idx, row in df.iterrows():
-        val_escala = str(row[col_escala]).strip().lower() if col_escala else ""
+        val_escala = str(row[col_escala]).strip().lower() if col_escala and pd.notna(row[col_escala]) else ""
+        val_etapa = str(row[col_etapa]).strip() if col_etapa and pd.notna(row[col_etapa]) else ""
+        
+        etapa_num = "".join(filter(str.isdigit, val_etapa))
         
         if "lab" in val_escala:
             fases.append("Laboratorio")
         elif "ind" in val_escala or "plant" in val_escala or "tanque" in val_escala:
-            if "1" in val_escala: fases.append("Industrial 1")
-            elif "2" in val_escala: fases.append("Industrial 2")
-            elif "3" in val_escala: fases.append("Industrial 3")
+            if etapa_num in ["1", "2", "3"]:
+                fases.append(f"Industrial {etapa_num}")
             else:
-                if col_temp and pd.notna(row[col_temp]):
-                    try:
-                        t = float(str(row[col_temp]).replace(',', '.'))
-                        if t >= 21.0: fases.append("Laboratorio")
-                        elif t >= 17.0: fases.append("Industrial 1")
-                        elif t >= 15.0: fases.append("Industrial 2")
-                        else: fases.append("Industrial 3")
-                    except: fases.append("Industrial 1")
-                else: fases.append("Industrial 1")
+                fases.append("Industrial 1")
         else:
-            fases.append("Laboratorio" if idx < 4 else "Industrial 1")
-            
+            if etapa_num in ["1", "2", "3"]:
+                fases.append(f"Industrial {etapa_num}")
+            else:
+                fases.append("Laboratorio" if idx < 4 else "Industrial 1")
+                
     df['Escala_Fase'] = fases
     return df
 
@@ -192,7 +191,7 @@ else:
                 if lote_sel != "Todas las Propagaciones":
                     df_limpio = df_limpio[df_limpio['Propagacion'] == lote_sel]
 
-        # 1. IDENTIFICAR COLUMNAS NATIVAS NUMÉRICAS (EXCLUYENDO ETAPA/ESCALA)
+        # 1. IDENTIFICAR COLUMNAS NUMÉRICAS REALES
         cols_numericas = df_limpio.select_dtypes(include=[np.number]).columns.tolist()
         cols_prohibidas_graf = ['semana', 'lote', 'ft', 'batch_id', 'etapa', 'escala', 'escala_fase', 'hora']
         cols_graficables = [c for c in cols_numericas if not any(ex in c.lower() for ex in cols_prohibidas_graf)]
@@ -203,36 +202,36 @@ else:
             st.markdown("<h3 style='color: #ffffff; font-size: 1.1rem; margin-bottom: 15px;'>■ GRÁFICO DE CONTROL (SPC) MULTI-ESCALA</h3>", unsafe_allow_html=True)
             
             if cols_graficables:
-                # DEFAULT A TEMPERATURA SI EXISTE
                 idx_default = next((i for i, c in enumerate(cols_graficables) if "temp" in c.lower()), 0)
                 parametro_a_graficar = st.selectbox("Selecciona el parámetro a analizar:", cols_graficables, index=idx_default, label_visibility="collapsed")
                 
-                col_fecha = next((col for col in df_limpio.columns if "fecha" in col.lower()), df_limpio.index)
+                col_fecha_orig = next((col for col in df_limpio.columns if "fecha" in col.lower()), "FECHA_DT")
                 col_hora_str = next((col for col in df_limpio.columns if "hora" in col.lower()), None)
                 es_temperatura = "temp" in parametro_a_graficar.lower()
                 
                 fig = go.Figure()
 
-                # 🔥 1. DIBUJAR FRANSAS DE TOLERANCIA VERDE Y SOMBRAS DE ETAPA
+                # 🔥 2. SOMBRAS Y FRANJAS DE TOLERANCIA POR BLOQUES TEMPORALES CONTINUOS
                 if 'Escala_Fase' in df_limpio.columns:
-                    for i in range(len(df_limpio) - 1):
-                        x0 = df_limpio[col_fecha].iloc[i]
-                        x1 = df_limpio[col_fecha].iloc[i+1]
-                        fase_i = df_limpio['Escala_Fase'].iloc[i]
-                        spec_i = SPECS_TEMP.get(fase_i, {})
+                    df_limpio['fase_block'] = (df_limpio['Escala_Fase'] != df_limpio['Escala_Fase'].shift()).cumsum()
+                    for _, sub_block in df_limpio.groupby('fase_block'):
+                        fase_name = sub_block['Escala_Fase'].iloc[0]
+                        spec_info = SPECS_TEMP.get(fase_name, {})
+                        x_min = sub_block['FECHA_DT'].min()
+                        x_max = sub_block['FECHA_DT'].max()
                         
-                        # Fondo de la fase
-                        fig.add_vrect(x0=x0, x1=x1, fillcolor=spec_i.get('bg', 'rgba(255,255,255,0.02)'), layer="below", line_width=0)
+                        # Fondo de la etapa
+                        fig.add_vrect(x0=x_min, x1=x_max, fillcolor=spec_info.get('bg', 'rgba(255,255,255,0.02)'), layer="below", line_width=0)
                         
-                        # Si es temperatura, dibujamos la franja de tolerancia ±0.5°C
-                        if es_temperatura and spec_i.get('min') is not None:
+                        # Franja de tolerancia ±0.5°C
+                        if es_temperatura and spec_info.get('min') is not None:
                             fig.add_shape(
-                                type="rect", x0=x0, x1=x1, y0=spec_i['min'], y1=spec_i['max'],
+                                type="rect", x0=x_min, x1=x_max, y0=spec_info['min'], y1=spec_info['max'],
                                 fillcolor="rgba(74, 222, 128, 0.12)", line=dict(color="rgba(74, 222, 128, 0.3)", width=1),
                                 layer="below"
                             )
 
-                # 🔥 2. DIBUJAR PUNTOS Y EVALUAR ESTÁNDAR POR ETAPA
+                # 🔥 3. DIBUJAR PUNTOS Y EVALUAR ESTÁNDAR
                 escala_orden = ["Laboratorio", "Industrial 1", "Industrial 2", "Industrial 3"]
                 fases_presentes = [f for f in escala_orden if f in df_limpio['Escala_Fase'].values] if 'Escala_Fase' in df_limpio.columns else ["General"]
 
@@ -240,7 +239,6 @@ else:
                     group = df_limpio[df_limpio['Escala_Fase'] == fase_tipo] if 'Escala_Fase' in df_limpio.columns else df_limpio
                     spec = SPECS_TEMP.get(fase_tipo, {"color": "#a3ff00", "symbol": "circle", "target": None, "min": None, "max": None})
                     
-                    # Semáforo de tolerancia ±0.5°C
                     colores_puntos = []
                     hover_text = []
                     
@@ -250,7 +248,7 @@ else:
                         
                         if es_temperatura and spec["min"] is not None:
                             if pd.notna(val) and (spec["min"] <= float(val) <= spec["max"]):
-                                colores_puntos.append(spec["color"]) # Dentro de norma
+                                colores_puntos.append(spec["color"])
                                 estado_txt = "<span style='color: #4ade80;'><b>✅ DENTRO DE STD</b></span>"
                             else:
                                 colores_puntos.append('#f87171') # Rojo fuera de norma
@@ -262,7 +260,7 @@ else:
                             target_txt = ""
 
                         hover_text.append(
-                            f"Fecha: {row[col_fecha]}{hora_txt}<br>"
+                            f"Fecha: {row[col_fecha_orig]}{hora_txt}<br>"
                             f"Lote: {row.get('Propagacion', 'N/A')}<br>"
                             f"Etapa: <b>{fase_tipo}</b><br>"
                             f"Valor: <b>{val} {'°C' if es_temperatura else ''}</b>"
@@ -270,17 +268,17 @@ else:
                         )
 
                     fig.add_trace(go.Scatter(
-                        x=group[col_fecha], y=group[parametro_a_graficar],
+                        x=group['FECHA_DT'], y=group[parametro_a_graficar],
                         mode='lines+markers', name=f"{fase_tipo} ({spec['target']}°C)" if es_temperatura and spec['target'] else fase_tipo,
                         hovertext=hover_text, hoverinfo="text",
                         line=dict(color=spec["color"], width=2),
                         marker=dict(size=9, symbol=spec["symbol"], color=colores_puntos, line=dict(width=1, color='#050505'))
                     ))
 
-                # 🔥 3. TÍTULO Y UNIDADES DEL EJE Y
+                # 🔥 4. FORMATO EJE X (CRONOLÓGICO Y LIMPIO)
                 fig.update_layout(
                     template="plotly_dark", plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)",
-                    xaxis=dict(showgrid=True, gridcolor="#1a1a1a", title=""),
+                    xaxis=dict(showgrid=True, gridcolor="#1a1a1a", title="", tickformat="%d-%b"),
                     yaxis=dict(showgrid=True, gridcolor="#1a1a1a", title="Temperatura (°C)" if es_temperatura else "UFC / Medición"),
                     margin=dict(l=0, r=0, t=30, b=0),
                     showlegend=True,
@@ -292,7 +290,7 @@ else:
                 
         with col_tabla:
             st.markdown("<h3 style='color: #ffffff; font-size: 1.1rem; margin-bottom: 15px;'>■ ÚLTIMOS REGISTROS</h3>", unsafe_allow_html=True)
-            cols_mostrar = [c for c in df_limpio.columns if c not in ['FECHA_DT', 'batch_id']]
+            cols_mostrar = [c for c in df_limpio.columns if c not in ['FECHA_DT', 'batch_id', 'fase_block']]
             st.dataframe(df_limpio[cols_mostrar].tail(10), use_container_width=True, height=450)
             
     else:
