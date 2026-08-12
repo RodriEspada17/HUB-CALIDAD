@@ -7,9 +7,58 @@ from utils.core import aplicar_estilo_neon, obtener_limites, generar_url_csv, ca
 st.set_page_config(page_title="Parámetros Críticos", layout="wide", page_icon="▪️", initial_sidebar_state="expanded")
 aplicar_estilo_neon()
 
+# --- CSS GLOBAL Y ESTILO NEÓN PARA SIDEBAR ---
+st.markdown("""
+    <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+    
+    html, body, [class*="css"], .stApp { 
+        font-family: 'Inter', sans-serif !important; 
+        background-color: #050505 !important; 
+        color: #e0e0e0 !important; 
+    }
+    header[data-testid="stHeader"] { background-color: transparent !important; }
+    
+    /* BOTONES NEÓN EXCLUSIVOS PARA EL SIDEBAR */
+    div[data-testid="stSidebar"] div[data-testid="stButton"] > button { 
+        background-color: transparent !important; 
+        border: 1px solid #1a1a1a !important; 
+        width: 100% !important; 
+        padding: 8px 16px !important; 
+        border-radius: 6px !important; 
+        transition: 0.3s !important; 
+        margin-bottom: 5px !important;
+    }
+    div[data-testid="stSidebar"] div[data-testid="stButton"] > button p { 
+        color: #888888 !important; font-weight: 700 !important; font-size: 0.8rem !important; letter-spacing: 1px !important; text-align: left !important;
+    }
+    div[data-testid="stSidebar"] div[data-testid="stButton"] > button:hover { 
+        border-color: #a3ff00 !important; background-color: rgba(163, 255, 0, 0.05) !important; 
+    }
+    div[data-testid="stSidebar"] div[data-testid="stButton"] > button:hover p { 
+        color: #a3ff00 !important; 
+    }
+    
+    /* ELIMINAR EL FOCO PERMANENTE DESPUÉS DEL CLIC EN SIDEBAR */
+    div[data-testid="stSidebar"] div[data-testid="stButton"] > button:focus {
+        box-shadow: none !important;
+        outline: none !important;
+    }
+    div[data-testid="stSidebar"] div[data-testid="stButton"] > button:focus:not(:hover) {
+        border-color: #1a1a1a !important;
+        background-color: transparent !important;
+    }
+    div[data-testid="stSidebar"] div[data-testid="stButton"] > button:focus:not(:hover) p {
+        color: #888888 !important;
+    }
+    </style>
+""", unsafe_allow_html=True)
+
 # --- SIDEBAR: NAVEGACIÓN Y FILTROS ---
-st.sidebar.page_link("app.py", label="◀ VOLVER AL INICIO")
-st.sidebar.page_link("pages/CONTROL_CALIDAD.py", label="◀ VOLVER A CALIDAD")
+if st.sidebar.button("🏠 VOLVER AL INICIO", use_container_width=True):
+    st.switch_page("app.py")
+if st.sidebar.button("◀ VOLVER A CALIDAD", use_container_width=True):
+    st.switch_page("pages/CONTROL_CALIDAD.py")
 
 st.sidebar.markdown("<br>", unsafe_allow_html=True)
 st.sidebar.markdown("<h3 style='color: #a3ff00; font-size: 1.1rem; letter-spacing: 1px;'>⯈ FILTROS DE DATOS</h3>", unsafe_allow_html=True)
