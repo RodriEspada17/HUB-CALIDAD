@@ -55,7 +55,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # --- SIDEBAR: NAVEGACIÓN Y FILTROS ---
-if st.sidebar.button("🏠 VOLVER AL INICIO", use_container_width=True):
+if st.sidebar.button("◀ VOLVER AL INICIO", use_container_width=True):
     st.switch_page("app.py")
 if st.sidebar.button("◀ VOLVER A CALIDAD", use_container_width=True):
     st.switch_page("pages/CONTROL_CALIDAD.py")
