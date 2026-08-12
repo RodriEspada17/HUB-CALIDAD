@@ -9,7 +9,7 @@ from utils.core import aplicar_estilo_neon, generar_url_csv, cargar_datos
 st.set_page_config(page_title="Microbiología SPC", layout="wide", initial_sidebar_state="collapsed")
 aplicar_estilo_neon()
 
-# --- CSS GLOBAL (INTER + NEÓN + SELECTBOX STRICT READONLY) ---
+# --- CSS GLOBAL (INTER + NEÓN) ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
@@ -43,16 +43,14 @@ st.markdown("""
     div[data-testid="stButton"] > button:focus:not(:hover) { border-color: #1a1a1a !important; background-color: transparent !important; }
     div[data-testid="stButton"] > button:focus:not(:hover) p { color: #888888 !important; }
     
-    /* 🔥 ELIMINADOR DE TECLADO EN DESPLEGABLES (STRICT READONLY) */
+    /* BLOQUEAR ESCRITURA / TECLADO EN DESPLEGABLES (Ocultar Input nativo) */
     div[data-baseweb="select"] input {
         width: 0px !important;
         opacity: 0 !important;
         position: absolute !important;
         pointer-events: none !important;
     }
-    div[data-baseweb="select"], div[data-baseweb="select"] * {
-        cursor: pointer !important;
-    }
+    div[data-baseweb="select"], div[data-baseweb="select"] * { cursor: pointer !important; }
     
     .stSelectbox label { color: #888888 !important; font-weight: 600 !important; letter-spacing: 1px; font-size: 0.85rem !important; }
     </style>
@@ -191,6 +189,7 @@ def cargar_y_limpiar_microbiologia(gid):
         if len(columnas_fecha) > 0:
             df = df.dropna(subset=[columnas_fecha[0]])
             
+        # Filtramos columnas que no queremos que Streamlit detecte como numéricas
         columnas_excluidas = ['fecha', 'hora', 'semana', 'lote', 'escala', 'etapa', 'analista', 'producto', 'procedencia', 'tipo', 'generación', 'tanque', 'observaciones', 'ft', 'tp', 'muestra', 'sector', 'estado', 'calibre', 'propagacion', 'batch_id', 'fecha_dt', 'escala_fase']
         for col in df.columns:
             if not any(excl in col.lower() for excl in columnas_excluidas):
@@ -247,7 +246,7 @@ else:
                 
                 fig = go.Figure()
 
-                # 🔥 2. SOMBRAS Y FRANJAS DE TOLERANCIA
+                # 🔥 SOMBRAS Y FRANJAS DE TOLERANCIA
                 if 'Escala_Fase' in df_limpio.columns:
                     df_limpio['fase_block'] = (df_limpio['Escala_Fase'] != df_limpio['Escala_Fase'].shift()).cumsum()
                     for _, sub_block in df_limpio.groupby('fase_block'):
@@ -265,7 +264,7 @@ else:
                                 layer="below"
                             )
 
-                # 🔥 LÍNEAS DE OBJETIVO PARA OTROS PARÁMETROS
+                # 🔥 LÍNEAS DE OBJETIVO
                 if spec_gen:
                     if spec_gen["type"] == "min":
                         fig.add_hline(y=spec_gen["val"], line_dash="dash", line_color="#4ade80", 
@@ -277,17 +276,13 @@ else:
                         fig.add_hline(y=spec_gen["min"], line_dash="dash", line_color="#4ade80", annotation_text=f"LSL: {spec_gen['min']}")
                         fig.add_hline(y=spec_gen["max"], line_dash="dash", line_color="#4ade80", annotation_text=f"USL: {spec_gen['max']}")
 
-                # 🔥 3. LÍNEA CONTINUA QUE CONECTA TODOS LOS PUNTOS
+                # 🔥 LÍNEA CONTINUA CONECTORA
                 fig.add_trace(go.Scatter(
-                    x=df_limpio['FECHA_DT'],
-                    y=df_limpio[parametro_a_graficar],
-                    mode='lines',
-                    line=dict(color='rgba(255, 255, 255, 0.35)', width=1.5, dash='dot'),
-                    showlegend=False,
-                    hoverinfo='none'
+                    x=df_limpio['FECHA_DT'], y=df_limpio[parametro_a_graficar], mode='lines',
+                    line=dict(color='rgba(255, 255, 255, 0.35)', width=1.5, dash='dot'), showlegend=False, hoverinfo='none'
                 ))
 
-                # 🔥 4. DIBUJAR PUNTOS Y EVALUAR ESTÁNDAR
+                # 🔥 DIBUJAR PUNTOS Y EVALUAR ESTÁNDAR
                 escala_orden = ["Laboratorio", "Industrial 1", "Industrial 2", "Industrial 3"]
                 fases_presentes = [f for f in escala_orden if f in df_limpio['Escala_Fase'].values] if 'Escala_Fase' in df_limpio.columns else ["General"]
 
@@ -307,10 +302,8 @@ else:
                         
                         if es_temperatura and spec_t["min"] is not None:
                             std_label_txt = f"STD: {spec_t['target']} ± {spec_t['tol']}°C"
-                            if pd.notna(val) and (spec_t["min"] <= float(val) <= spec_t["max"]):
-                                cumple = True
-                            else:
-                                cumple = False
+                            if pd.notna(val) and (spec_t["min"] <= float(val) <= spec_t["max"]): cumple = True
+                            else: cumple = False
                         elif spec_gen:
                             std_label_txt = f"STD: {spec_gen['label']}"
                             if pd.notna(val):
@@ -329,11 +322,8 @@ else:
                         target_info = f"<br>{std_label_txt}<br>Estado: {estado_txt}" if std_label_txt else ""
 
                         hover_text.append(
-                            f"Fecha: {row[col_fecha_orig]}{hora_txt}<br>"
-                            f"Lote: {row.get('Propagacion', 'N/A')}<br>"
-                            f"Etapa: <b>{fase_tipo}</b><br>"
-                            f"Valor: <b>{val} {spec_gen['unit'] if spec_gen else ''}</b>"
-                            f"{target_info}"
+                            f"Fecha: {row[col_fecha_orig]}{hora_txt}<br>Lote: {row.get('Propagacion', 'N/A')}<br>Etapa: <b>{fase_tipo}</b><br>"
+                            f"Valor: <b>{val} {spec_gen['unit'] if spec_gen else ''}</b>{target_info}"
                         )
 
                     fig.add_trace(go.Scatter(
@@ -344,16 +334,14 @@ else:
                         marker=dict(size=9, symbol=spec_t["symbol"], color=colores_puntos, line=dict(width=1, color='#050505'))
                     ))
 
-                # 🔥 5. UNIDADES DEL EJE Y Y FORMATO
+                # FORMATO FINAL
                 unit_label = "Temperatura (°C)" if es_temperatura else (f"{parametro_a_graficar} ({spec_gen['unit']})" if spec_gen else "UFC / Medición")
-                
                 fig.update_layout(
                     template="plotly_dark", plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)",
                     xaxis=dict(showgrid=True, gridcolor="#1a1a1a", title="", tickformat="%d-%b"),
                     yaxis=dict(showgrid=True, gridcolor="#1a1a1a", title=unit_label),
                     margin=dict(l=0, r=0, t=30, b=0),
-                    showlegend=True,
-                    legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
+                    showlegend=True, legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
                 )
                 st.plotly_chart(fig, use_container_width=True)
             else:
@@ -361,7 +349,20 @@ else:
                 
         with col_tabla:
             st.markdown("<h3 style='color: #ffffff; font-size: 1.1rem; margin-bottom: 15px;'>■ ÚLTIMOS REGISTROS</h3>", unsafe_allow_html=True)
-            cols_mostrar = [c for c in df_limpio.columns if c not in ['FECHA_DT', 'batch_id', 'fase_block']]
+            
+            # 🔥 NUEVA LÓGICA DE TABLA DE APOYO (CONTEXTO + PARÁMETRO SELECCIONADO)
+            claves_fijas = ['fecha', 'hora', 'escala', 'etapa', 'lote', 'propagacion']
+            cols_fijas = [c for c in df_limpio.columns if any(k in c.lower() for k in claves_fijas)]
+            
+            # Excluimos las técnicas del código
+            cols_fijas = [c for c in cols_fijas if c not in ['FECHA_DT', 'batch_id', 'fase_block', 'Escala_Fase']]
+            
+            cols_mostrar = cols_fijas.copy()
+            
+            # Agregamos EXCLUSIVAMENTE el parámetro que se está viendo en el gráfico
+            if 'parametro_a_graficar' in locals() and parametro_a_graficar not in cols_mostrar:
+                cols_mostrar.append(parametro_a_graficar)
+                
             st.dataframe(df_limpio[cols_mostrar].tail(10), use_container_width=True, height=450)
             
     else:
