@@ -55,13 +55,33 @@ SPECS_TEMP = {
     "Industrial 3": {"target": 14.0, "tol": 0.5, "min": 13.5, "max": 14.5, "color": "#f97316", "bg": "rgba(249, 115, 22, 0.06)", "symbol": "triangle-up"}
 }
 
+# --- ESTÁNDARES DE PARÁMETROS GENERALES ---
+SPECS_PARAMETROS = {
+    "recuento": {"type": "min", "val": 100.0, "label": "> 100 mill. Cel/ml", "unit": "mill. Cel/ml"},
+    "extracto": {"type": "range", "min": 9.9, "max": 11.5, "label": "9.9 - 11.5 °P", "unit": "°P"},
+    "alcohol": {"type": "max", "val": 3.0, "label": "< 3 %", "unit": "%"},
+    "muerta": {"type": "max", "val": 0.0, "label": "0", "unit": "%"},
+    "wld": {"type": "max", "val": 0.0, "label": "0 UFC/ml", "unit": "UFC/ml"},
+    "aerobio": {"type": "max", "val": 0.0, "label": "0 UFC/ml", "unit": "UFC/ml"},
+    "salvaje": {"type": "max", "val": 1.0, "label": "≤ 1 UFC/ml", "unit": "UFC/ml"},
+    "ym": {"type": "max", "val": 1.0, "label": "≤ 1 UFC/ml", "unit": "UFC/ml"},
+    "anaerobio": {"type": "max", "val": 0.0, "label": "0 UFC/ml", "unit": "UFC/ml"},
+    "nbb": {"type": "max", "val": 0.0, "label": "0 UFC/ml", "unit": "UFC/ml"}
+}
+
+def obtener_spec_parametro(col_nombre):
+    col_low = col_nombre.lower()
+    for key, spec in SPECS_PARAMETROS.items():
+        if key in col_low:
+            return spec
+    return None
+
 def agrupar_por_propagaciones(df):
     col_fecha = next((c for c in df.columns if "fecha" in c.lower()), None)
     col_hora = next((c for c in df.columns if "hora" in c.lower()), None)
     
     if not col_fecha: return df
     
-    # Fusión exacta Fecha + Hora
     if col_hora:
         df['FECHA_DT'] = pd.to_datetime(df[col_fecha].astype(str) + ' ' + df[col_hora].astype(str), errors='coerce', dayfirst=True)
     else:
@@ -210,11 +230,13 @@ else:
                 
                 col_fecha_orig = next((col for col in df_limpio.columns if "fecha" in col.lower()), "FECHA_DT")
                 col_hora_str = next((col for col in df_limpio.columns if "hora" in col.lower()), None)
+                
                 es_temperatura = "temp" in parametro_a_graficar.lower()
+                spec_gen = obtener_spec_parametro(parametro_a_graficar) if not es_temperatura else None
                 
                 fig = go.Figure()
 
-                # 🔥 2. SOMBRAS Y FRANJAS DE TOLERANCIA POR BLOQUES TEMPORALES CONTINUOS
+                # 🔥 2. SOMBRAS Y FRANJAS DE TOLERANCIA
                 if 'Escala_Fase' in df_limpio.columns:
                     df_limpio['fase_block'] = (df_limpio['Escala_Fase'] != df_limpio['Escala_Fase'].shift()).cumsum()
                     for _, sub_block in df_limpio.groupby('fase_block'):
@@ -223,14 +245,28 @@ else:
                         x_min = sub_block['FECHA_DT'].min()
                         x_max = sub_block['FECHA_DT'].max()
                         
+                        # Fondo de la etapa
                         fig.add_vrect(x0=x_min, x1=x_max, fillcolor=spec_info.get('bg', 'rgba(255,255,255,0.02)'), layer="below", line_width=0)
                         
+                        # Tolerancia de temperatura (si se analiza temperatura)
                         if es_temperatura and spec_info.get('min') is not None:
                             fig.add_shape(
                                 type="rect", x0=x_min, x1=x_max, y0=spec_info['min'], y1=spec_info['max'],
                                 fillcolor="rgba(74, 222, 128, 0.12)", line=dict(color="rgba(74, 222, 128, 0.3)", width=1),
                                 layer="below"
                             )
+
+                # 🔥 LÍNEAS DE OBJETIVO PARA OTROS PARÁMETROS
+                if spec_gen:
+                    if spec_gen["type"] == "min":
+                        fig.add_hline(y=spec_gen["val"], line_dash="dash", line_color="#4ade80", 
+                                      annotation_text=f"Mín STD: {spec_gen['label']}", annotation_position="top left", annotation_font_color="#4ade80")
+                    elif spec_gen["type"] == "max":
+                        fig.add_hline(y=spec_gen["val"], line_dash="dash", line_color="#f87171", 
+                                      annotation_text=f"Máx STD: {spec_gen['label']}", annotation_position="top left", annotation_font_color="#f87171")
+                    elif spec_gen["type"] == "range":
+                        fig.add_hline(y=spec_gen["min"], line_dash="dash", line_color="#4ade80", annotation_text=f"LSL: {spec_gen['min']}")
+                        fig.add_hline(y=spec_gen["max"], line_dash="dash", line_color="#4ade80", annotation_text=f"USL: {spec_gen['max']}")
 
                 # 🔥 3. LÍNEA CONTINUA QUE CONECTA TODOS LOS PUNTOS DE LA PROPAGACIÓN
                 fig.add_trace(go.Scatter(
@@ -242,13 +278,13 @@ else:
                     hoverinfo='none'
                 ))
 
-                # 🔥 4. DIBUJAR PUNTOS Y LÍNEAS DE CADA ETAPA
+                # 🔥 4. DIBUJAR PUNTOS Y EVALUAR ESTÁNDAR POR ETAPA / PARÁMETRO
                 escala_orden = ["Laboratorio", "Industrial 1", "Industrial 2", "Industrial 3"]
                 fases_presentes = [f for f in escala_orden if f in df_limpio['Escala_Fase'].values] if 'Escala_Fase' in df_limpio.columns else ["General"]
 
                 for fase_tipo in fases_presentes:
                     group = df_limpio[df_limpio['Escala_Fase'] == fase_tipo] if 'Escala_Fase' in df_limpio.columns else df_limpio
-                    spec = SPECS_TEMP.get(fase_tipo, {"color": "#a3ff00", "symbol": "circle", "target": None, "min": None, "max": None})
+                    spec_t = SPECS_TEMP.get(fase_tipo, {"color": "#a3ff00", "symbol": "circle", "target": None, "min": None, "max": None})
                     
                     colores_puntos = []
                     hover_text = []
@@ -257,40 +293,55 @@ else:
                         val = row[parametro_a_graficar]
                         hora_txt = f" {row[col_hora_str]}" if col_hora_str and pd.notna(row[col_hora_str]) else ""
                         
-                        if es_temperatura and spec["min"] is not None:
-                            if pd.notna(val) and (spec["min"] <= float(val) <= spec["max"]):
-                                colores_puntos.append(spec["color"])
-                                estado_txt = "<span style='color: #4ade80;'><b>✅ DENTRO DE STD</b></span>"
+                        cumple = True
+                        std_label_txt = ""
+                        
+                        if es_temperatura and spec_t["min"] is not None:
+                            std_label_txt = f"STD: {spec_t['target']} ± {spec_t['tol']}°C"
+                            if pd.notna(val) and (spec_t["min"] <= float(val) <= spec_t["max"]):
+                                cumple = True
                             else:
-                                colores_puntos.append('#f87171')
-                                estado_txt = "<span style='color: #f87171;'><b>🚨 FUERA DE STD</b></span>"
-                                
-                            target_txt = f"<br>STD Objetivos: <b>{spec['target']} ± {spec['tol']}°C</b><br>Estado: {estado_txt}"
+                                cumple = False
+                        elif spec_gen:
+                            std_label_txt = f"STD: {spec_gen['label']}"
+                            if pd.notna(val):
+                                float_v = float(val)
+                                if spec_gen["type"] == "min" and float_v < spec_gen["val"]: cumple = False
+                                elif spec_gen["type"] == "max" and float_v > spec_gen["val"]: cumple = False
+                                elif spec_gen["type"] == "range" and not (spec_gen["min"] <= float_v <= spec_gen["max"]): cumple = False
+
+                        if cumple:
+                            colores_puntos.append(spec_t["color"])
+                            estado_txt = "<span style='color: #4ade80;'><b>✅ DENTRO DE STD</b></span>"
                         else:
-                            colores_puntos.append(spec["color"])
-                            target_txt = ""
+                            colores_puntos.append('#f87171') # Rojo si fuera de norma
+                            estado_txt = "<span style='color: #f87171;'><b>🚨 FUERA DE STD</b></span>"
+                            
+                        target_info = f"<br>{std_label_txt}<br>Estado: {estado_txt}" if std_label_txt else ""
 
                         hover_text.append(
                             f"Fecha: {row[col_fecha_orig]}{hora_txt}<br>"
                             f"Lote: {row.get('Propagacion', 'N/A')}<br>"
                             f"Etapa: <b>{fase_tipo}</b><br>"
-                            f"Valor: <b>{val} {'°C' if es_temperatura else ''}</b>"
-                            f"{target_txt}"
+                            f"Valor: <b>{val} {spec_gen['unit'] if spec_gen else ''}</b>"
+                            f"{target_info}"
                         )
 
                     fig.add_trace(go.Scatter(
                         x=group['FECHA_DT'], y=group[parametro_a_graficar],
-                        mode='lines+markers', name=f"{fase_tipo} ({spec['target']}°C)" if es_temperatura and spec['target'] else fase_tipo,
+                        mode='lines+markers', name=f"{fase_tipo} ({spec_t['target']}°C)" if es_temperatura and spec_t['target'] else fase_tipo,
                         hovertext=hover_text, hoverinfo="text",
-                        line=dict(color=spec["color"], width=2),
-                        marker=dict(size=9, symbol=spec["symbol"], color=colores_puntos, line=dict(width=1, color='#050505'))
+                        line=dict(color=spec_t["color"], width=2),
+                        marker=dict(size=9, symbol=spec_t["symbol"], color=colores_puntos, line=dict(width=1, color='#050505'))
                     ))
 
-                # 🔥 5. FORMATO FINAL DEL EJE X Y LEYENDAS
+                # 🔥 5. UNIDADES DEL EJE Y Y FORMATO
+                unit_label = "Temperatura (°C)" if es_temperatura else (f"{parametro_a_graficar} ({spec_gen['unit']})" if spec_gen else "UFC / Medición")
+                
                 fig.update_layout(
                     template="plotly_dark", plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)",
                     xaxis=dict(showgrid=True, gridcolor="#1a1a1a", title="", tickformat="%d-%b"),
-                    yaxis=dict(showgrid=True, gridcolor="#1a1a1a", title="Temperatura (°C)" if es_temperatura else "UFC / Medición"),
+                    yaxis=dict(showgrid=True, gridcolor="#1a1a1a", title=unit_label),
                     margin=dict(l=0, r=0, t=30, b=0),
                     showlegend=True,
                     legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
