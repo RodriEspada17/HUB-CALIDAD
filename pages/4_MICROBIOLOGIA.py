@@ -85,7 +85,6 @@ def agrupar_por_propagaciones(df):
     df['Propagacion'] = df['batch_id'].map(mapa_etiquetas)
     return df
 
-# 🔥 CLASIFICACIÓN DE ESCALA Y ETAPA A PRUEBA DE NÚMEROS FLOTANTES
 def clasificar_escala(df):
     col_escala = next((c for c in df.columns if "escala" in c.lower()), None)
     col_etapa = next((c for c in df.columns if "etapa" in c.lower()), None)
@@ -94,7 +93,6 @@ def clasificar_escala(df):
     for idx, row in df.iterrows():
         val_escala = str(row[col_escala]).strip().lower() if col_escala and pd.notna(row[col_escala]) else ""
         
-        # Extraer el número entero de la Etapa de forma limpia
         etapa_num = "1"
         if col_etapa and pd.notna(row[col_etapa]):
             raw_etapa = str(row[col_etapa]).strip()
@@ -110,7 +108,6 @@ def clasificar_escala(df):
         elif "ind" in val_escala or "plant" in val_escala or "tanque" in val_escala:
             fases.append(f"Industrial {etapa_num}")
         else:
-            # Fallback en caso de que la celda de Escala esté vacía
             if idx < 4:
                 fases.append("Laboratorio")
             else:
@@ -226,10 +223,8 @@ else:
                         x_min = sub_block['FECHA_DT'].min()
                         x_max = sub_block['FECHA_DT'].max()
                         
-                        # Fondo de la etapa
                         fig.add_vrect(x0=x_min, x1=x_max, fillcolor=spec_info.get('bg', 'rgba(255,255,255,0.02)'), layer="below", line_width=0)
                         
-                        # Franja de tolerancia ±0.5°C
                         if es_temperatura and spec_info.get('min') is not None:
                             fig.add_shape(
                                 type="rect", x0=x_min, x1=x_max, y0=spec_info['min'], y1=spec_info['max'],
@@ -237,7 +232,17 @@ else:
                                 layer="below"
                             )
 
-                # 🔥 3. DIBUJAR PUNTOS Y EVALUAR ESTÁNDAR POR ETAPA REAL
+                # 🔥 3. LÍNEA CONTINUA QUE CONECTA TODOS LOS PUNTOS DE LA PROPAGACIÓN
+                fig.add_trace(go.Scatter(
+                    x=df_limpio['FECHA_DT'],
+                    y=df_limpio[parametro_a_graficar],
+                    mode='lines',
+                    line=dict(color='rgba(255, 255, 255, 0.35)', width=1.5, dash='dot'),
+                    showlegend=False,
+                    hoverinfo='none'
+                ))
+
+                # 🔥 4. DIBUJAR PUNTOS Y LÍNEAS DE CADA ETAPA
                 escala_orden = ["Laboratorio", "Industrial 1", "Industrial 2", "Industrial 3"]
                 fases_presentes = [f for f in escala_orden if f in df_limpio['Escala_Fase'].values] if 'Escala_Fase' in df_limpio.columns else ["General"]
 
@@ -257,7 +262,7 @@ else:
                                 colores_puntos.append(spec["color"])
                                 estado_txt = "<span style='color: #4ade80;'><b>✅ DENTRO DE STD</b></span>"
                             else:
-                                colores_puntos.append('#f87171') # Rojo si sale de la tolerancia de su etapa
+                                colores_puntos.append('#f87171')
                                 estado_txt = "<span style='color: #f87171;'><b>🚨 FUERA DE STD</b></span>"
                                 
                             target_txt = f"<br>STD Objetivos: <b>{spec['target']} ± {spec['tol']}°C</b><br>Estado: {estado_txt}"
@@ -281,7 +286,7 @@ else:
                         marker=dict(size=9, symbol=spec["symbol"], color=colores_puntos, line=dict(width=1, color='#050505'))
                     ))
 
-                # 🔥 4. FORMATO EJE X CRONOLÓGICO Y LIMPIO
+                # 🔥 5. FORMATO FINAL DEL EJE X Y LEYENDAS
                 fig.update_layout(
                     template="plotly_dark", plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)",
                     xaxis=dict(showgrid=True, gridcolor="#1a1a1a", title="", tickformat="%d-%b"),
