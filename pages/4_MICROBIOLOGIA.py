@@ -39,73 +39,70 @@ st.markdown("""
     /* ELIMINAR EL FOCO PERMANENTE DESPUÉS DEL CLIC */
     div[data-testid="stButton"] > button:focus,
     div[data-testid="stButton"] > button:active {
-        box-shadow: none !important;
-        outline: none !important;
-        border-color: #1a1a1a !important;
+        box-shadow: none !important; outline: none !important; border-color: #1a1a1a !important;
     }
-    div[data-testid="stButton"] > button:focus p {
-        color: #888888 !important;
-    }
-
-    div[data-testid="stButton"] > button:focus:not(:hover) {
-        border-color: #1a1a1a !important;
-        background-color: transparent !important;
-    }
-    div[data-testid="stButton"] > button:focus:not(:hover) p {
-        color: #888888 !important;
-    }
+    div[data-testid="stButton"] > button:focus p { color: #888888 !important; }
+    div[data-testid="stButton"] > button:focus:not(:hover) { border-color: #1a1a1a !important; background-color: transparent !important; }
+    div[data-testid="stButton"] > button:focus:not(:hover) p { color: #888888 !important; }
     
     /* Cajas y Selectores */
     .stSelectbox label { color: #888888 !important; font-weight: 600 !important; letter-spacing: 1px; font-size: 0.85rem !important; }
     </style>
 """, unsafe_allow_html=True)
 
-# --- FUNCIÓN INTELIGENTE: AGRUPAR PROPAGACIONES POR DÍAS CONSECUTIVOS ---
+# --- FUNCIÓN: AGRUPAR PROPAGACIONES POR DÍAS CONSECUTIVOS ---
 def agrupar_por_propagaciones(df):
     col_fecha = next((c for c in df.columns if "fecha" in c.lower()), None)
     if not col_fecha:
         return df
     
-    # 1. Convertir a datetime y ordenar cronológicamente
     df['FECHA_DT'] = pd.to_datetime(df[col_fecha], dayfirst=True, errors='coerce')
     df = df.dropna(subset=['FECHA_DT']).sort_values('FECHA_DT').reset_index(drop=True)
     
-    if df.empty:
-        return df
+    if df.empty: return df
 
-    # 2. Calcular salto entre fechas: si hay >1 día de diferencia, es una nueva propagación
     diferencias = df['FECHA_DT'].diff().dt.days
     df['batch_id'] = (diferencias > 1).cumsum()
     
-    # 3. Formatear etiqueta tipo [30jun-3jul]
     def obtener_etiqueta_rango(sub_df):
         f_min = sub_df['FECHA_DT'].min()
         f_max = sub_df['FECHA_DT'].max()
         meses_es = {1:'ene', 2:'feb', 3:'mar', 4:'abr', 5:'may', 6:'jun', 7:'jul', 8:'ago', 9:'sep', 10:'oct', 11:'nov', 12:'dic'}
-        
         inicio = f"{f_min.day}{meses_es[f_min.month]}"
         fin = f"{f_max.day}{meses_es[f_max.month]}"
-        
-        if inicio == fin:
-            return f"[{inicio}]"
-        return f"[{inicio}-{fin}]"
+        return f"[{inicio}]" if inicio == fin else f"[{inicio}-{fin}]"
 
-    # Mapear etiquetas
-    mapa_etiquetas = {}
-    for b_id, sub_df in df.groupby('batch_id'):
-        mapa_etiquetas[b_id] = obtener_etiqueta_rango(sub_df)
-        
+    mapa_etiquetas = {b_id: obtener_etiqueta_rango(sub) for b_id, sub in df.groupby('batch_id')}
     df['Propagacion'] = df['batch_id'].map(mapa_etiquetas)
     return df
 
-# --- ENCABEZADO Y BOTONES DE NAVEGACIÓN ---
+# --- FUNCIÓN INTELIGENTE: CLASIFICAR ESCALA (LABORATORIO VS INDUSTRIAL) ---
+def clasificar_escala(df):
+    col_origen = next((c for c in df.columns if any(k in c.lower() for k in ['procedencia', 'tipo', 'sector', 'etapa', 'muestra'])), None)
+    
+    escala = []
+    for idx, row in df.iterrows():
+        val = str(row[col_origen]).lower() if col_origen else ""
+        if any(term in val for term in ['lab', 'matraz', 'erlenmeyer', 'propagador 1', 'fase 1']):
+            escala.append("Laboratorio")
+        elif any(term in val for term in ['ind', 'industrial', 'tanque', 'planta', 'fase 2', 'fase 3']):
+            escala.append("Industrial")
+        else:
+            # Si no hay texto claro, asigna los primeros días a Lab y los últimos a Ind
+            if idx < len(df) / 2:
+                escala.append("Laboratorio")
+            else:
+                escala.append("Industrial")
+                
+    df['Escala_Fase'] = escala
+    return df
+
+# --- ENCABEZADO Y NAVEGACIÓN ---
 col_b1, col_b2, _ = st.columns([1.5, 1.5, 7])
 with col_b1:
-    if st.button("◀ VOLVER A CALIDAD"):
-        st.switch_page("pages/CONTROL_CALIDAD.py")
+    if st.button("◀ VOLVER A CALIDAD"): st.switch_page("pages/CONTROL_CALIDAD.py")
 with col_b2:
-    if st.button("◀ VOLVER AL INICIO"):
-        st.switch_page("app.py")
+    if st.button("◀ VOLVER AL INICIO"): st.switch_page("app.py")
 
 st.markdown("<h1 style='color: #a3ff00; font-size: 2.2rem; font-weight: 800; letter-spacing: 2px; margin: 0;'>ANÁLISIS MICROBIOLÓGICOS <span style='color: #ffffff;'>(SPC)</span></h1>", unsafe_allow_html=True)
 st.markdown("<p style='color: #888888; font-size: 0.95rem; margin-bottom: 2rem;'>Monitoreo estadístico de recuentos celulares y contaminación.</p>", unsafe_allow_html=True)
@@ -123,39 +120,29 @@ GIDS = {
     "7. Agua y Materia Prima": "PONER_GID_AQUI"
 }
 
-# --- SELECTORES DE FILTRO ---
 col1, col2 = st.columns([1.2, 2.8])
 with col1:
     etapa_seleccionada = st.selectbox("SELECCIONA LA ETAPA A MONITOREAR:", list(GIDS.keys()))
 
 st.markdown("<hr style='border: 1px solid #1a1a1a; margin-top: 5px; margin-bottom: 25px;'>", unsafe_allow_html=True)
 
-# --- MOTOR DE LIMPIEZA DE DATOS ---
 @st.cache_data(ttl=60)
 def cargar_y_limpiar_microbiologia(gid):
     if gid == "PONER_GID_AQUI": return None
-        
     url_csv = generar_url_csv(URL_BASE + gid, gid)
     try:
         df = pd.read_csv(url_csv)
-        
-        # 1. Limpiar textos comunes
         df = df.replace({"Ausencia": 0, "ausencia": 0, "AUSENCIA": 0})
         df = df.replace({"NA": np.nan, "N/A": np.nan, "n/a": np.nan, "-": np.nan, "": np.nan})
-        
-        # 2. Manejo del "DNPC"
         df = df.replace({"DNPC": 300, "dnpc": 300}) 
         
-        # 3. Limpiar fechas falsas (1900)
         columnas_fecha = [col for col in df.columns if "fecha" in col.lower() or "semana" in col.lower()]
         for col in columnas_fecha:
             df.loc[df[col].astype(str).str.contains("1900", na=False), col] = np.nan
         if len(columnas_fecha) > 0:
             df = df.dropna(subset=[columnas_fecha[0]])
             
-        # 4. Forzar conversión numérica a columnas métricas
-        columnas_excluidas = ['fecha', 'semana', 'lote', 'analista', 'producto', 'procedencia', 'tipo', 'generación', 'etapa', 'tanque', 'observaciones', 'ft', 'tp', 'muestra', 'sector', 'estado', 'calibre', 'propagacion', 'batch_id', 'fecha_dt']
-        
+        columnas_excluidas = ['fecha', 'semana', 'lote', 'analista', 'producto', 'procedencia', 'tipo', 'generación', 'etapa', 'tanque', 'observaciones', 'ft', 'tp', 'muestra', 'sector', 'estado', 'calibre', 'propagacion', 'batch_id', 'fecha_dt', 'escala_fase']
         for col in df.columns:
             if not any(excl in col.lower() for excl in columnas_excluidas):
                 df[col] = pd.to_numeric(df[col], errors='coerce')
@@ -164,26 +151,25 @@ def cargar_y_limpiar_microbiologia(gid):
     except Exception as e:
         return f"Error: {e}"
 
-# --- CARGA Y RENDERIZADO ---
 gid_actual = GIDS[etapa_seleccionada]
 
 if gid_actual == "PONER_GID_AQUI":
     st.info(f"Falta configurar el GID para **{etapa_seleccionada}**. Agrégalo en el código.")
 else:
-    with st.spinner("Conectando con Google Sheets y estructurando lotes..."):
+    with st.spinner("Conectando con Google Sheets y estructurando datos..."):
         df_limpio = cargar_y_limpiar_microbiologia(gid_actual)
         
     if isinstance(df_limpio, str):
         st.error(f"Error de conexión: {df_limpio}")
     elif df_limpio is not None and not df_limpio.empty:
         
-        # 🔥 SI ES CONTROL DE PROPAGACIÓN, AGRUPAMOS Y HABITAMOS EL SUB-FILTRO POR LOTE
+        # PROPAGACIÓN: AGRUPAR LOTES Y CLASIFICAR FASE LAB / INDUSTRIAL
         if etapa_seleccionada == "1. Control de Propagación":
             df_limpio = agrupar_por_propagaciones(df_limpio)
+            df_limpio = clasificar_escala(df_limpio)
             
             if 'Propagacion' in df_limpio.columns:
                 lista_lotes = ["Todas las Propagaciones"] + list(df_limpio['Propagacion'].unique())
-                
                 c_lote, _ = st.columns([1.5, 2.5])
                 with c_lote:
                     lote_sel = st.selectbox("PROPAGACIÓN / LOTE SELECCIONADO:", lista_lotes)
@@ -191,52 +177,63 @@ else:
                 if lote_sel != "Todas las Propagaciones":
                     df_limpio = df_limpio[df_limpio['Propagacion'] == lote_sel]
 
-        # 1. IDENTIFICAR COLUMNAS NUMÉRICAS PARA GRAFICAR
         cols_numericas = df_limpio.select_dtypes(include=[np.number]).columns.tolist()
         cols_graficables = [c for c in cols_numericas if "semana" not in c.lower() and "lote" not in c.lower() and "ft" not in c.lower() and "batch_id" not in c.lower()]
         
-        # 2. INTERFAZ DIVIDIDA: GRÁFICO (Izquierda) / TABLA (Derecha)
         col_grafico, col_tabla = st.columns([2.5, 1.2])
         
         with col_grafico:
-            st.markdown("<h3 style='color: #ffffff; font-size: 1.1rem; margin-bottom: 15px;'>■ GRÁFICO DE CONTROL (SPC)</h3>", unsafe_allow_html=True)
+            st.markdown("<h3 style='color: #ffffff; font-size: 1.1rem; margin-bottom: 15px;'>■ GRÁFICO DE CONTROL (SPC) CON SEGREGACIÓN</h3>", unsafe_allow_html=True)
             
             if cols_graficables:
                 parametro_a_graficar = st.selectbox("Selecciona el parámetro a analizar:", cols_graficables, label_visibility="collapsed")
                 col_fecha = next((col for col in df_limpio.columns if "fecha" in col.lower()), df_limpio.index)
                 
-                # --- MATEMÁTICA SPC ---
+                # MATEMÁTICA SPC
                 promedio = df_limpio[parametro_a_graficar].mean()
                 desviacion = df_limpio[parametro_a_graficar].std()
                 lcs = promedio + (3 * desviacion) if pd.notna(desviacion) and desviacion > 0 else promedio
                 
-                # Alerta Roja si supera el límite
-                colores_puntos = np.where(df_limpio[parametro_a_graficar] >= lcs, '#f87171', '#a3ff00')
-                
                 fig = go.Figure()
-                
-                # Texto hover enriquecido con el rango del lote
-                hover_text = [f"Fecha: {f}<br>Lote: {p}<br>Valor: {v}" for f, p, v in zip(
-                    df_limpio[col_fecha], 
-                    df_limpio.get('Propagacion', ['N/A']*len(df_limpio)), 
-                    df_limpio[parametro_a_graficar]
-                )]
-                
-                # Línea principal
-                fig.add_trace(go.Scatter(
-                    x=df_limpio[col_fecha], y=df_limpio[parametro_a_graficar],
-                    mode='lines+markers', name='Medición',
-                    hovertext=hover_text, hoverinfo="text",
-                    line=dict(color='rgba(163, 255, 0, 0.4)', width=2),
-                    marker=dict(size=8, color=colores_puntos, line=dict(width=1, color='#050505'))
-                ))
-                
-                # Línea de Promedio
+
+                # 🔥 DIBUJAR SOMBRAS DE FONDO SEGÚN LA ESCALA (LABORATORIO VS INDUSTRIAL)
+                if 'Escala_Fase' in df_limpio.columns:
+                    for i in range(len(df_limpio) - 1):
+                        x0 = df_limpio[col_fecha].iloc[i]
+                        x1 = df_limpio[col_fecha].iloc[i+1]
+                        escala_actual = df_limpio['Escala_Fase'].iloc[i]
+                        
+                        color_fondo = "rgba(59, 130, 246, 0.08)" if escala_actual == "Laboratorio" else "rgba(163, 255, 0, 0.05)"
+                        fig.add_vrect(x0=x0, x1=x1, fillcolor=color_fondo, layer="below", line_width=0)
+
+                # 🔥 DIBUJAR PUNTOS Y TRAZOS SEGÚN ESCALA
+                for escala_tipo, group in df_limpio.groupby('Escala_Fase' if 'Escala_Fase' in df_limpio.columns else [True]*len(df_limpio)):
+                    nombre_fase = f"Fase {escala_tipo}" if isinstance(escala_tipo, str) else "Medición"
+                    simbolo = "circle" if escala_tipo == "Laboratorio" else "diamond"
+                    color_linea = "#60a5fa" if escala_tipo == "Laboratorio" else "#a3ff00"
+                    
+                    colores_puntos = np.where(group[parametro_a_graficar] >= lcs, '#f87171', color_linea)
+                    
+                    hover_text = [f"Fecha: {f}<br>Lote: {p}<br>Fase: {e}<br>Valor: {v}" for f, p, e, v in zip(
+                        group[col_fecha], 
+                        group.get('Propagacion', ['N/A']*len(group)), 
+                        group.get('Escala_Fase', ['N/A']*len(group)),
+                        group[parametro_a_graficar]
+                    )]
+                    
+                    fig.add_trace(go.Scatter(
+                        x=group[col_fecha], y=group[parametro_a_graficar],
+                        mode='lines+markers', name=nombre_fase,
+                        hovertext=hover_text, hoverinfo="text",
+                        line=dict(color=color_linea, width=2),
+                        marker=dict(size=9, symbol=simbolo, color=colores_puntos, line=dict(width=1, color='#050505'))
+                    ))
+
+                # LÍNEAS DE CONTROL
                 if pd.notna(promedio):
                     fig.add_hline(y=promedio, line_dash="dash", line_color="#888888", 
                                   annotation_text=f"Prom: {promedio:.1f}", annotation_position="bottom right")
                 
-                # Línea de LCS
                 if pd.notna(lcs) and lcs > promedio:
                     fig.add_hline(y=lcs, line_dash="dot", line_color="#f87171", 
                                   annotation_text=f"LCS: {lcs:.1f}", annotation_position="top right", annotation_font_color="#f87171")
@@ -246,7 +243,8 @@ else:
                     xaxis=dict(showgrid=True, gridcolor="#1a1a1a", title=""),
                     yaxis=dict(showgrid=True, gridcolor="#1a1a1a", title="UFC / Medición"),
                     margin=dict(l=0, r=0, t=30, b=0),
-                    showlegend=False
+                    showlegend=True,
+                    legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
                 )
                 st.plotly_chart(fig, use_container_width=True)
             else:
@@ -254,8 +252,6 @@ else:
                 
         with col_tabla:
             st.markdown("<h3 style='color: #ffffff; font-size: 1.1rem; margin-bottom: 15px;'>■ ÚLTIMOS REGISTROS</h3>", unsafe_allow_html=True)
-            
-            # Ocultamos columnas técnicas creadas en el background
             cols_mostrar = [c for c in df_limpio.columns if c not in ['FECHA_DT', 'batch_id']]
             st.dataframe(df_limpio[cols_mostrar].tail(10), use_container_width=True, height=450)
             
