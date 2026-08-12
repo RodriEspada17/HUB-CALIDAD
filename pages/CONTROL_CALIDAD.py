@@ -91,16 +91,22 @@ st.markdown("""
         letter-spacing: -0.5px !important;
     }
 
+    /* Convertimos la columna en el ancla fija */
+    div[data-testid="stColumn"] {
+        position: relative !important;
+    }
+
+    /* Clavamos la pastilla de forma absoluta al fondo izquierdo */
     .pill-container { 
-               margin-top: -75px; 
-               margin-left: 24px; 
-               margin-bottom: 30px; 
-               pointer-events: none; 
-               position: relative; 
-               z-index: 10; 
-               font-family: 'Inter', sans-serif !important;
-               transition: transform 0.3s ease !important; /* <--- Esto hace que el movimiento sea suave */
-           }
+        position: absolute !important;
+        bottom: 24px !important; /* Distancia exacta desde abajo */
+        left: 24px !important;   /* Distancia exacta desde la izquierda */
+        margin: 0 !important;    /* Adiós a los márgenes negativos */
+        pointer-events: none; 
+        z-index: 10; 
+        font-family: 'Inter', sans-serif !important;
+        transition: transform 0.3s ease !important; 
+    }
     .pill-activo { background-color: rgba(163, 255, 0, 0.1); color: #a3ff00; border: 1px solid rgba(163, 255, 0, 0.3); padding: 4px 10px; border-radius: 4px; font-size: 0.7rem; font-weight: 700; letter-spacing: 1px; display: inline-block; }
     .pill-desarrollo { background-color: rgba(250, 204, 21, 0.1); color: #facc15; border: 1px solid rgba(250, 204, 21, 0.3); padding: 4px 10px; border-radius: 4px; font-size: 0.7rem; font-weight: 700; letter-spacing: 1px; display: inline-block; }
                
@@ -134,11 +140,11 @@ st.markdown("<p style='color: #888888; font-size: 0.95rem; margin-bottom: 3rem;'
 col1, col2, col3 = st.columns(3)
 
 # Textos Nativos
-txt_fq = "**///**\n\n**PARAMETROS FISICOQUÍMICOS**\n\nAnálisis SPC, Cp/Cpk y resumen de producción mensual.\n\n\n\n\n"
-txt_est = "**///**\n\n**CONTROL DE TANQUES**\n\nMonitoreo logístico y alertas tempranas en tanques.\n\n\n\n\n"
-txt_mic = "**///**\n\n**PARAMETROS MICROBIOLÓGICOS**\n\nSPC para recuento de levaduras, bacterias y aerobios totales.\n\n\n\n\n"
-txt_ing = "**///**\n\n**INGRESO DE DATOS**\n\nCarga directa de variables desde el HUB sin usar Google Sheets.\n\n\n\n\n"
-txt_exp = "**///**\n\n**EXPORTAR DATOS**\n\nBúsqueda rápida de lotes y envío automatizado vía WhatsApp.\n\n\n\n\n"
+txt_fq = "**///**\n\n**PARÁMETROS FISICOQUÍMICOS**\n\nAnálisis SPC, Cp/Cpk y resumen de producción mensual."
+txt_est = "**///**\n\n**CONTROL DE TANQUES**\n\nMonitoreo logístico y alertas tempranas en tanques."
+txt_mic = "**///**\n\n**ANÁLISIS MICROBIOLÓGICOS**\n\nSPC para recuento de levaduras, bacterias y aerobios totales."
+txt_ing = "**///**\n\n**INGRESO DE DATOS**\n\nCarga directa de variables desde el HUB sin usar Google Sheets."
+txt_exp = "**///**\n\n**EXPORTAR REPORTES**\n\nBúsqueda rápida de lotes y envío automatizado vía WhatsApp."
 
 with col1:
     if st.button(txt_fq, use_container_width=True, key="btn_fq"): st.switch_page("pages/1_PARAMETROS_CRITICOS.py")
