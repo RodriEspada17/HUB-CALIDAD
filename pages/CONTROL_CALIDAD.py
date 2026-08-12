@@ -86,11 +86,11 @@ st.markdown("""
     .pill-activo { background-color: rgba(163, 255, 0, 0.1); color: #a3ff00; border: 1px solid rgba(163, 255, 0, 0.3); padding: 4px 10px; border-radius: 4px; font-size: 0.7rem; font-weight: 700; letter-spacing: 1px; display: inline-block; }
     .pill-desarrollo { background-color: rgba(250, 204, 21, 0.1); color: #facc15; border: 1px solid rgba(250, 204, 21, 0.3); padding: 4px 10px; border-radius: 4px; font-size: 0.7rem; font-weight: 700; letter-spacing: 1px; display: inline-block; }
                
-    /* Levantar la pastilla al mismo tiempo que la tarjeta */
-    div[data-testid="stColumn"]:hover .pill-container,
-    div[data-testid="column"]:hover .pill-container {
+    /* MAGIA: Solo levanta la pastilla de la tarjeta específica que estás tocando */
+    div.element-container:has(button:hover) + div.element-container .pill-container {
         transform: translateY(-4px) !important;
     }
+
     </style>
 """, unsafe_allow_html=True)
 
@@ -114,11 +114,11 @@ st.markdown("<p style='color: #888888; font-size: 0.95rem; margin-bottom: 3rem;'
 col1, col2, col3 = st.columns(3)
 
 # Textos Nativos
-txt_fq = "**///**\n\n**Parámetros Fisicoquímicos**\n\nAnálisis SPC, Cp/Cpk y resumen de producción mensual.\n\n\n\n\n"
-txt_est = "**///**\n\n**Control de Estadía**\n\nMonitoreo logístico y alertas tempranas en tanques.\n\n\n\n\n"
-txt_mic = "**///**\n\n**Análisis Microbiológicos**\n\nSPC para recuento de levaduras, bacterias y aerobios totales.\n\n\n\n\n"
-txt_ing = "**///**\n\n**Ingreso de Datos**\n\nCarga directa de variables desde el HUB sin usar Google Sheets.\n\n\n\n\n"
-txt_exp = "**///**\n\n**Exportar Reportes**\n\nBúsqueda rápida de lotes y envío automatizado vía WhatsApp.\n\n\n\n\n"
+txt_fq = "**///**\n\n**PARAMETROS FISICOQUÍMICOS**\n\nAnálisis SPC, Cp/Cpk y resumen de producción mensual.\n\n\n\n\n"
+txt_est = "**///**\n\n**CONTROL DE TANQUES**\n\nMonitoreo logístico y alertas tempranas en tanques.\n\n\n\n\n"
+txt_mic = "**///**\n\n**PARAMETROS MICROBIOLÓGICOS**\n\nSPC para recuento de levaduras, bacterias y aerobios totales.\n\n\n\n\n"
+txt_ing = "**///**\n\n**INGRESO DE DATOS**\n\nCarga directa de variables desde el HUB sin usar Google Sheets.\n\n\n\n\n"
+txt_exp = "**///**\n\n**EXPORTAR DATOS**\n\nBúsqueda rápida de lotes y envío automatizado vía WhatsApp.\n\n\n\n\n"
 
 with col1:
     if st.button(txt_fq, use_container_width=True, key="btn_fq"): st.switch_page("pages/1_PARAMETROS_CRITICOS.py")
