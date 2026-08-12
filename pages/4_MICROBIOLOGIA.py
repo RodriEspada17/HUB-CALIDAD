@@ -9,7 +9,7 @@ from utils.core import aplicar_estilo_neon, generar_url_csv, cargar_datos
 st.set_page_config(page_title="Microbiología SPC", layout="wide", initial_sidebar_state="collapsed")
 aplicar_estilo_neon()
 
-# --- CSS GLOBAL (INTER + NEÓN + SELECTBOX READONLY) ---
+# --- CSS GLOBAL (INTER + NEÓN + SELECTBOX STRICT READONLY) ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
@@ -43,10 +43,15 @@ st.markdown("""
     div[data-testid="stButton"] > button:focus:not(:hover) { border-color: #1a1a1a !important; background-color: transparent !important; }
     div[data-testid="stButton"] > button:focus:not(:hover) p { color: #888888 !important; }
     
-    /* BLOQUEAR ESCRITURA / TECLADO EN DESPLEGABLES (SELECTBOX READONLY) */
+    /* 🔥 ELIMINADOR DE TECLADO EN DESPLEGABLES (STRICT READONLY) */
     div[data-baseweb="select"] input {
-        caret-color: transparent !important;
+        width: 0px !important;
+        opacity: 0 !important;
+        position: absolute !important;
         pointer-events: none !important;
+    }
+    div[data-baseweb="select"], div[data-baseweb="select"] * {
+        cursor: pointer !important;
     }
     
     .stSelectbox label { color: #888888 !important; font-weight: 600 !important; letter-spacing: 1px; font-size: 0.85rem !important; }
@@ -61,10 +66,10 @@ SPECS_TEMP = {
     "Industrial 3": {"target": 14.0, "tol": 0.5, "min": 13.5, "max": 14.5, "color": "#f97316", "bg": "rgba(249, 115, 22, 0.06)", "symbol": "triangle-up"}
 }
 
-# --- ESTÁNDARES DE PARÁMETROS GENERALES (EVALUACIÓN ESPECÍFICA) ---
+# --- ESTÁNDARES DE PARÁMETROS GENERALES ---
 SPECS_PARAMETROS = {
     "recuento": {"type": "min", "val": 100.0, "label": "> 100 mill. Cel/ml", "unit": "mill. Cel/ml"},
-    "extracto original": {"type": "range", "min": 9.9, "max": 11.5, "label": "9.9 - 11.5 °P", "unit": "°P"}, # EXCLUSIVO EXTRACTO ORIGINAL
+    "extracto original": {"type": "range", "min": 9.9, "max": 11.5, "label": "9.9 - 11.5 °P", "unit": "°P"},
     "alcohol": {"type": "max", "val": 3.0, "label": "< 3 %", "unit": "%"},
     "muerta": {"type": "max", "val": 0.0, "label": "0 %", "unit": "%"},
     "wld": {"type": "max", "val": 0.0, "label": "0 UFC/ml", "unit": "UFC/ml"},
