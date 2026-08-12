@@ -50,7 +50,7 @@ st.markdown("""
         border: 1px solid #1a1a1a !important;
         padding: 24px !important;
         border-radius: 12px !important;
-        min-height: 250px !important;
+        height: 270px !important;
         width: 100% !important;
         display: flex !important;
         flex-direction: column !important;
@@ -61,6 +61,14 @@ st.markdown("""
         box-shadow: 0 5px 15px rgba(0,0,0,0.5) !important;
         margin-bottom: 0 !important;
     }
+
+    
+/* Aseguramos que el texto por dentro no tenga márgenes rebeldes */
+    div[data-testid="stColumn"] div[data-testid="stButton"] > button div[data-testid="stMarkdownContainer"] {
+        width: 100% !important; text-align: left !important;
+    }
+
+
     div[data-testid="stColumn"] div[data-testid="stButton"] > button:hover {
         border-color: #a3ff00 !important;
         box-shadow: 0 0 20px rgba(163, 255, 0, 0.15) !important;
