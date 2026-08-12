@@ -16,13 +16,35 @@ st.markdown("""
     html, body, [class*="css"], .stApp { font-family: 'Inter', sans-serif !important; background-color: #050505 !important; color: #e0e0e0 !important; }
     header[data-testid="stHeader"] { background-color: transparent !important; }
     
-    /* Botón Volver */
-    .btn-volver {
-        display: inline-block; padding: 8px 16px; margin-bottom: 20px; border: 1px solid #1a1a1a; 
-        border-radius: 6px; color: #888888; text-decoration: none; font-size: 0.8rem; font-weight: 700; 
-        letter-spacing: 1px; transition: 0.3s;
-    }
-    .btn-volver:hover { border-color: #a3ff00; color: #a3ff00; background-color: rgba(163, 255, 0, 0.05); }
+    //* BOTÓN VOLVER PRINCIPAL */
+        div[data-testid="stButton"] > button { 
+            background-color: transparent !important; 
+            border: 1px solid #1a1a1a !important; 
+            width: fit-content !important; 
+            padding: 6px 16px !important; 
+            border-radius: 6px !important; 
+            transition: 0.3s !important; 
+            margin-bottom: 10px !important;
+        }
+        div[data-testid="stButton"] > button p { 
+            color: #888888 !important; font-weight: 700 !important; font-size: 0.8rem !important; letter-spacing: 1px !important; 
+        }
+        div[data-testid="stButton"] > button:hover { 
+            border-color: #a3ff00 !important; background-color: rgba(163, 255, 0, 0.05) !important; 
+        }
+        div[data-testid="stButton"] > button:hover p { 
+            color: #a3ff00 !important; 
+        }
+        
+    div[data-testid="stButton"] > button:focus,
+        div[data-testid="stButton"] > button:active {
+            box-shadow: none !important;
+            outline: none !important;
+            border-color: #1a1a1a !important;
+        }
+        div[data-testid="stButton"] > button:focus p {
+            color: #888888 !important;
+        }
     
     /* Cajas y Selectores */
     .stSelectbox label { color: #888888 !important; font-weight: 600 !important; letter-spacing: 1px; font-size: 0.85rem !important; }
@@ -30,7 +52,10 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # --- ENCABEZADO ---
-st.markdown('<a href="CONTROL_CALIDAD" target="_self" class="btn-volver">◀ VOLVER A CALIDAD</a>', unsafe_allow_html=True)
+# --- NUEVO BOTÓN DE VOLVER ---
+if st.button("◀ VOLVER A CALIDAD"):
+    st.switch_page("pages/CONTROL_CALIDAD.py")
+    
 st.markdown("<h1 style='color: #a3ff00; font-size: 2.2rem; font-weight: 800; letter-spacing: 2px; margin: 0;'>ANÁLISIS MICROBIOLÓGICOS <span style='color: #ffffff;'>(SPC)</span></h1>", unsafe_allow_html=True)
 st.markdown("<p style='color: #888888; font-size: 0.95rem; margin-bottom: 2rem;'>Monitoreo estadístico de recuentos celulares y contaminación.</p>", unsafe_allow_html=True)
 
