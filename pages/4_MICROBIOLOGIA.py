@@ -45,6 +45,21 @@ st.markdown("""
         div[data-testid="stButton"] > button:focus p {
             color: #888888 !important;
         }
+
+        /* ELIMINAR EL FOCO PERMANENTE DESPUÉS DEL CLIC */
+    div[data-testid="stButton"] > button:focus {
+        box-shadow: none !important;
+        outline: none !important;
+    }
+    
+    /* Si está enfocado pero el mouse YA NO está encima, lo apagamos a gris */
+    div[data-testid="stButton"] > button:focus:not(:hover) {
+        border-color: #1a1a1a !important;
+        background-color: transparent !important;
+    }
+    div[data-testid="stButton"] > button:focus:not(:hover) p {
+        color: #888888 !important;
+    }
     
     /* Cajas y Selectores */
     .stSelectbox label { color: #888888 !important; font-weight: 600 !important; letter-spacing: 1px; font-size: 0.85rem !important; }
@@ -55,7 +70,7 @@ st.markdown("""
 # --- NUEVO BOTÓN DE VOLVER ---
 if st.button("◀ VOLVER A CALIDAD"):
     st.switch_page("pages/CONTROL_CALIDAD.py")
-    
+
 st.markdown("<h1 style='color: #a3ff00; font-size: 2.2rem; font-weight: 800; letter-spacing: 2px; margin: 0;'>ANÁLISIS MICROBIOLÓGICOS <span style='color: #ffffff;'>(SPC)</span></h1>", unsafe_allow_html=True)
 st.markdown("<p style='color: #888888; font-size: 0.95rem; margin-bottom: 2rem;'>Monitoreo estadístico de recuentos celulares y contaminación.</p>", unsafe_allow_html=True)
 
