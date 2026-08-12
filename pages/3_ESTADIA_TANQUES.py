@@ -6,11 +6,11 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from utils.core import aplicar_estilo_neon, generar_url_csv, cargar_datos
 
-# Configuración inicial
-st.set_page_config(page_title="Estadía de Tanques", layout="wide", initial_sidebar_state="expanded")
+# Configuración inicial (Pantalla completa sin sidebar estorbando)
+st.set_page_config(page_title="Estadía de Tanques", layout="wide", initial_sidebar_state="collapsed")
 aplicar_estilo_neon()
 
-# --- CSS AVANZADO: DISEÑO DE DASHBOARD Y BOTONES NEÓN ---
+# --- CSS AVANZADO: BARRAS Y BOTONES ARRIBA DEL TÍTULO ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
@@ -22,41 +22,43 @@ st.markdown("""
     }
     header[data-testid="stHeader"] { background-color: transparent !important; }
     
-    /* BOTONES NEÓN EXCLUSIVOS PARA EL SIDEBAR */
-    div[data-testid="stSidebar"] div[data-testid="stButton"] > button { 
-        background-color: transparent !important; 
-        border: 1px solid #1a1a1a !important; 
-        width: 100% !important; 
-        padding: 8px 16px !important; 
-        border-radius: 6px !important; 
-        transition: 0.3s !important; 
-        margin-bottom: 5px !important;
-    }
-    div[data-testid="stSidebar"] div[data-testid="stButton"] > button p { 
-        color: #888888 !important; font-weight: 700 !important; font-size: 0.8rem !important; letter-spacing: 1px !important; text-align: left !important;
-    }
-    div[data-testid="stSidebar"] div[data-testid="stButton"] > button:hover { 
-        border-color: #a3ff00 !important; background-color: rgba(163, 255, 0, 0.05) !important; 
-    }
-    div[data-testid="stSidebar"] div[data-testid="stButton"] > button:hover p { 
-        color: #a3ff00 !important; 
-    }
-    
-    /* ELIMINAR EL FOCO PERMANENTE DESPUÉS DEL CLIC EN SIDEBAR */
-    div[data-testid="stSidebar"] div[data-testid="stButton"] > button:focus {
-        box-shadow: none !important;
-        outline: none !important;
-    }
-    div[data-testid="stSidebar"] div[data-testid="stButton"] > button:focus:not(:hover) {
-        border-color: #1a1a1a !important;
+    /* 1. BOTONES DE REGRESO SUPERIORES (Arriba del título) */
+    div.element-container:has(button[key^="btn_back"]) div[data-testid="stButton"] > button {
         background-color: transparent !important;
+        border: 1px solid #1a1a1a !important;
+        width: fit-content !important;
+        padding: 6px 16px !important;
+        border-radius: 6px !important;
+        transition: 0.3s !important;
+        margin-bottom: 10px !important;
     }
-    div[data-testid="stSidebar"] div[data-testid="stButton"] > button:focus:not(:hover) p {
+    div.element-container:has(button[key^="btn_back"]) div[data-testid="stButton"] > button p {
+        color: #888888 !important;
+        font-weight: 700 !important;
+        font-size: 0.8rem !important;
+        letter-spacing: 1px !important;
+    }
+    div.element-container:has(button[key^="btn_back"]) div[data-testid="stButton"] > button:hover {
+        border-color: #a3ff00 !important;
+        background-color: rgba(163, 255, 0, 0.05) !important;
+    }
+    div.element-container:has(button[key^="btn_back"]) div[data-testid="stButton"] > button:hover p {
+        color: #a3ff00 !important;
+    }
+
+    /* Quitar foco permanente de los botones superiores */
+    div.element-container:has(button[key^="btn_back"]) div[data-testid="stButton"] > button:focus {
+        box-shadow: none !important; outline: none !important;
+    }
+    div.element-container:has(button[key^="btn_back"]) div[data-testid="stButton"] > button:focus:not(:hover) {
+        border-color: #1a1a1a !important; background-color: transparent !important;
+    }
+    div.element-container:has(button[key^="btn_back"]) div[data-testid="stButton"] > button:focus:not(:hover) p {
         color: #888888 !important;
     }
 
-    /* BOTONES DE ACCIÓN PRINCIPALES (Correo y Notificaciones) */
-    div[data-testid="stMainBlockContainer"] div[data-testid="stButton"] > button { 
+    /* 2. BOTÓN DE ACCIÓN PRINCIPAL (Correo abajo) */
+    div.element-container:has(button[key="btn_email"]) div[data-testid="stButton"] > button { 
         background-color: #050505 !important; 
         border: 1px solid #a3ff00 !important; 
         border-radius: 6px !important; 
@@ -64,19 +66,19 @@ st.markdown("""
         width: 100% !important; 
         padding: 0.6rem 1rem !important; 
     }
-    div[data-testid="stMainBlockContainer"] div[data-testid="stButton"] > button p { 
+    div.element-container:has(button[key="btn_email"]) div[data-testid="stButton"] > button p { 
         color: #a3ff00 !important; 
         font-weight: 600 !important; 
         font-family: 'Inter', sans-serif !important; 
         font-size: 1rem !important; 
         margin: 0 !important;
     }
-    div[data-testid="stMainBlockContainer"] div[data-testid="stButton"] > button:hover { 
+    div.element-container:has(button[key="btn_email"]) div[data-testid="stButton"] > button:hover { 
         background-color: #a3ff00 !important; 
         box-shadow: 0 0 15px rgba(163, 255, 0, 0.4) !important; 
         transform: translateY(-2px) !important; 
     }
-    div[data-testid="stMainBlockContainer"] div[data-testid="stButton"] > button:hover p { 
+    div.element-container:has(button[key="btn_email"]) div[data-testid="stButton"] > button:hover p { 
         color: #050505 !important; 
     }
     
@@ -93,15 +95,16 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# --- SIDEBAR (NAVEGACIÓN HOMOGÉNEA) ---
-if st.sidebar.button("🏠 VOLVER AL INICIO", use_container_width=True):
-    st.switch_page("app.py")
-if st.sidebar.button("◀ VOLVER A CALIDAD", use_container_width=True):
-    st.switch_page("pages/CONTROL_CALIDAD.py")
+# --- BOTONES DE NAVEGACIÓN UBICADOS ARRIBA DEL TÍTULO ---
+col_b1, col_b2, _ = st.columns([1.5, 1.5, 7])
+with col_b1:
+    if st.button("◀ VOLVER A CALIDAD", key="btn_back_qc"):
+        st.switch_page("pages/CONTROL_CALIDAD.py")
+with col_b2:
+    if st.button("🏠 VOLVER AL INICIO", key="btn_back_home"):
+        st.switch_page("app.py")
 
-st.sidebar.markdown("<br><hr style='border: 1px solid #1a1a1a;'>", unsafe_allow_html=True)
-
-# --- CABECERA ---
+# --- CABECERA PRINCIPAL ---
 st.markdown("<h2 style='text-transform: uppercase; font-size: 1.8rem;'>MÓDULO / <span style='color: #a3ff00;'>ESTADÍA DE TANQUES</span></h2>", unsafe_allow_html=True)
 st.markdown("<p style='color: #888888; font-size: 1rem; margin-bottom: 2rem;'>Monitoreo en tiempo real y alertas tempranas (24h) de tiempos de residencia.</p>", unsafe_allow_html=True)
 
@@ -306,7 +309,7 @@ correo_enviado = False
 col_btn_email, col_btn_wpp = st.columns(2)
 
 with col_btn_email:
-    if st.button("📧 ENVIAR REPORTE POR CORREO", use_container_width=True):
+    if st.button("📧 ENVIAR REPORTE POR CORREO", use_container_width=True, key="btn_email"):
         correo_enviado = True
 
 with col_btn_wpp:
