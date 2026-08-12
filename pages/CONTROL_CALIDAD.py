@@ -73,18 +73,24 @@ st.markdown("""
         letter-spacing: -0.5px !important;
     }
 
-    /* Pastillas (Pills) flotantes */
-    .pill-container {
-        margin-top: -65px; 
-        margin-left: 24px; 
-        margin-bottom: 30px; 
-        pointer-events: none; 
-        position: relative;
-        z-index: 10;
-        font-family: 'Inter', sans-serif !important;
-    }
+    .pill-container { 
+               margin-top: -65px; 
+               margin-left: 24px; 
+               margin-bottom: 30px; 
+               pointer-events: none; 
+               position: relative; 
+               z-index: 10; 
+               font-family: 'Inter', sans-serif !important;
+               transition: transform 0.3s ease !important; /* <--- Esto hace que el movimiento sea suave */
+           }
     .pill-activo { background-color: rgba(163, 255, 0, 0.1); color: #a3ff00; border: 1px solid rgba(163, 255, 0, 0.3); padding: 4px 10px; border-radius: 4px; font-size: 0.7rem; font-weight: 700; letter-spacing: 1px; display: inline-block; }
     .pill-desarrollo { background-color: rgba(250, 204, 21, 0.1); color: #facc15; border: 1px solid rgba(250, 204, 21, 0.3); padding: 4px 10px; border-radius: 4px; font-size: 0.7rem; font-weight: 700; letter-spacing: 1px; display: inline-block; }
+               
+    /* Levantar la pastilla al mismo tiempo que la tarjeta */
+    div[data-testid="stColumn"]:hover .pill-container,
+    div[data-testid="column"]:hover .pill-container {
+        transform: translateY(-4px) !important;
+    }
     </style>
 """, unsafe_allow_html=True)
 
