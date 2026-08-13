@@ -5,18 +5,18 @@ import plotly.express as px
 import plotly.graph_objects as go
 from utils.core import aplicar_estilo_neon, generar_url_csv, cargar_datos
 
-# Configuracion inicial
-st.set_page_config(page_title="Microbiologia SPC", layout="wide", initial_sidebar_state="collapsed")
+# Configuración inicial
+st.set_page_config(page_title="Microbiología SPC", layout="wide", initial_sidebar_state="collapsed")
 aplicar_estilo_neon()
 
-# --- CSS GLOBAL (INTER + NEON + SELECTBOX READONLY + OPCIONES INHABILITADAS) ---
+# --- CSS GLOBAL (INTER + NEÓN + SELECTBOX READONLY) ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
     html, body, [class*="css"], .stApp { font-family: 'Inter', sans-serif !important; background-color: #050505 !important; color: #e0e0e0 !important; }
     header[data-testid="stHeader"] { background-color: transparent !important; }
     
-    /* BOTON VOLVER PRINCIPAL */
+    /* BOTÓN VOLVER PRINCIPAL */
     div[data-testid="stButton"] > button { 
         background-color: transparent !important; border: 1px solid #1a1a1a !important; width: fit-content !important; 
         padding: 6px 16px !important; border-radius: 6px !important; transition: 0.3s !important; margin-bottom: 10px !important;
@@ -25,7 +25,7 @@ st.markdown("""
     div[data-testid="stButton"] > button:hover { border-color: #a3ff00 !important; background-color: rgba(163, 255, 0, 0.05) !important; }
     div[data-testid="stButton"] > button:hover p { color: #a3ff00 !important; }
         
-    /* ELIMINAR EL FOCO PERMANENTE DESPUES DEL CLIC */
+    /* ELIMINAR EL FOCO PERMANENTE DESPUÉS DEL CLIC */
     div[data-testid="stButton"] > button:focus { box-shadow: none !important; outline: none !important; border-color: #1a1a1a !important; }
     div[data-testid="stButton"] > button:focus p { color: #888888 !important; }
     div[data-testid="stButton"] > button:focus:not(:hover) { border-color: #1a1a1a !important; background-color: transparent !important; }
@@ -35,20 +35,11 @@ st.markdown("""
     div[data-baseweb="select"] input { width: 0px !important; opacity: 0 !important; position: absolute !important; pointer-events: none !important; }
     div[data-baseweb="select"], div[data-baseweb="select"] * { cursor: pointer !important; }
     
-    /* INHABILITAR Y PONER EN GRIS LAS OPCIONES EN CONSTRUCCION (Posiciones 3, 5 y 7) */
-    ul[data-baseweb="menu"] li:nth-child(3),
-    ul[data-baseweb="menu"] li:nth-child(5),
-    ul[data-baseweb="menu"] li:nth-child(7) {
-        color: #444444 !important;
-        pointer-events: none !important;
-        font-style: italic !important;
-    }
-    
     .stSelectbox label, .stRadio label { color: #888888 !important; font-weight: 600 !important; letter-spacing: 1px; font-size: 0.85rem !important; }
     </style>
 """, unsafe_allow_html=True)
 
-# --- ESTANDARES DE TEMPERATURA (SOLO PROPAGACION) ---
+# --- ESTÁNDARES DE TEMPERATURA (SOLO PROPAGACIÓN) ---
 SPECS_TEMP = {
     "Laboratorio": {"target": 25.0, "tol": 0.5, "min": 24.5, "max": 25.5, "color": "#60a5fa", "bg": "rgba(96, 165, 250, 0.06)", "symbol": "circle"},
     "Industrial 1": {"target": 18.0, "tol": 0.5, "min": 17.5, "max": 18.5, "color": "#a3ff00", "bg": "rgba(163, 255, 0, 0.06)", "symbol": "diamond"},
@@ -56,7 +47,7 @@ SPECS_TEMP = {
     "Industrial 3": {"target": 14.0, "tol": 0.5, "min": 13.5, "max": 14.5, "color": "#f97316", "bg": "rgba(249, 115, 22, 0.06)", "symbol": "triangle-up"}
 }
 
-# --- ESTANDARES SEGREGADOS POR ETAPA MAESTRA ---
+# --- ESTÁNDARES SEGREGADOS POR ETAPA MAESTRA ---
 SPECS_PARAMETROS = {
     "1. Control de Propagación": {
         "recuento": {"type": "min", "val": 80.0, "label": "> 80 mill. Cel/ml", "unit": "mill. Cel/ml"},
@@ -186,25 +177,17 @@ st.markdown("<p style='color: #888888; font-size: 0.95rem; margin-bottom: 2rem;'
 
 URL_BASE = "https://docs.google.com/spreadsheets/d/1CHG6Ndce1Hon9nUFikJqY5YIezYHHC1z_GKnWBmBOFQ/edit?pli=1&gid="
 
-# Agregado de etiqueta (En construccion) en las claves
+# Menú limpio, solo opciones 100% operativas
 GIDS = {
     "1. Control de Propagación": "2050551093",
     "2. Análisis de Levadura": "160101583", 
-    "3. Cocimiento (En construccion)": "1413638154",
     "4. Fermentación": "1692699392",
-    "5. Filtración (En construccion)": "1258366654",
-    "6. Envasado": "1542069577",
-    "7. Agua y Materia Prima (En construccion)": "PONER_GID_AQUI"
+    "6. Envasado": "1542069577"
 }
 
 col1, col2 = st.columns([1.2, 2.8])
 with col1:
     etapa_seleccionada = st.selectbox("SELECCIONA LA ETAPA A MONITOREAR:", list(GIDS.keys()))
-
-# BLOQUEO DE SEGURIDAD EN PYTHON
-if "(En construccion)" in etapa_seleccionada:
-    st.markdown("<h4 style='color: #555555; margin-top: 30px; font-weight: 500;'>Este modulo se encuentra en construccion. Por favor, selecciona una etapa habilitada.</h4>", unsafe_allow_html=True)
-    st.stop()
 
 st.markdown("<hr style='border: 1px solid #1a1a1a; margin-top: 5px; margin-bottom: 25px;'>", unsafe_allow_html=True)
 
@@ -393,7 +376,6 @@ else:
                     
                 with c_tab:
                     st.markdown(f"<h3 style='color: #ffffff; font-size: 1.1rem; margin-bottom: 15px;'>■ TABLA {titulo_tabla}</h3>", unsafe_allow_html=True)
-                    
                     cols_to_show = []
                     for c in df_fase.columns:
                         cl = c.lower()
@@ -405,12 +387,9 @@ else:
                         if is_fecha:
                             if tipo_fase == "48" and "48" in cl: cols_to_show.append(c)
                             elif tipo_fase == "7" and ("7" in cl or "7mo" in cl): cols_to_show.append(c)
-                        elif is_contexto:
-                            cols_to_show.append(c)
+                        elif is_contexto: cols_to_show.append(c)
                             
-                    if col_param not in cols_to_show:
-                        cols_to_show.append(col_param)
-                        
+                    if col_param not in cols_to_show: cols_to_show.append(col_param)
                     df_tabla = df_fase[cols_to_show].copy()
                     
                     for c in df_tabla.columns:
@@ -466,6 +445,7 @@ else:
                 cols_permitidas = []
                 for c in cols_graficables:
                     cl = c.lower().strip()
+                    # ATRAPA CON O SIN TILDE ("aerob", "aerób") + NBB + SALVAJE
                     if "aerob" in cl or "aerób" in cl or "salvaje" in cl or "nbb" in cl or "anaerob" in cl:
                         cols_permitidas.append(c)
                 cols_graficables = cols_permitidas
