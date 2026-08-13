@@ -260,7 +260,8 @@ else:
 
                 df_limpio[col_ft] = df_limpio[col_ft].apply(limpiar_entero)
                 if col_lote_ref:
-                    df_limpio[col_lote_ref] = df_limpio[col_lote_ref].astype(str).str.replace(r'\.0$', '', regex=True).str.replace('nan', '', case=False).str.replace('None', '', case=False)
+                    # 🔥 Corrección del TypeError (agregando .str antes de replace)
+                    df_limpio[col_lote_ref] = df_limpio[col_lote_ref].astype(str).str.replace(r'\.0$', '', regex=True).str.replace('(?i)nan', '', regex=True).str.replace('(?i)none', '', regex=True)
 
                 df_valid_ft = df_limpio[~df_limpio[col_ft].isin(["", "NAN", "NONE", "N/A"])]
                 fts_unicos = list(dict.fromkeys(df_valid_ft[col_ft].unique()))
@@ -428,7 +429,6 @@ else:
             cols_prohibidas_graf = ['semana', 'lote', 'ft', 'batch_id', 'etapa', 'escala', 'escala_fase', 'hora', 'volumen', 'unnamed', 'procedencia', 'producto', 'analista', 'tipo', 'tanque', 'observaciones', 'tp', 'muestra', 'sector', 'estado']
             cols_graficables = [c for c in cols_numericas if not any(ex in c.lower() for ex in cols_prohibidas_graf)]
             
-            # 🔥 LÓGICA EXCLUSIVA PARA ENVASADO (EJE X CATEGÓRICO POR LOTE + PURGA WLD/YM/NBB)
             col_x_graf = 'FECHA_DT'
             if etapa_seleccionada == "6. Envasado":
                 cols_permitidas = []
@@ -440,7 +440,8 @@ else:
                 
                 col_lote_env = next((c for c in df_limpio.columns if "lote" in c.lower()), None)
                 if col_lote_env:
-                    df_limpio[col_lote_env] = df_limpio[col_lote_env].astype(str).str.replace(r'\.0$', '', regex=True).replace('nan', 'N/A', case=False)
+                    # 🔥 Corrección del TypeError aquí también
+                    df_limpio[col_lote_env] = df_limpio[col_lote_env].astype(str).str.replace(r'\.0$', '', regex=True).str.replace('(?i)nan', 'N/A', regex=True)
                     col_x_graf = col_lote_env
             
             col_grafico, col_tabla = st.columns([2.5, 1.2])
@@ -553,7 +554,7 @@ else:
                     if col_x_graf == 'FECHA_DT':
                         xaxis_config['tickformat'] = "%d-%b"
                     else:
-                        xaxis_config['type'] = 'category' # Forza a Plotly a respetar los strings tipo Lote P202
+                        xaxis_config['type'] = 'category'
 
                     fig.update_layout(
                         template="plotly_dark", plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)",
