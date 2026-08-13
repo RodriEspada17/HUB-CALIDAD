@@ -31,7 +31,7 @@ st.markdown("""
     div[data-testid="stButton"] > button:focus:not(:hover) { border-color: #1a1a1a !important; background-color: transparent !important; }
     div[data-testid="stButton"] > button:focus:not(:hover) p { color: #888888 !important; }
     
-    /* BLOQUEAR ESCRITURA / TECLADO EN DESPLEGABLES (Ocultar Input nativo) */
+    /* BLOQUEAR ESCRITURA / TECLADO EN DESPLEGABLES */
     div[data-baseweb="select"] input { width: 0px !important; opacity: 0 !important; position: absolute !important; pointer-events: none !important; }
     div[data-baseweb="select"], div[data-baseweb="select"] * { cursor: pointer !important; }
     
@@ -112,7 +112,6 @@ def clasificar_escala(df):
     df['Escala_Fase'] = fases
     return df
 
-# --- SEMÁFORO INTELIGENTE PARA LA TABLA ---
 def aplicar_semaforo_tabla(row):
     global etapa_seleccionada
     estilos = [''] * len(row)
@@ -201,7 +200,7 @@ def cargar_y_limpiar_microbiologia(gid):
         if len(columnas_fecha) > 0:
             df = df.dropna(subset=[columnas_fecha[0]])
             
-        columnas_excluidas = ['fecha', 'hora', 'semana', 'lote', 'escala', 'etapa', 'analista', 'producto', 'procedencia', 'tipo', 'generación', 'tanque', 'observaciones', 'ft', 'tp', 'muestra', 'sector', 'estado', 'calibre', 'propagacion', 'batch_id', 'fecha_dt', 'escala_fase']
+        columnas_excluidas = ['fecha', 'hora', 'semana', 'lote', 'escala', 'etapa', 'analista', 'producto', 'procedencia', 'tipo', 'generación', 'tanque', 'observaciones', 'ft', 'tp', 'muestra', 'sector', 'estado', 'calibre', 'propagacion', 'batch_id', 'fecha_dt', 'escala_fase', 'label_selector']
         for col in df.columns:
             if not any(excl in col.lower() for excl in columnas_excluidas):
                 df[col] = pd.to_numeric(df[col], errors='coerce')
@@ -221,7 +220,6 @@ else:
         st.error(f"Error de conexión: {df_limpio}")
     elif df_limpio is not None and not df_limpio.empty:
         
-        # --- GENERACIÓN DE FECHA_DT UNIVERSAL ---
         col_fecha_orig = next((c for c in df_limpio.columns if "fecha" in c.lower()), None)
         col_hora_str = next((c for c in df_limpio.columns if "hora" in c.lower()), None)
         
@@ -234,7 +232,6 @@ else:
         else:
             df_limpio['FECHA_DT'] = df_limpio.index
 
-        # Columna Global Lote y FT
         col_ft = next((c for c in df_limpio.columns if c.strip().lower() == "ft"), None)
         if not col_ft: col_ft = next((c for c in df_limpio.columns if "ft" in c.lower()), None)
         col_lote_ref = next((c for c in df_limpio.columns if "lote" in c.lower() and c.lower() != 'lote'), None)
@@ -246,26 +243,35 @@ else:
         if etapa_seleccionada == "4. Fermentación":
             df_limpio['Escala_Fase'] = "General"
             
-            # Limpieza y Selector de FTs
+            # 🔥 LIMPIEZA Y SELECTOR COMBINADO (FT + LOTE SIN DECIMALES)
             if col_ft:
-                def limpiar_ft_entero(val):
+                def limpiar_entero(val):
                     if pd.isna(val): return ""
                     raw = str(val).strip()
                     try: return str(int(float(raw.replace(',', '.'))))
                     except: return raw.upper()
 
-                df_limpio[col_ft] = df_limpio[col_ft].apply(limpiar_ft_entero)
-                df_valid_ft = df_limpio[~df_limpio[col_ft].isin(["", "NAN", "NONE", "N/A"])]
-                fts_unicos = list(dict.fromkeys(df_valid_ft[col_ft].unique()))
-                lista_fts = ["Todos los FT"] + fts_unicos
+                df_limpio[col_ft] = df_limpio[col_ft].apply(limpiar_entero)
+                if col_lote_ref:
+                    df_limpio[col_lote_ref] = df_limpio[col_lote_ref].astype(str).str.replace(r'\.0$', '', regex=True).str.replace('nan', '', case=False).str.replace('None', '', case=False)
+                
+                def make_label(row):
+                    ft = str(row[col_ft]).strip()
+                    lote = str(row[col_lote_ref]).strip() if col_lote_ref else ""
+                    if not ft or ft.upper() in ["NAN", "NONE", "N/A", ""]: return ""
+                    if lote and lote.upper() not in ["NAN", "NONE", "N/A", ""]: return f"FT {ft} | Lote {lote}"
+                    return f"FT {ft}"
+                    
+                df_limpio['LABEL_SELECTOR'] = df_limpio.apply(make_label, axis=1)
+                valid_labels = df_limpio[df_limpio['LABEL_SELECTOR'] != ""]['LABEL_SELECTOR'].unique().tolist()
+                lista_fts = ["Todos los Lotes"] + valid_labels
                 
                 c_filtro1, c_filtro2 = st.columns(2)
                 with c_filtro1: 
                     ft_sel = st.selectbox("FILTRAR POR LOTE / FT:", lista_fts)
-                if ft_sel != "Todos los FT":
-                    df_limpio = df_limpio[df_limpio[col_ft] == ft_sel]
+                if ft_sel != "Todos los Lotes":
+                    df_limpio = df_limpio[df_limpio['LABEL_SELECTOR'] == ft_sel]
             
-            # Opciones de Parámetro y Agrupación Eje X
             c_opt1, c_opt2 = st.columns(2)
             with c_opt1:
                 param_base = st.selectbox("PARÁMETRO BIOLÓGICO:", ["Aerobios WLD", "Levadura Salvaje YM"])
@@ -275,7 +281,6 @@ else:
 
             cols_numericas = df_limpio.select_dtypes(include=[np.number]).columns.tolist()
             
-            # Asignación exacta de columnas 48h vs 7d
             if param_base == "Aerobios WLD":
                 col_48h = next((c for c in cols_numericas if "medici" in c.lower() and "wld" in c.lower()), None)
                 col_7d = next((c for c in cols_numericas if c.lower().strip() == "aerobio wld"), None)
@@ -283,12 +288,18 @@ else:
                 col_48h = next((c for c in cols_numericas if c.lower().strip() == "levadura salvaje ym"), None)
                 col_7d = next((c for c in cols_numericas if "lev. salvaje" in c.lower() or "lev salvaje" in c.lower()), None)
 
-            # --- MOTOR RENDERIZADOR DOBLE (Gráfico + Tabla) ---
-            def render_fermentacion_row(col_param, titulo_grafico, titulo_tabla):
+            # --- MOTOR RENDERIZADOR DOBLE ---
+            def render_fermentacion_row(col_param, titulo_grafico, titulo_tabla, tipo_fase):
                 if not col_param or col_param not in df_limpio.columns:
                     st.info(f"No hay registros de {titulo_grafico} en este FT.")
                     return
                 
+                # Filtrar NaNs del parámetro para limpiar gráficos y tablas rotas
+                df_fase = df_limpio.dropna(subset=[col_param]).copy()
+                if df_fase.empty:
+                    st.info(f"Los registros de {titulo_grafico} están vacíos.")
+                    return
+
                 c_graf, c_tab = st.columns([2.5, 1.2])
                 
                 with c_graf:
@@ -297,8 +308,8 @@ else:
                     fig = go.Figure()
                     spec_gen = obtener_spec_parametro(col_param, etapa_seleccionada)
                     
-                    promedio = df_limpio[col_param].mean()
-                    desviacion = df_limpio[col_param].std()
+                    promedio = df_fase[col_param].mean()
+                    desviacion = df_fase[col_param].std()
                     lcs = promedio + (3 * desviacion) if pd.notna(desviacion) and desviacion > 0 else promedio
 
                     if spec_gen:
@@ -309,30 +320,24 @@ else:
                         if pd.notna(lcs) and lcs > promedio: fig.add_hline(y=lcs, line_dash="dot", line_color="#f87171", annotation_text=f"LCS: {lcs:.1f}", annotation_font_color="#f87171")
 
                     fig.add_trace(go.Scatter(
-                        x=df_limpio['FECHA_DT'], y=df_limpio[col_param], mode='lines',
+                        x=df_fase['FECHA_DT'], y=df_fase[col_param], mode='lines',
                         line=dict(color='rgba(163, 255, 0, 0.35)', width=1.5, dash='dot'), showlegend=False, hoverinfo='none'
                     ))
 
-                    colores_puntos = []
-                    hover_text = []
-                    tick_text = []
+                    colores_puntos, hover_text, tick_text = [], [], []
                     
-                    for idx, row in df_limpio.iterrows():
+                    for idx, row in df_fase.iterrows():
                         val = row[col_param]
                         ft_val = row.get(col_ft, 'N/A') if col_ft else 'N/A'
                         lote_val = row.get(col_lote_ref, 'N/A') if col_lote_ref else 'N/A'
                         
-                        # Custom X Axis
-                        if eje_x_sel == "FT + Lote": tick_text.append(f"FT {ft_val}<br>Lote {lote_val}")
+                        if eje_x_sel == "FT + Lote": tick_text.append(f"FT {ft_val}<br>L. {lote_val}")
                         else: tick_text.append(f"FT {ft_val}")
                         
-                        # Semaforización
                         cumple, std_label_txt = True, ""
                         if spec_gen:
                             std_label_txt = f"STD: {spec_gen['label']}"
-                            if pd.notna(val):
-                                float_v = float(val)
-                                if spec_gen["type"] == "max" and float_v > spec_gen["val"]: cumple = False
+                            if pd.notna(val) and float(val) > spec_gen["val"]: cumple = False
                         else:
                             if pd.notna(val) and pd.notna(lcs) and float(val) > lcs:
                                 cumple, std_label_txt = False, f"Alerta SPC (LCS: {lcs:.1f})"
@@ -350,14 +355,14 @@ else:
                         hover_text.append(f"Fecha: {fecha_val}<br>Lote/FT: {lote_val} / FT {ft_val}<br>Valor: <b>{val} {spec_gen['unit'] if spec_gen else ''}</b>{target_info}")
 
                     fig.add_trace(go.Scatter(
-                        x=df_limpio['FECHA_DT'], y=df_limpio[col_param], mode='lines+markers', name=col_param,
+                        x=df_fase['FECHA_DT'], y=df_fase[col_param], mode='lines+markers', name=col_param,
                         hovertext=hover_text, hoverinfo="text", line=dict(color="#a3ff00", width=2),
                         marker=dict(size=9, symbol="circle", color=colores_puntos, line=dict(width=1, color='#050505'))
                     ))
 
                     fig.update_layout(
                         template="plotly_dark", plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)",
-                        xaxis=dict(showgrid=True, gridcolor="#1a1a1a", title="", tickmode='array', tickvals=df_limpio['FECHA_DT'], ticktext=tick_text),
+                        xaxis=dict(showgrid=True, gridcolor="#1a1a1a", title="", tickmode='array', tickvals=df_fase['FECHA_DT'], ticktext=tick_text),
                         yaxis=dict(showgrid=True, gridcolor="#1a1a1a", title="UFC / ml"), margin=dict(l=0, r=0, t=30, b=0), showlegend=False
                     )
                     st.plotly_chart(fig, use_container_width=True)
@@ -365,33 +370,38 @@ else:
                 with c_tab:
                     st.markdown(f"<h3 style='color: #ffffff; font-size: 1.1rem; margin-bottom: 15px;'>■ TABLA {titulo_tabla}</h3>", unsafe_allow_html=True)
                     
-                    # FILTRO QUIRÚRGICO DE COLUMNAS
+                    # 🔥 FILTRO QUIRÚRGICO DE FECHAS SEGÚN LA FASE (48H vs 7D)
                     cols_to_show = []
-                    for c in df_limpio.columns:
+                    for c in df_fase.columns:
                         cl = c.lower()
-                        # Solo Fecha Toma, Fecha Lectura, FT y Lote
-                        if ("toma" in cl) or ("lectura" in cl) or (cl == "ft") or ("lote" in cl) or (cl == "fecha"):
-                            if c not in ['FECHA_DT', 'batch_id', 'fase_block', 'Escala_Fase', 'Propagacion']:
-                                cols_to_show.append(c)
-                                
+                        if c in ['FECHA_DT', 'batch_id', 'fase_block', 'Escala_Fase', 'Propagacion', 'LABEL_SELECTOR']:
+                            continue
+                        
+                        is_fecha = "toma" in cl or "lectura" in cl or "fecha" in cl
+                        is_contexto = (cl == "ft") or ("lote" in cl)
+                        
+                        if is_fecha:
+                            if tipo_fase == "48" and "48" in cl: cols_to_show.append(c)
+                            elif tipo_fase == "7" and ("7" in cl or "7mo" in cl): cols_to_show.append(c)
+                        elif is_contexto:
+                            cols_to_show.append(c)
+                            
                     if col_param not in cols_to_show:
                         cols_to_show.append(col_param)
                         
-                    df_tabla = df_limpio[cols_to_show].copy()
+                    df_tabla = df_fase[cols_to_show].copy()
                     
-                    # Limpiar FT en la tabla
+                    # Limpiar FT y Lote en tabla
                     for c in df_tabla.columns:
-                        if c.lower() == "ft" or "ft" in c.lower():
-                            df_tabla[c] = df_tabla[c].apply(
-                                lambda x: f"{int(float(x))}" if pd.notna(x) and str(x).strip() != "" and str(x).replace('.','',1).replace('-','',1).isdigit() else ("" if pd.isna(x) else str(x))
-                            )
+                        if c.lower() == "ft" or "ft" in c.lower() or "lote" in c.lower():
+                            df_tabla[c] = df_tabla[c].apply(lambda x: f"{int(float(x))}" if pd.notna(x) and str(x).strip() != "" and str(x).replace('.','',1).replace('-','',1).isdigit() else ("" if pd.isna(x) else str(x)))
 
                     st.dataframe(df_tabla.style.apply(aplicar_semaforo_tabla, axis=1).format(precision=2, na_rep=""), use_container_width=True, height=350)
 
             st.markdown("<hr style='border: 1px solid #1a1a1a; margin-top: 10px; margin-bottom: 25px;'>", unsafe_allow_html=True)
-            render_fermentacion_row(col_48h, f"MEDICIÓN A LAS 48 HORAS", "48 HORAS")
+            render_fermentacion_row(col_48h, f"MEDICIÓN A LAS 48 HORAS", "48 HORAS", "48")
             st.markdown("<br><hr style='border: 1px solid #1a1a1a; margin-bottom: 25px;'>", unsafe_allow_html=True)
-            render_fermentacion_row(col_7d, f"LECTURA A LOS 7 DÍAS", "7 DÍAS")
+            render_fermentacion_row(col_7d, f"LECTURA A LOS 7 DÍAS", "7 DÍAS", "7")
 
 
         # -------------------------------------------------------------------------
