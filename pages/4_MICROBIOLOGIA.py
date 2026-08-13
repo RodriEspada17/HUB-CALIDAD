@@ -259,10 +259,11 @@ else:
                     except: return raw.upper()
 
                 df_limpio[col_ft] = df_limpio[col_ft].apply(limpiar_entero)
+                
                 if col_lote_ref:
-                    # 🔥 Corrección del TypeError (agregando .str antes de replace)
                     df_limpio[col_lote_ref] = df_limpio[col_lote_ref].astype(str).str.replace(r'\.0$', '', regex=True).str.replace('(?i)nan', '', regex=True).str.replace('(?i)none', '', regex=True)
 
+                # 🔥 1ER DESPLEGABLE: FILTRAR POR FT
                 df_valid_ft = df_limpio[~df_limpio[col_ft].isin(["", "NAN", "NONE", "N/A"])]
                 fts_unicos = list(dict.fromkeys(df_valid_ft[col_ft].unique()))
                 lista_fts = ["Todos los FT"] + fts_unicos
@@ -275,6 +276,7 @@ else:
                 if ft_sel != "Todos los FT":
                     df_limpio = df_limpio[df_limpio[col_ft] == ft_sel]
 
+                # 🔥 2DO DESPLEGABLE: FILTRAR POR LOTE (Depende del FT seleccionado)
                 if col_lote_ref:
                     df_valid_lotes = df_limpio[~df_limpio[col_lote_ref].isin(["", "NAN", "NONE", "N/A"])]
                     lotes_unicos = list(dict.fromkeys(df_valid_lotes[col_lote_ref].unique()))
@@ -410,7 +412,7 @@ else:
             render_fermentacion_row(col_7d, f"LECTURA A LOS 7 DÍAS", "7 DÍAS", "7")
 
         # -------------------------------------------------------------------------
-        # LÓGICA ESTÁNDAR PARA PROPAGACIÓN Y DEMÁS ETAPAS
+        # LÓGICA ESTÁNDAR PARA PROPAGACIÓN Y DEMÁS ETAPAS (ENVASADO Y OTROS)
         # -------------------------------------------------------------------------
         else:
             if etapa_seleccionada == "1. Control de Propagación":
@@ -422,11 +424,31 @@ else:
                     with c_lote: lote_sel = st.selectbox("PROPAGACIÓN / LOTE SELECCIONADO:", lista_lotes)
                     if lote_sel != "Todas las Propagaciones":
                         df_limpio = df_limpio[df_limpio['Propagacion'] == lote_sel]
+            
+            elif etapa_seleccionada == "6. Envasado":
+                df_limpio['Escala_Fase'] = "General"
+                
+                # --- FILTRO POR PRODUCTO ---
+                col_producto = next((c for c in df_limpio.columns if "producto" in c.lower()), None)
+                prod_sel = "Todos los Productos"
+                
+                if col_producto:
+                    df_limpio[col_producto] = df_limpio[col_producto].astype(str).str.strip().str.replace(r'(?i)^nan$', 'N/A', regex=True)
+                    df_valid_prod = df_limpio[~df_limpio[col_producto].isin(["", "NAN", "NONE", "N/A", "nan", "NaN"])]
+                    prods_unicos = list(dict.fromkeys(df_valid_prod[col_producto].unique()))
+                    lista_prods = ["Todos los Productos"] + prods_unicos
+                    
+                    c_prod, _ = st.columns([1.5, 2.5])
+                    with c_prod: 
+                        prod_sel = st.selectbox("FILTRAR POR PRODUCTO:", lista_prods)
+                    
+                    if prod_sel != "Todos los Productos":
+                        df_limpio = df_limpio[df_limpio[col_producto] == prod_sel]
             else:
                 df_limpio['Escala_Fase'] = "General"
 
             cols_numericas = df_limpio.select_dtypes(include=[np.number]).columns.tolist()
-            cols_prohibidas_graf = ['semana', 'lote', 'ft', 'batch_id', 'etapa', 'escala', 'escala_fase', 'hora', 'volumen', 'unnamed', 'procedencia', 'producto', 'analista', 'tipo', 'tanque', 'observaciones', 'tp', 'muestra', 'sector', 'estado']
+            cols_prohibidas_graf = ['semana', 'lote', 'ft', 'batch_id', 'etapa', 'escala', 'escala_fase', 'hora', 'volumen', 'unnamed', 'procedencia', 'producto', 'analista', 'tipo', 'tanque', 'observaciones', 'tp', 'muestra', 'sector', 'estado', 'calibre']
             cols_graficables = [c for c in cols_numericas if not any(ex in c.lower() for ex in cols_prohibidas_graf)]
             
             col_x_graf = 'FECHA_DT'
@@ -434,13 +456,13 @@ else:
                 cols_permitidas = []
                 for c in cols_graficables:
                     cl = c.lower().strip()
-                    if "aerobio" in cl or "salvaje" in cl or "nbb" in cl or "anaerobio" in cl:
+                    # Filtro expandido y seguro para capturar Aerobios, Salvajes y NBB
+                    if "aerob" in cl or "salvaje" in cl or "nbb" in cl:
                         cols_permitidas.append(c)
                 cols_graficables = cols_permitidas
                 
                 col_lote_env = next((c for c in df_limpio.columns if "lote" in c.lower()), None)
                 if col_lote_env:
-                    # 🔥 Corrección del TypeError aquí también
                     df_limpio[col_lote_env] = df_limpio[col_lote_env].astype(str).str.replace(r'\.0$', '', regex=True).str.replace('(?i)nan', 'N/A', regex=True)
                     col_x_graf = col_lote_env
             
@@ -551,10 +573,8 @@ else:
                     unit_label = "Temperatura (°C)" if es_temperatura else (f"{parametro_a_graficar} ({spec_gen['unit']})" if spec_gen else "UFC / Medición")
                     
                     xaxis_config = dict(showgrid=True, gridcolor="#1a1a1a", title="")
-                    if col_x_graf == 'FECHA_DT':
-                        xaxis_config['tickformat'] = "%d-%b"
-                    else:
-                        xaxis_config['type'] = 'category'
+                    if col_x_graf == 'FECHA_DT': xaxis_config['tickformat'] = "%d-%b"
+                    else: xaxis_config['type'] = 'category'
 
                     fig.update_layout(
                         template="plotly_dark", plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)",
@@ -570,7 +590,10 @@ else:
                 st.markdown("<h3 style='color: #ffffff; font-size: 1.1rem; margin-bottom: 15px;'>■ REGISTROS DE LA ETAPA</h3>", unsafe_allow_html=True)
                 
                 if etapa_seleccionada == "6. Envasado":
-                    claves_fijas = ['lectura', 'calibre', 'envasado', 'lote']
+                    claves_fijas = ['lectura', 'envasado', 'lote']
+                    # Ocultar o mostrar Producto dinámicamente
+                    if 'prod_sel' in locals() and prod_sel == "Todos los Productos" and col_producto:
+                        claves_fijas.append('producto')
                 else:
                     claves_fijas = ['fecha', 'hora', 'ft', 'escala', 'etapa', 'lote', 'procedencia', 'tipo', 'tanque']
                     
