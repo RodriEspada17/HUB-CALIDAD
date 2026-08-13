@@ -200,7 +200,7 @@ def cargar_y_limpiar_microbiologia(gid):
         if len(columnas_fecha) > 0:
             df = df.dropna(subset=[columnas_fecha[0]])
             
-        columnas_excluidas = ['fecha', 'hora', 'semana', 'lote', 'escala', 'etapa', 'analista', 'producto', 'procedencia', 'tipo', 'generación', 'tanque', 'observaciones', 'ft', 'tp', 'muestra', 'sector', 'estado', 'calibre', 'propagacion', 'batch_id', 'fecha_dt', 'escala_fase', 'label_selector']
+        columnas_excluidas = ['fecha', 'hora', 'semana', 'lote', 'escala', 'etapa', 'analista', 'producto', 'procedencia', 'tipo', 'generación', 'tanque', 'observaciones', 'ft', 'tp', 'muestra', 'sector', 'estado', 'calibre', 'propagacion', 'batch_id', 'fecha_dt', 'escala_fase']
         for col in df.columns:
             if not any(excl in col.lower() for excl in columnas_excluidas):
                 df[col] = pd.to_numeric(df[col], errors='coerce')
@@ -243,7 +243,7 @@ else:
         if etapa_seleccionada == "4. Fermentación":
             df_limpio['Escala_Fase'] = "General"
             
-            # 🔥 LIMPIEZA Y SELECTOR COMBINADO (FT + LOTE SIN DECIMALES)
+            # 🔥 LIMPIEZA DE COLUMNAS FT Y LOTE (A enteros limpios)
             if col_ft:
                 def limpiar_entero(val):
                     if pd.isna(val): return ""
@@ -252,26 +252,36 @@ else:
                     except: return raw.upper()
 
                 df_limpio[col_ft] = df_limpio[col_ft].apply(limpiar_entero)
+                
                 if col_lote_ref:
                     df_limpio[col_lote_ref] = df_limpio[col_lote_ref].astype(str).str.replace(r'\.0$', '', regex=True).str.replace('nan', '', case=False).str.replace('None', '', case=False)
-                
-                def make_label(row):
-                    ft = str(row[col_ft]).strip()
-                    lote = str(row[col_lote_ref]).strip() if col_lote_ref else ""
-                    if not ft or ft.upper() in ["NAN", "NONE", "N/A", ""]: return ""
-                    if lote and lote.upper() not in ["NAN", "NONE", "N/A", ""]: return f"FT {ft} | Lote {lote}"
-                    return f"FT {ft}"
-                    
-                df_limpio['LABEL_SELECTOR'] = df_limpio.apply(make_label, axis=1)
-                valid_labels = df_limpio[df_limpio['LABEL_SELECTOR'] != ""]['LABEL_SELECTOR'].unique().tolist()
-                lista_fts = ["Todos los Lotes"] + valid_labels
+
+                # 🔥 1ER DESPLEGABLE: FILTRAR POR FT
+                df_valid_ft = df_limpio[~df_limpio[col_ft].isin(["", "NAN", "NONE", "N/A"])]
+                fts_unicos = list(dict.fromkeys(df_valid_ft[col_ft].unique()))
+                lista_fts = ["Todos los FT"] + fts_unicos
                 
                 c_filtro1, c_filtro2 = st.columns(2)
+                
                 with c_filtro1: 
-                    ft_sel = st.selectbox("FILTRAR POR LOTE / FT:", lista_fts)
-                if ft_sel != "Todos los Lotes":
-                    df_limpio = df_limpio[df_limpio['LABEL_SELECTOR'] == ft_sel]
+                    ft_sel = st.selectbox("FILTRAR POR FT:", lista_fts)
+                
+                if ft_sel != "Todos los FT":
+                    df_limpio = df_limpio[df_limpio[col_ft] == ft_sel]
+
+                # 🔥 2DO DESPLEGABLE: FILTRAR POR LOTE (Depende del FT seleccionado)
+                if col_lote_ref:
+                    df_valid_lotes = df_limpio[~df_limpio[col_lote_ref].isin(["", "NAN", "NONE", "N/A"])]
+                    lotes_unicos = list(dict.fromkeys(df_valid_lotes[col_lote_ref].unique()))
+                    lista_lotes = ["Todos los Lotes"] + lotes_unicos
+                    
+                    with c_filtro2:
+                        lote_sel = st.selectbox("FILTRAR POR LOTE:", lista_lotes)
+                    
+                    if lote_sel != "Todos los Lotes":
+                        df_limpio = df_limpio[df_limpio[col_lote_ref] == lote_sel]
             
+            # Opciones de Parámetro y Agrupación Eje X
             c_opt1, c_opt2 = st.columns(2)
             with c_opt1:
                 param_base = st.selectbox("PARÁMETRO BIOLÓGICO:", ["Aerobios WLD", "Levadura Salvaje YM"])
@@ -281,6 +291,7 @@ else:
 
             cols_numericas = df_limpio.select_dtypes(include=[np.number]).columns.tolist()
             
+            # Asignación exacta de columnas 48h vs 7d
             if param_base == "Aerobios WLD":
                 col_48h = next((c for c in cols_numericas if "medici" in c.lower() and "wld" in c.lower()), None)
                 col_7d = next((c for c in cols_numericas if c.lower().strip() == "aerobio wld"), None)
@@ -288,16 +299,15 @@ else:
                 col_48h = next((c for c in cols_numericas if c.lower().strip() == "levadura salvaje ym"), None)
                 col_7d = next((c for c in cols_numericas if "lev. salvaje" in c.lower() or "lev salvaje" in c.lower()), None)
 
-            # --- MOTOR RENDERIZADOR DOBLE ---
+            # --- MOTOR RENDERIZADOR DOBLE (Gráfico + Tabla) ---
             def render_fermentacion_row(col_param, titulo_grafico, titulo_tabla, tipo_fase):
                 if not col_param or col_param not in df_limpio.columns:
-                    st.info(f"No hay registros de {titulo_grafico} en este FT.")
+                    st.info(f"No hay registros de {titulo_grafico} para esta selección.")
                     return
                 
-                # Filtrar NaNs del parámetro para limpiar gráficos y tablas rotas
                 df_fase = df_limpio.dropna(subset=[col_param]).copy()
                 if df_fase.empty:
-                    st.info(f"Los registros de {titulo_grafico} están vacíos.")
+                    st.info(f"Los registros de {titulo_grafico} están vacíos para este lote.")
                     return
 
                 c_graf, c_tab = st.columns([2.5, 1.2])
@@ -370,12 +380,10 @@ else:
                 with c_tab:
                     st.markdown(f"<h3 style='color: #ffffff; font-size: 1.1rem; margin-bottom: 15px;'>■ TABLA {titulo_tabla}</h3>", unsafe_allow_html=True)
                     
-                    # 🔥 FILTRO QUIRÚRGICO DE FECHAS SEGÚN LA FASE (48H vs 7D)
                     cols_to_show = []
                     for c in df_fase.columns:
                         cl = c.lower()
-                        if c in ['FECHA_DT', 'batch_id', 'fase_block', 'Escala_Fase', 'Propagacion', 'LABEL_SELECTOR']:
-                            continue
+                        if c in ['FECHA_DT', 'batch_id', 'fase_block', 'Escala_Fase', 'Propagacion']: continue
                         
                         is_fecha = "toma" in cl or "lectura" in cl or "fecha" in cl
                         is_contexto = (cl == "ft") or ("lote" in cl)
@@ -391,7 +399,6 @@ else:
                         
                     df_tabla = df_fase[cols_to_show].copy()
                     
-                    # Limpiar FT y Lote en tabla
                     for c in df_tabla.columns:
                         if c.lower() == "ft" or "ft" in c.lower() or "lote" in c.lower():
                             df_tabla[c] = df_tabla[c].apply(lambda x: f"{int(float(x))}" if pd.notna(x) and str(x).strip() != "" and str(x).replace('.','',1).replace('-','',1).isdigit() else ("" if pd.isna(x) else str(x)))
@@ -508,8 +515,12 @@ else:
                             target_info = f"<br>{std_label_txt}<br>Estado: {estado_txt}" if std_label_txt else ""
                             etapa_info = f"Etapa: <b>{fase_tipo}</b><br>" if "1. Control de Propagación" in etapa_seleccionada else ""
                             
-                            lote_str = row.get(col_lote_ref, '') if col_lote_ref else ''
-                            ft_str = row.get(col_ft, '') if col_ft else ''
+                            col_lote_ref_loc = next((c for c in row.index if "lote" in c.lower() and c.lower() != 'lote'), None)
+                            if not col_lote_ref_loc: col_lote_ref_loc = next((c for c in row.index if "lote" in c.lower()), None)
+                            col_ft_ref_loc = next((c for c in row.index if c.lower() == 'ft'), None)
+                            
+                            lote_str = row.get(col_lote_ref_loc, '') if col_lote_ref_loc else ''
+                            ft_str = row.get(col_ft_ref_loc, '') if col_ft_ref_loc else ''
                             lote_txt = row.get('Propagacion', f"{lote_str} / FT {ft_str}".strip(' /'))
 
                             hover_text.append(f"Fecha: {fecha_val}{hora_txt}<br>Lote/FT: {lote_txt}<br>{etapa_info}Valor: <b>{val} {spec_gen['unit'] if spec_gen else ''}</b>{target_info}")
