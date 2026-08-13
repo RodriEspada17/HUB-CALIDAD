@@ -43,14 +43,16 @@ with col_b2:
 st.markdown("<h1 style='color: #00e5ff; font-size: 2.2rem; font-weight: 800; letter-spacing: 2px; margin: 0;'>CONTROL DE AGUAS <span style='color: #ffffff;'>(SPC)</span></h1>", unsafe_allow_html=True)
 st.markdown("<p style='color: #888888; font-size: 0.95rem; margin-bottom: 2rem;'>Monitoreo estadístico de parámetros físico-químicos del agua.</p>", unsafe_allow_html=True)
 
-URL_CSV_AGUAS = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTfm3KfpLbZ6De9FzJE0rpGZbkB0soLJOCKFl1yjvQQMiMqef43JWcUL6s9OyIGP9hr1e067494EZOo/pub?output=csv"
+# 🔥 CORRECCIÓN CLAVE: Agregamos el &gid=1373914293 para que lea la pestaña correcta
+URL_CSV_AGUAS = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTfm3KfpLbZ6De9FzJE0rpGZbkB0soLJOCKFl1yjvQQMiMqef43JWcUL6s9OyIGP9hr1e067494EZOo/pub?output=csv&gid=1373914293"
 
 @st.cache_data(ttl=60)
 def cargar_datos_aguas():
     try:
         df = pd.read_csv(URL_CSV_AGUAS)
-        # Limpieza básica
-        df = df.replace({"NA": np.nan, "N/A": np.nan, "n/a": np.nan, "-": np.nan, "": np.nan})
+        
+        # Limpieza básica y eliminación de "NSC" (No Se Controló)
+        df = df.replace({"NA": np.nan, "N/A": np.nan, "n/a": np.nan, "-": np.nan, "": np.nan, "NSC": np.nan, "nsc": np.nan})
         
         # Buscar columna de fecha
         col_fecha = next((col for col in df.columns if "fecha" in col.lower()), None)
@@ -61,7 +63,7 @@ def cargar_datos_aguas():
             df['FECHA_DT'] = df.index
 
         # Forzar numericas a columnas que no son de contexto
-        cols_contexto = ['fecha', 'hora', 'punto', 'sector', 'analista', 'observaciones', 'estado']
+        cols_contexto = ['fecha', 'hora', 'semana', 'punto', 'sector', 'analista', 'observaciones', 'estado']
         for col in df.columns:
             if not any(excl in col.lower() for excl in cols_contexto) and col != 'FECHA_DT':
                 df[col] = pd.to_numeric(df[col], errors='coerce')
@@ -158,7 +160,6 @@ elif df_limpio is not None and not df_limpio.empty:
         # Filtramos para mostrar los últimos 15
         df_mostrar = df_limpio[cols_tabla].tail(15)
         
-        # Si elegimos un parámetro, lo ponemos al principio o aseguramos que se vea
         st.dataframe(df_mostrar.style.format(precision=2, na_rep=""), use_container_width=True, height=450)
 
 else:
