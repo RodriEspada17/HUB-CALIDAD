@@ -70,6 +70,7 @@ SPECS_PARAMETROS = {
     "6. Envasado": {
         "wld": {"type": "max", "val": 0.0, "label": "0 UFC/ml", "unit": "UFC/ml"},
         "aerobio": {"type": "max", "val": 0.0, "label": "0 UFC/ml", "unit": "UFC/ml"},
+        "aeróbio": {"type": "max", "val": 0.0, "label": "0 UFC/ml", "unit": "UFC/ml"}, # ATrapa con tilde
         "salvaje": {"type": "max", "val": 0.0, "label": "0 UFC/ml", "unit": "UFC/ml"},
         "ym": {"type": "max", "val": 0.0, "label": "0 UFC/ml", "unit": "UFC/ml"},
         "anaerobio": {"type": "max", "val": 0.0, "label": "0 UFC/ml", "unit": "UFC/ml"},
@@ -259,38 +260,26 @@ else:
                     except: return raw.upper()
 
                 df_limpio[col_ft] = df_limpio[col_ft].apply(limpiar_entero)
-                
                 if col_lote_ref:
                     df_limpio[col_lote_ref] = df_limpio[col_lote_ref].astype(str).str.replace(r'\.0$', '', regex=True).str.replace('(?i)nan', '', regex=True).str.replace('(?i)none', '', regex=True)
 
-                # 🔥 1ER DESPLEGABLE: FILTRAR POR FT
                 df_valid_ft = df_limpio[~df_limpio[col_ft].isin(["", "NAN", "NONE", "N/A"])]
                 fts_unicos = list(dict.fromkeys(df_valid_ft[col_ft].unique()))
                 lista_fts = ["Todos los FT"] + fts_unicos
                 
                 c_filtro1, c_filtro2 = st.columns(2)
-                
-                with c_filtro1: 
-                    ft_sel = st.selectbox("FILTRAR POR FT:", lista_fts)
-                
-                if ft_sel != "Todos los FT":
-                    df_limpio = df_limpio[df_limpio[col_ft] == ft_sel]
+                with c_filtro1: ft_sel = st.selectbox("FILTRAR POR FT:", lista_fts)
+                if ft_sel != "Todos los FT": df_limpio = df_limpio[df_limpio[col_ft] == ft_sel]
 
-                # 🔥 2DO DESPLEGABLE: FILTRAR POR LOTE (Depende del FT seleccionado)
                 if col_lote_ref:
                     df_valid_lotes = df_limpio[~df_limpio[col_lote_ref].isin(["", "NAN", "NONE", "N/A"])]
                     lotes_unicos = list(dict.fromkeys(df_valid_lotes[col_lote_ref].unique()))
                     lista_lotes = ["Todos los Lotes"] + lotes_unicos
-                    
-                    with c_filtro2:
-                        lote_sel = st.selectbox("FILTRAR POR LOTE:", lista_lotes)
-                    
-                    if lote_sel != "Todos los Lotes":
-                        df_limpio = df_limpio[df_limpio[col_lote_ref] == lote_sel]
+                    with c_filtro2: lote_sel = st.selectbox("FILTRAR POR LOTE:", lista_lotes)
+                    if lote_sel != "Todos los Lotes": df_limpio = df_limpio[df_limpio[col_lote_ref] == lote_sel]
             
             c_opt1, c_opt2 = st.columns(2)
-            with c_opt1:
-                param_base = st.selectbox("PARÁMETRO BIOLÓGICO:", ["Aerobios WLD", "Levadura Salvaje YM"])
+            with c_opt1: param_base = st.selectbox("PARÁMETRO BIOLÓGICO:", ["Aerobios WLD", "Levadura Salvaje YM"])
             with c_opt2:
                 st.markdown("<div style='margin-top: 5px;'></div>", unsafe_allow_html=True)
                 eje_x_sel = st.radio("ETIQUETAS DEL EJE X:", ["Solo FT", "FT + Lote"], horizontal=True)
@@ -308,20 +297,16 @@ else:
                 if not col_param or col_param not in df_limpio.columns:
                     st.info(f"No hay registros de {titulo_grafico} para esta selección.")
                     return
-                
                 df_fase = df_limpio.dropna(subset=[col_param]).copy()
                 if df_fase.empty:
                     st.info(f"Los registros de {titulo_grafico} están vacíos para este lote.")
                     return
 
                 c_graf, c_tab = st.columns([2.5, 1.2])
-                
                 with c_graf:
                     st.markdown(f"<h3 style='color: #ffffff; font-size: 1.1rem; margin-bottom: 15px;'>■ {titulo_grafico}</h3>", unsafe_allow_html=True)
-                    
                     fig = go.Figure()
                     spec_gen = obtener_spec_parametro(col_param, etapa_seleccionada)
-                    
                     promedio = df_fase[col_param].mean()
                     desviacion = df_fase[col_param].std()
                     lcs = promedio + (3 * desviacion) if pd.notna(desviacion) and desviacion > 0 else promedio
@@ -336,7 +321,6 @@ else:
                     fig.add_trace(go.Scatter(x=df_fase['FECHA_DT'], y=df_fase[col_param], mode='lines', line=dict(color='rgba(163, 255, 0, 0.35)', width=1.5, dash='dot'), showlegend=False, hoverinfo='none'))
 
                     colores_puntos, hover_text, tick_text = [], [], []
-                    
                     for idx, row in df_fase.iterrows():
                         val = row[col_param]
                         ft_val = row.get(col_ft, 'N/A') if col_ft else 'N/A'
@@ -380,7 +364,6 @@ else:
                     
                 with c_tab:
                     st.markdown(f"<h3 style='color: #ffffff; font-size: 1.1rem; margin-bottom: 15px;'>■ TABLA {titulo_tabla}</h3>", unsafe_allow_html=True)
-                    
                     cols_to_show = []
                     for c in df_fase.columns:
                         cl = c.lower()
@@ -392,12 +375,9 @@ else:
                         if is_fecha:
                             if tipo_fase == "48" and "48" in cl: cols_to_show.append(c)
                             elif tipo_fase == "7" and ("7" in cl or "7mo" in cl): cols_to_show.append(c)
-                        elif is_contexto:
-                            cols_to_show.append(c)
+                        elif is_contexto: cols_to_show.append(c)
                             
-                    if col_param not in cols_to_show:
-                        cols_to_show.append(col_param)
-                        
+                    if col_param not in cols_to_show: cols_to_show.append(col_param)
                     df_tabla = df_fase[cols_to_show].copy()
                     
                     for c in df_tabla.columns:
@@ -433,17 +413,14 @@ else:
                 prod_sel = "Todos los Productos"
                 
                 if col_producto:
-                    df_limpio[col_producto] = df_limpio[col_producto].astype(str).str.strip().str.replace(r'(?i)^nan$', 'N/A', regex=True)
+                    df_limpio[col_producto] = df_limpio[col_producto].astype(str).str.strip().replace(r'(?i)^nan$', 'N/A', regex=True)
                     df_valid_prod = df_limpio[~df_limpio[col_producto].isin(["", "NAN", "NONE", "N/A", "nan", "NaN"])]
                     prods_unicos = list(dict.fromkeys(df_valid_prod[col_producto].unique()))
                     lista_prods = ["Todos los Productos"] + prods_unicos
                     
                     c_prod, _ = st.columns([1.5, 2.5])
-                    with c_prod: 
-                        prod_sel = st.selectbox("FILTRAR POR PRODUCTO:", lista_prods)
-                    
-                    if prod_sel != "Todos los Productos":
-                        df_limpio = df_limpio[df_limpio[col_producto] == prod_sel]
+                    with c_prod: prod_sel = st.selectbox("FILTRAR POR PRODUCTO:", lista_prods)
+                    if prod_sel != "Todos los Productos": df_limpio = df_limpio[df_limpio[col_producto] == prod_sel]
             else:
                 df_limpio['Escala_Fase'] = "General"
 
@@ -456,8 +433,8 @@ else:
                 cols_permitidas = []
                 for c in cols_graficables:
                     cl = c.lower().strip()
-                    # Filtro expandido y seguro para capturar Aerobios, Salvajes y NBB
-                    if "aerob" in cl or "salvaje" in cl or "nbb" in cl:
+                    # 🔥 ATRAPA CON O SIN TILDE ("aerob", "aerób") + NBB + SALVAJE
+                    if "aerob" in cl or "aerób" in cl or "salvaje" in cl or "nbb" in cl or "anaerob" in cl:
                         cols_permitidas.append(c)
                 cols_graficables = cols_permitidas
                 
@@ -591,13 +568,15 @@ else:
                 
                 if etapa_seleccionada == "6. Envasado":
                     claves_fijas = ['lectura', 'envasado', 'lote']
-                    # Ocultar o mostrar Producto dinámicamente
                     if 'prod_sel' in locals() and prod_sel == "Todos los Productos" and col_producto:
                         claves_fijas.append('producto')
                 else:
                     claves_fijas = ['fecha', 'hora', 'ft', 'escala', 'etapa', 'lote', 'procedencia', 'tipo', 'tanque']
                     
                 cols_fijas = [c for c in df_limpio.columns if any(k in c.lower() for k in claves_fijas)]
+                
+                # 🔥 ELIMINAR CALIBRE EXPRESAMENTE PARA EVITAR FANTASMAS
+                cols_fijas = [c for c in cols_fijas if "calibre" not in c.lower()]
                 cols_fijas = [c for c in cols_fijas if c not in ['FECHA_DT', 'batch_id', 'fase_block', 'Escala_Fase', 'Propagacion']]
                 
                 cols_mostrar = cols_fijas.copy()
