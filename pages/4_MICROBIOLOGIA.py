@@ -35,7 +35,7 @@ st.markdown("""
     div[data-baseweb="select"] input { width: 0px !important; opacity: 0 !important; position: absolute !important; pointer-events: none !important; }
     div[data-baseweb="select"], div[data-baseweb="select"] * { cursor: pointer !important; }
     
-    .stSelectbox label { color: #888888 !important; font-weight: 600 !important; letter-spacing: 1px; font-size: 0.85rem !important; }
+    .stSelectbox label, .stRadio label { color: #888888 !important; font-weight: 600 !important; letter-spacing: 1px; font-size: 0.85rem !important; }
     </style>
 """, unsafe_allow_html=True)
 
@@ -221,6 +221,7 @@ else:
         st.error(f"Error de conexión: {df_limpio}")
     elif df_limpio is not None and not df_limpio.empty:
         
+        # --- GENERACIÓN DE FECHA_DT UNIVERSAL ---
         col_fecha_orig = next((c for c in df_limpio.columns if "fecha" in c.lower()), None)
         col_hora_str = next((c for c in df_limpio.columns if "hora" in c.lower()), None)
         
@@ -233,21 +234,19 @@ else:
         else:
             df_limpio['FECHA_DT'] = df_limpio.index
 
-        if etapa_seleccionada == "1. Control de Propagación":
-            df_limpio = agrupar_por_propagaciones(df_limpio)
-            df_limpio = clasificar_escala(df_limpio)
-            if 'Propagacion' in df_limpio.columns:
-                lista_lotes = ["Todas las Propagaciones"] + list(df_limpio['Propagacion'].unique())
-                c_lote, _ = st.columns([1.5, 2.5])
-                with c_lote: lote_sel = st.selectbox("PROPAGACIÓN / LOTE SELECCIONADO:", lista_lotes)
-                if lote_sel != "Todas las Propagaciones":
-                    df_limpio = df_limpio[df_limpio['Propagacion'] == lote_sel]
-        
-        elif etapa_seleccionada == "4. Fermentación":
+        # Columna Global Lote y FT
+        col_ft = next((c for c in df_limpio.columns if c.strip().lower() == "ft"), None)
+        if not col_ft: col_ft = next((c for c in df_limpio.columns if "ft" in c.lower()), None)
+        col_lote_ref = next((c for c in df_limpio.columns if "lote" in c.lower() and c.lower() != 'lote'), None)
+        if not col_lote_ref: col_lote_ref = next((c for c in df_limpio.columns if "lote" in c.lower()), None)
+
+        # -------------------------------------------------------------------------
+        # LÓGICA EXCLUSIVA PARA FERMENTACIÓN (DISEÑO 48H vs 7 DÍAS)
+        # -------------------------------------------------------------------------
+        if etapa_seleccionada == "4. Fermentación":
             df_limpio['Escala_Fase'] = "General"
-            col_ft = next((c for c in df_limpio.columns if c.strip().lower() == "ft"), None)
-            if not col_ft: col_ft = next((c for c in df_limpio.columns if "ft" in c.lower()), None)
             
+            # Limpieza y Selector de FTs
             if col_ft:
                 def limpiar_ft_entero(val):
                     if pd.isna(val): return ""
@@ -260,189 +259,287 @@ else:
                 fts_unicos = list(dict.fromkeys(df_valid_ft[col_ft].unique()))
                 lista_fts = ["Todos los FT"] + fts_unicos
                 
-                c_ft, _ = st.columns([1.5, 2.5])
-                with c_ft: ft_sel = st.selectbox("LOTE / FT SELECCIONADO:", lista_fts)
+                c_filtro1, c_filtro2 = st.columns(2)
+                with c_filtro1: 
+                    ft_sel = st.selectbox("FILTRAR POR LOTE / FT:", lista_fts)
                 if ft_sel != "Todos los FT":
                     df_limpio = df_limpio[df_limpio[col_ft] == ft_sel]
-        else:
-            df_limpio['Escala_Fase'] = "General"
-
-        cols_numericas = df_limpio.select_dtypes(include=[np.number]).columns.tolist()
-        cols_prohibidas_graf = ['semana', 'lote', 'ft', 'batch_id', 'etapa', 'escala', 'escala_fase', 'hora', 'volumen', 'unnamed', 'procedencia', 'producto', 'analista', 'tipo', 'tanque', 'observaciones', 'tp', 'muestra', 'sector', 'estado']
-        cols_graficables = [c for c in cols_numericas if not any(ex in c.lower() for ex in cols_prohibidas_graf)]
-        
-        # 🔥 FILTRADO ESTRICTO EXCLUSIVO PARA FERMENTACIÓN
-        if etapa_seleccionada == "4. Fermentación":
-            cols_permitidas = []
-            for c in cols_graficables:
-                cl = c.lower().strip()
-                if cl == "medición aerobio wld" or cl == "medicion aerobio wld" or cl == "levadura salvaje ym":
-                    cols_permitidas.append(c)
-            cols_graficables = cols_permitidas
-        
-        col_grafico, col_tabla = st.columns([2.5, 1.2])
-        
-        with col_grafico:
-            st.markdown(f"<h3 style='color: #ffffff; font-size: 1.1rem; margin-bottom: 15px;'>■ GRÁFICO DE CONTROL (SPC) {'MULTI-ESCALA' if etapa_seleccionada == '1. Control de Propagación' else ''}</h3>", unsafe_allow_html=True)
             
-            if cols_graficables:
-                idx_default = next((i for i, c in enumerate(cols_graficables) if "temp" in c.lower()), 0)
-                parametro_a_graficar = st.selectbox("Selecciona el parámetro a analizar:", cols_graficables, index=idx_default, label_visibility="collapsed")
-                
-                col_fecha_label = col_fecha_orig if col_fecha_orig else "FECHA_DT"
-                es_temperatura = "temp" in parametro_a_graficar.lower()
-                spec_gen = obtener_spec_parametro(parametro_a_graficar, etapa_seleccionada) if not es_temperatura else None
-                
-                promedio_global = df_limpio[parametro_a_graficar].mean()
-                desviacion_global = df_limpio[parametro_a_graficar].std()
-                lcs_global = promedio_global + (3 * desviacion_global) if pd.notna(desviacion_global) and desviacion_global > 0 else promedio_global
-                
-                fig = go.Figure()
+            # Opciones de Parámetro y Agrupación Eje X
+            c_opt1, c_opt2 = st.columns(2)
+            with c_opt1:
+                param_base = st.selectbox("PARÁMETRO BIOLÓGICO:", ["Aerobios WLD", "Levadura Salvaje YM"])
+            with c_opt2:
+                st.markdown("<div style='margin-top: 5px;'></div>", unsafe_allow_html=True)
+                eje_x_sel = st.radio("ETIQUETAS DEL EJE X:", ["Solo FT", "FT + Lote"], horizontal=True)
 
-                if spec_gen:
-                    if spec_gen["type"] == "min":
-                        fig.add_hline(y=spec_gen["val"], line_dash="dash", line_color="#4ade80", annotation_text=f"Mín STD: {spec_gen['label']}", annotation_position="top left", annotation_font_color="#4ade80")
-                    elif spec_gen["type"] == "max":
-                        fig.add_hline(y=spec_gen["val"], line_dash="dash", line_color="#f87171", annotation_text=f"Máx STD: {spec_gen['label']}", annotation_position="top left", annotation_font_color="#f87171")
-                    elif spec_gen["type"] == "range":
-                        fig.add_hline(y=spec_gen["min"], line_dash="dash", line_color="#4ade80", annotation_text=f"LSL: {spec_gen['min']}")
-                        fig.add_hline(y=spec_gen["max"], line_dash="dash", line_color="#4ade80", annotation_text=f"USL: {spec_gen['max']}")
-                elif not (es_temperatura and "1. Control de Propagación" in etapa_seleccionada):
-                    fig.add_hline(y=promedio_global, line_dash="dash", line_color="#888888", annotation_text=f"Prom: {promedio_global:.1f}")
-                    if pd.notna(lcs_global) and lcs_global > promedio_global:
-                        fig.add_hline(y=lcs_global, line_dash="dot", line_color="#f87171", annotation_text=f"LCS: {lcs_global:.1f}", annotation_font_color="#f87171")
+            cols_numericas = df_limpio.select_dtypes(include=[np.number]).columns.tolist()
+            
+            # Asignación exacta de columnas 48h vs 7d
+            if param_base == "Aerobios WLD":
+                col_48h = next((c for c in cols_numericas if "medici" in c.lower() and "wld" in c.lower()), None)
+                col_7d = next((c for c in cols_numericas if c.lower().strip() == "aerobio wld"), None)
+            else:
+                col_48h = next((c for c in cols_numericas if c.lower().strip() == "levadura salvaje ym"), None)
+                col_7d = next((c for c in cols_numericas if "lev. salvaje" in c.lower() or "lev salvaje" in c.lower()), None)
 
-                if etapa_seleccionada == "1. Control de Propagación":
-                    if 'Escala_Fase' in df_limpio.columns:
-                        df_limpio['fase_block'] = (df_limpio['Escala_Fase'] != df_limpio['Escala_Fase'].shift()).cumsum()
-                        for _, sub_block in df_limpio.groupby('fase_block'):
-                            fase_name = sub_block['Escala_Fase'].iloc[0]
-                            spec_info = SPECS_TEMP.get(fase_name, {})
-                            x_min = sub_block['FECHA_DT'].min()
-                            x_max = sub_block['FECHA_DT'].max()
-                            
-                            fig.add_vrect(x0=x_min, x1=x_max, fillcolor=spec_info.get('bg', 'rgba(255,255,255,0.02)'), layer="below", line_width=0)
-                            if es_temperatura and spec_info.get('min') is not None:
-                                fig.add_shape(type="rect", x0=x_min, x1=x_max, y0=spec_info['min'], y1=spec_info['max'], fillcolor="rgba(74, 222, 128, 0.12)", line=dict(color="rgba(74, 222, 128, 0.3)", width=1), layer="below")
-                                
+            # --- MOTOR RENDERIZADOR DOBLE (Gráfico + Tabla) ---
+            def render_fermentacion_row(col_param, titulo_grafico, titulo_tabla):
+                if not col_param or col_param not in df_limpio.columns:
+                    st.info(f"No hay registros de {titulo_grafico} en este FT.")
+                    return
+                
+                c_graf, c_tab = st.columns([2.5, 1.2])
+                
+                with c_graf:
+                    st.markdown(f"<h3 style='color: #ffffff; font-size: 1.1rem; margin-bottom: 15px;'>■ {titulo_grafico}</h3>", unsafe_allow_html=True)
+                    
+                    fig = go.Figure()
+                    spec_gen = obtener_spec_parametro(col_param, etapa_seleccionada)
+                    
+                    promedio = df_limpio[col_param].mean()
+                    desviacion = df_limpio[col_param].std()
+                    lcs = promedio + (3 * desviacion) if pd.notna(desviacion) and desviacion > 0 else promedio
+
+                    if spec_gen:
+                        if spec_gen["type"] == "min": fig.add_hline(y=spec_gen["val"], line_dash="dash", line_color="#4ade80", annotation_text=f"Mín: {spec_gen['label']}", annotation_position="top left")
+                        elif spec_gen["type"] == "max": fig.add_hline(y=spec_gen["val"], line_dash="dash", line_color="#f87171", annotation_text=f"Máx: {spec_gen['label']}", annotation_position="top left", annotation_font_color="#f87171")
+                    else:
+                        fig.add_hline(y=promedio, line_dash="dash", line_color="#888888", annotation_text=f"Prom: {promedio:.1f}")
+                        if pd.notna(lcs) and lcs > promedio: fig.add_hline(y=lcs, line_dash="dot", line_color="#f87171", annotation_text=f"LCS: {lcs:.1f}", annotation_font_color="#f87171")
+
                     fig.add_trace(go.Scatter(
-                        x=df_limpio['FECHA_DT'], y=df_limpio[parametro_a_graficar], mode='lines',
-                        line=dict(color='rgba(255, 255, 255, 0.35)', width=1.5, dash='dot'), showlegend=False, hoverinfo='none'
-                    ))
-                else:
-                    fig.add_trace(go.Scatter(
-                        x=df_limpio['FECHA_DT'], y=df_limpio[parametro_a_graficar], mode='lines',
+                        x=df_limpio['FECHA_DT'], y=df_limpio[col_param], mode='lines',
                         line=dict(color='rgba(163, 255, 0, 0.35)', width=1.5, dash='dot'), showlegend=False, hoverinfo='none'
                     ))
 
-                fases_presentes = ["Laboratorio", "Industrial 1", "Industrial 2", "Industrial 3"] if etapa_seleccionada == "1. Control de Propagación" else ["General"]
-                fases_presentes = [f for f in fases_presentes if f in df_limpio['Escala_Fase'].values]
-
-                for fase_tipo in fases_presentes:
-                    group = df_limpio[df_limpio['Escala_Fase'] == fase_tipo]
-                    spec_t = SPECS_TEMP.get(fase_tipo, {"color": "#a3ff00", "symbol": "circle", "target": None, "min": None, "max": None})
-                    
                     colores_puntos = []
                     hover_text = []
+                    tick_text = []
                     
-                    for idx, row in group.iterrows():
-                        val = row[parametro_a_graficar]
-                        hora_txt = f" {row[col_hora_str]}" if col_hora_str and pd.notna(row[col_hora_str]) else ""
-                        fecha_val = row[col_fecha_label] if col_fecha_label in row else row['FECHA_DT']
+                    for idx, row in df_limpio.iterrows():
+                        val = row[col_param]
+                        ft_val = row.get(col_ft, 'N/A') if col_ft else 'N/A'
+                        lote_val = row.get(col_lote_ref, 'N/A') if col_lote_ref else 'N/A'
                         
-                        cumple = True
-                        std_label_txt = ""
+                        # Custom X Axis
+                        if eje_x_sel == "FT + Lote": tick_text.append(f"FT {ft_val}<br>Lote {lote_val}")
+                        else: tick_text.append(f"FT {ft_val}")
                         
-                        if es_temperatura and spec_t["min"] is not None and "1. Control de Propagación" in etapa_seleccionada:
-                            std_label_txt = f"STD: {spec_t['target']} ± {spec_t['tol']}°C"
-                            if pd.notna(val) and not (spec_t["min"] <= float(val) <= spec_t["max"]): cumple = False
-                        elif spec_gen:
+                        # Semaforización
+                        cumple, std_label_txt = True, ""
+                        if spec_gen:
                             std_label_txt = f"STD: {spec_gen['label']}"
                             if pd.notna(val):
                                 float_v = float(val)
-                                if spec_gen["type"] == "min" and float_v < spec_gen["val"]: cumple = False
-                                elif spec_gen["type"] == "max" and float_v > spec_gen["val"]: cumple = False
-                                elif spec_gen["type"] == "range" and not (spec_gen["min"] <= float_v <= spec_gen["max"]): cumple = False
+                                if spec_gen["type"] == "max" and float_v > spec_gen["val"]: cumple = False
                         else:
-                            if pd.notna(val) and pd.notna(lcs_global) and float(val) > lcs_global:
-                                cumple = False
-                                std_label_txt = f"Alerta SPC (LCS: {lcs_global:.1f})"
+                            if pd.notna(val) and pd.notna(lcs) and float(val) > lcs:
+                                cumple, std_label_txt = False, f"Alerta SPC (LCS: {lcs:.1f})"
 
                         if cumple:
-                            colores_puntos.append(spec_t["color"])
-                            estado_txt = "<span style='color: #4ade80;'><b>✅ DENTRO DE STD</b></span>" if (spec_gen or es_temperatura) else "<span style='color: #4ade80;'><b>✅ NORMAL</b></span>"
+                            colores_puntos.append('#a3ff00')
+                            estado_txt = "<span style='color: #4ade80;'><b>✅ DENTRO DE STD</b></span>" if spec_gen else "<span style='color: #4ade80;'><b>✅ NORMAL</b></span>"
                         else:
                             colores_puntos.append('#f87171')
                             estado_txt = "<span style='color: #f87171;'><b>🚨 FUERA DE STD</b></span>"
                             
                         target_info = f"<br>{std_label_txt}<br>Estado: {estado_txt}" if std_label_txt else ""
-                        etapa_info = f"Etapa: <b>{fase_tipo}</b><br>" if "1. Control de Propagación" in etapa_seleccionada else ""
-                        
-                        col_ft_ref = next((c for c in row.index if c.lower() == 'ft'), None)
-                        col_lote_ref = next((c for c in row.index if "lote" in c.lower() and c.lower() != 'lote'), None)
-                        if not col_lote_ref: col_lote_ref = next((c for c in row.index if "lote" in c.lower()), None)
-                        
-                        lote_str = row.get(col_lote_ref, '') if col_lote_ref else ''
-                        ft_str = row.get(col_ft_ref, '') if col_ft_ref else ''
-                        
-                        lote_txt = row.get('Propagacion', f"{lote_str} / FT {ft_str}".strip(' /'))
+                        fecha_val = row[col_fecha_orig] if col_fecha_orig in row else row['FECHA_DT'].strftime('%d-%b')
 
-                        hover_text.append(
-                            f"Fecha: {fecha_val}{hora_txt}<br>Lote/FT: {lote_txt}<br>{etapa_info}"
-                            f"Valor: <b>{val} {spec_gen['unit'] if spec_gen else ''}</b>{target_info}"
-                        )
+                        hover_text.append(f"Fecha: {fecha_val}<br>Lote/FT: {lote_val} / FT {ft_val}<br>Valor: <b>{val} {spec_gen['unit'] if spec_gen else ''}</b>{target_info}")
 
                     fig.add_trace(go.Scatter(
-                        x=group['FECHA_DT'], y=group[parametro_a_graficar],
-                        mode='lines+markers', name=f"{fase_tipo} ({spec_t['target']}°C)" if (es_temperatura and spec_t['target'] and "1. Control de Propagación" in etapa_seleccionada) else (parametro_a_graficar if fase_tipo == "General" else fase_tipo),
-                        hovertext=hover_text, hoverinfo="text",
-                        line=dict(color=spec_t["color"], width=2),
-                        marker=dict(size=9, symbol=spec_t["symbol"], color=colores_puntos, line=dict(width=1, color='#050505'))
+                        x=df_limpio['FECHA_DT'], y=df_limpio[col_param], mode='lines+markers', name=col_param,
+                        hovertext=hover_text, hoverinfo="text", line=dict(color="#a3ff00", width=2),
+                        marker=dict(size=9, symbol="circle", color=colores_puntos, line=dict(width=1, color='#050505'))
                     ))
 
-                unit_label = "Temperatura (°C)" if es_temperatura else (f"{parametro_a_graficar} ({spec_gen['unit']})" if spec_gen else "UFC / Medición")
-                fig.update_layout(
-                    template="plotly_dark", plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)",
-                    xaxis=dict(showgrid=True, gridcolor="#1a1a1a", title="", tickformat="%d-%b"),
-                    yaxis=dict(showgrid=True, gridcolor="#1a1a1a", title=unit_label),
-                    margin=dict(l=0, r=0, t=30, b=0),
-                    showlegend=(etapa_seleccionada == "1. Control de Propagación"),
-                    legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
-                )
-                st.plotly_chart(fig, use_container_width=True)
-            else:
-                st.warning("No se encontraron columnas numéricas analizables en esta etapa.")
-                
-        with col_tabla:
-            st.markdown("<h3 style='color: #ffffff; font-size: 1.1rem; margin-bottom: 15px;'>■ REGISTROS DE LA ETAPA</h3>", unsafe_allow_html=True)
-            
-            # 🔥 LÓGICA DE TABLA DE APOYO EXCLUSIVA PARA FERMENTACIÓN
-            if etapa_seleccionada == "4. Fermentación":
-                claves_fijas = ['fecha de toma', 'fecha de lectura', 'ft', 'lote']
-            else:
-                claves_fijas = ['fecha', 'hora', 'ft', 'escala', 'etapa', 'lote', 'procedencia', 'tipo', 'tanque']
-                
-            cols_fijas = [c for c in df_limpio.columns if any(k in c.lower() for k in claves_fijas)]
-            cols_fijas = [c for c in cols_fijas if c not in ['FECHA_DT', 'batch_id', 'fase_block', 'Escala_Fase', 'Propagacion']]
-            
-            cols_mostrar = cols_fijas.copy()
-            if 'parametro_a_graficar' in locals() and parametro_a_graficar not in cols_mostrar:
-                cols_mostrar.append(parametro_a_graficar)
-                
-            df_mostrar = df_limpio[cols_mostrar].copy()
-            
-            for c in df_mostrar.columns:
-                if "etapa" in c.lower() or c.lower() == "ft" or "ft" in c.lower():
-                    df_mostrar[c] = df_mostrar[c].apply(
-                        lambda x: f"{int(float(x))}" if pd.notna(x) and str(x).strip() != "" and str(x).replace('.','',1).replace('-','',1).isdigit() else ("" if pd.isna(x) else str(x))
+                    fig.update_layout(
+                        template="plotly_dark", plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)",
+                        xaxis=dict(showgrid=True, gridcolor="#1a1a1a", title="", tickmode='array', tickvals=df_limpio['FECHA_DT'], ticktext=tick_text),
+                        yaxis=dict(showgrid=True, gridcolor="#1a1a1a", title="UFC / ml"), margin=dict(l=0, r=0, t=30, b=0), showlegend=False
                     )
-            
-            df_tabla_final = df_mostrar if etapa_seleccionada in ["1. Control de Propagación", "4. Fermentación"] else df_mostrar.tail(15)
+                    st.plotly_chart(fig, use_container_width=True)
+                    
+                with c_tab:
+                    st.markdown(f"<h3 style='color: #ffffff; font-size: 1.1rem; margin-bottom: 15px;'>■ TABLA {titulo_tabla}</h3>", unsafe_allow_html=True)
+                    
+                    # FILTRO QUIRÚRGICO DE COLUMNAS
+                    cols_to_show = []
+                    for c in df_limpio.columns:
+                        cl = c.lower()
+                        # Solo Fecha Toma, Fecha Lectura, FT y Lote
+                        if ("toma" in cl) or ("lectura" in cl) or (cl == "ft") or ("lote" in cl) or (cl == "fecha"):
+                            if c not in ['FECHA_DT', 'batch_id', 'fase_block', 'Escala_Fase', 'Propagacion']:
+                                cols_to_show.append(c)
+                                
+                    if col_param not in cols_to_show:
+                        cols_to_show.append(col_param)
+                        
+                    df_tabla = df_limpio[cols_to_show].copy()
+                    
+                    # Limpiar FT en la tabla
+                    for c in df_tabla.columns:
+                        if c.lower() == "ft" or "ft" in c.lower():
+                            df_tabla[c] = df_tabla[c].apply(
+                                lambda x: f"{int(float(x))}" if pd.notna(x) and str(x).strip() != "" and str(x).replace('.','',1).replace('-','',1).isdigit() else ("" if pd.isna(x) else str(x))
+                            )
 
-            st.dataframe(
-                df_tabla_final.style.apply(aplicar_semaforo_tabla, axis=1).format(precision=2, na_rep=""),
-                use_container_width=True, height=450
-            )
+                    st.dataframe(df_tabla.style.apply(aplicar_semaforo_tabla, axis=1).format(precision=2, na_rep=""), use_container_width=True, height=350)
+
+            st.markdown("<hr style='border: 1px solid #1a1a1a; margin-top: 10px; margin-bottom: 25px;'>", unsafe_allow_html=True)
+            render_fermentacion_row(col_48h, f"MEDICIÓN A LAS 48 HORAS", "48 HORAS")
+            st.markdown("<br><hr style='border: 1px solid #1a1a1a; margin-bottom: 25px;'>", unsafe_allow_html=True)
+            render_fermentacion_row(col_7d, f"LECTURA A LOS 7 DÍAS", "7 DÍAS")
+
+
+        # -------------------------------------------------------------------------
+        # LÓGICA ESTÁNDAR PARA PROPAGACIÓN Y DEMÁS ETAPAS
+        # -------------------------------------------------------------------------
+        else:
+            if etapa_seleccionada == "1. Control de Propagación":
+                df_limpio = agrupar_por_propagaciones(df_limpio)
+                df_limpio = clasificar_escala(df_limpio)
+                if 'Propagacion' in df_limpio.columns:
+                    lista_lotes = ["Todas las Propagaciones"] + list(df_limpio['Propagacion'].unique())
+                    c_lote, _ = st.columns([1.5, 2.5])
+                    with c_lote: lote_sel = st.selectbox("PROPAGACIÓN / LOTE SELECCIONADO:", lista_lotes)
+                    if lote_sel != "Todas las Propagaciones":
+                        df_limpio = df_limpio[df_limpio['Propagacion'] == lote_sel]
+            else:
+                df_limpio['Escala_Fase'] = "General"
+
+            cols_numericas = df_limpio.select_dtypes(include=[np.number]).columns.tolist()
+            cols_prohibidas_graf = ['semana', 'lote', 'ft', 'batch_id', 'etapa', 'escala', 'escala_fase', 'hora', 'volumen', 'unnamed', 'procedencia', 'producto', 'analista', 'tipo', 'tanque', 'observaciones', 'tp', 'muestra', 'sector', 'estado']
+            cols_graficables = [c for c in cols_numericas if not any(ex in c.lower() for ex in cols_prohibidas_graf)]
+            
+            col_grafico, col_tabla = st.columns([2.5, 1.2])
+            
+            with col_grafico:
+                st.markdown(f"<h3 style='color: #ffffff; font-size: 1.1rem; margin-bottom: 15px;'>■ GRÁFICO DE CONTROL (SPC) {'MULTI-ESCALA' if etapa_seleccionada == '1. Control de Propagación' else ''}</h3>", unsafe_allow_html=True)
+                
+                if cols_graficables:
+                    idx_default = next((i for i, c in enumerate(cols_graficables) if "temp" in c.lower()), 0)
+                    parametro_a_graficar = st.selectbox("Selecciona el parámetro a analizar:", cols_graficables, index=idx_default, label_visibility="collapsed")
+                    
+                    col_fecha_label = col_fecha_orig if col_fecha_orig else "FECHA_DT"
+                    es_temperatura = "temp" in parametro_a_graficar.lower()
+                    spec_gen = obtener_spec_parametro(parametro_a_graficar, etapa_seleccionada) if not es_temperatura else None
+                    
+                    promedio_global = df_limpio[parametro_a_graficar].mean()
+                    desviacion_global = df_limpio[parametro_a_graficar].std()
+                    lcs_global = promedio_global + (3 * desviacion_global) if pd.notna(desviacion_global) and desviacion_global > 0 else promedio_global
+                    
+                    fig = go.Figure()
+
+                    if spec_gen:
+                        if spec_gen["type"] == "min": fig.add_hline(y=spec_gen["val"], line_dash="dash", line_color="#4ade80", annotation_text=f"Mín STD: {spec_gen['label']}", annotation_position="top left")
+                        elif spec_gen["type"] == "max": fig.add_hline(y=spec_gen["val"], line_dash="dash", line_color="#f87171", annotation_text=f"Máx STD: {spec_gen['label']}", annotation_position="top left", annotation_font_color="#f87171")
+                        elif spec_gen["type"] == "range":
+                            fig.add_hline(y=spec_gen["min"], line_dash="dash", line_color="#4ade80", annotation_text=f"LSL: {spec_gen['min']}")
+                            fig.add_hline(y=spec_gen["max"], line_dash="dash", line_color="#4ade80", annotation_text=f"USL: {spec_gen['max']}")
+                    elif not (es_temperatura and "1. Control de Propagación" in etapa_seleccionada):
+                        fig.add_hline(y=promedio_global, line_dash="dash", line_color="#888888", annotation_text=f"Prom: {promedio_global:.1f}")
+                        if pd.notna(lcs_global) and lcs_global > promedio_global: fig.add_hline(y=lcs_global, line_dash="dot", line_color="#f87171", annotation_text=f"LCS: {lcs_global:.1f}", annotation_font_color="#f87171")
+
+                    if etapa_seleccionada == "1. Control de Propagación":
+                        if 'Escala_Fase' in df_limpio.columns:
+                            df_limpio['fase_block'] = (df_limpio['Escala_Fase'] != df_limpio['Escala_Fase'].shift()).cumsum()
+                            for _, sub_block in df_limpio.groupby('fase_block'):
+                                fase_name = sub_block['Escala_Fase'].iloc[0]
+                                spec_info = SPECS_TEMP.get(fase_name, {})
+                                x_min = sub_block['FECHA_DT'].min()
+                                x_max = sub_block['FECHA_DT'].max()
+                                fig.add_vrect(x0=x_min, x1=x_max, fillcolor=spec_info.get('bg', 'rgba(255,255,255,0.02)'), layer="below", line_width=0)
+                                if es_temperatura and spec_info.get('min') is not None:
+                                    fig.add_shape(type="rect", x0=x_min, x1=x_max, y0=spec_info['min'], y1=spec_info['max'], fillcolor="rgba(74, 222, 128, 0.12)", line=dict(color="rgba(74, 222, 128, 0.3)", width=1), layer="below")
+                                    
+                        fig.add_trace(go.Scatter(x=df_limpio['FECHA_DT'], y=df_limpio[parametro_a_graficar], mode='lines', line=dict(color='rgba(255, 255, 255, 0.35)', width=1.5, dash='dot'), showlegend=False, hoverinfo='none'))
+                    else:
+                        fig.add_trace(go.Scatter(x=df_limpio['FECHA_DT'], y=df_limpio[parametro_a_graficar], mode='lines', line=dict(color='rgba(163, 255, 0, 0.35)', width=1.5, dash='dot'), showlegend=False, hoverinfo='none'))
+
+                    fases_presentes = ["Laboratorio", "Industrial 1", "Industrial 2", "Industrial 3"] if etapa_seleccionada == "1. Control de Propagación" else ["General"]
+                    fases_presentes = [f for f in fases_presentes if f in df_limpio['Escala_Fase'].values]
+
+                    for fase_tipo in fases_presentes:
+                        group = df_limpio[df_limpio['Escala_Fase'] == fase_tipo]
+                        spec_t = SPECS_TEMP.get(fase_tipo, {"color": "#a3ff00", "symbol": "circle", "target": None, "min": None, "max": None})
+                        
+                        colores_puntos, hover_text = [], []
+                        
+                        for idx, row in group.iterrows():
+                            val = row[parametro_a_graficar]
+                            hora_txt = f" {row[col_hora_str]}" if col_hora_str and pd.notna(row[col_hora_str]) else ""
+                            fecha_val = row[col_fecha_label] if col_fecha_label in row else row['FECHA_DT']
+                            
+                            cumple, std_label_txt = True, ""
+                            if es_temperatura and spec_t["min"] is not None and "1. Control de Propagación" in etapa_seleccionada:
+                                std_label_txt = f"STD: {spec_t['target']} ± {spec_t['tol']}°C"
+                                if pd.notna(val) and not (spec_t["min"] <= float(val) <= spec_t["max"]): cumple = False
+                            elif spec_gen:
+                                std_label_txt = f"STD: {spec_gen['label']}"
+                                if pd.notna(val):
+                                    float_v = float(val)
+                                    if spec_gen["type"] == "min" and float_v < spec_gen["val"]: cumple = False
+                                    elif spec_gen["type"] == "max" and float_v > spec_gen["val"]: cumple = False
+                                    elif spec_gen["type"] == "range" and not (spec_gen["min"] <= float_v <= spec_gen["max"]): cumple = False
+                            else:
+                                if pd.notna(val) and pd.notna(lcs_global) and float(val) > lcs_global:
+                                    cumple, std_label_txt = False, f"Alerta SPC (LCS: {lcs_global:.1f})"
+
+                            if cumple:
+                                colores_puntos.append(spec_t["color"])
+                                estado_txt = "<span style='color: #4ade80;'><b>✅ DENTRO DE STD</b></span>" if (spec_gen or es_temperatura) else "<span style='color: #4ade80;'><b>✅ NORMAL</b></span>"
+                            else:
+                                colores_puntos.append('#f87171')
+                                estado_txt = "<span style='color: #f87171;'><b>🚨 FUERA DE STD</b></span>"
+                                
+                            target_info = f"<br>{std_label_txt}<br>Estado: {estado_txt}" if std_label_txt else ""
+                            etapa_info = f"Etapa: <b>{fase_tipo}</b><br>" if "1. Control de Propagación" in etapa_seleccionada else ""
+                            
+                            lote_str = row.get(col_lote_ref, '') if col_lote_ref else ''
+                            ft_str = row.get(col_ft, '') if col_ft else ''
+                            lote_txt = row.get('Propagacion', f"{lote_str} / FT {ft_str}".strip(' /'))
+
+                            hover_text.append(f"Fecha: {fecha_val}{hora_txt}<br>Lote/FT: {lote_txt}<br>{etapa_info}Valor: <b>{val} {spec_gen['unit'] if spec_gen else ''}</b>{target_info}")
+
+                        fig.add_trace(go.Scatter(
+                            x=group['FECHA_DT'], y=group[parametro_a_graficar],
+                            mode='lines+markers', name=f"{fase_tipo} ({spec_t['target']}°C)" if (es_temperatura and spec_t['target'] and "1. Control de Propagación" in etapa_seleccionada) else (parametro_a_graficar if fase_tipo == "General" else fase_tipo),
+                            hovertext=hover_text, hoverinfo="text", line=dict(color=spec_t["color"], width=2),
+                            marker=dict(size=9, symbol=spec_t["symbol"], color=colores_puntos, line=dict(width=1, color='#050505'))
+                        ))
+
+                    unit_label = "Temperatura (°C)" if es_temperatura else (f"{parametro_a_graficar} ({spec_gen['unit']})" if spec_gen else "UFC / Medición")
+                    fig.update_layout(
+                        template="plotly_dark", plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)",
+                        xaxis=dict(showgrid=True, gridcolor="#1a1a1a", title="", tickformat="%d-%b"),
+                        yaxis=dict(showgrid=True, gridcolor="#1a1a1a", title=unit_label), margin=dict(l=0, r=0, t=30, b=0),
+                        showlegend=(etapa_seleccionada == "1. Control de Propagación"), legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
+                    )
+                    st.plotly_chart(fig, use_container_width=True)
+                else:
+                    st.warning("No se encontraron columnas numéricas analizables en esta etapa.")
+                    
+            with col_tabla:
+                st.markdown("<h3 style='color: #ffffff; font-size: 1.1rem; margin-bottom: 15px;'>■ REGISTROS DE LA ETAPA</h3>", unsafe_allow_html=True)
+                
+                claves_fijas = ['fecha', 'hora', 'ft', 'escala', 'etapa', 'lote', 'procedencia', 'tipo', 'tanque']
+                cols_fijas = [c for c in df_limpio.columns if any(k in c.lower() for k in claves_fijas)]
+                cols_fijas = [c for c in cols_fijas if c not in ['FECHA_DT', 'batch_id', 'fase_block', 'Escala_Fase', 'Propagacion']]
+                
+                cols_mostrar = cols_fijas.copy()
+                if 'parametro_a_graficar' in locals() and parametro_a_graficar not in cols_mostrar:
+                    cols_mostrar.append(parametro_a_graficar)
+                    
+                df_mostrar = df_limpio[cols_mostrar].copy()
+                for c in df_mostrar.columns:
+                    if "etapa" in c.lower() or c.lower() == "ft" or "ft" in c.lower():
+                        df_mostrar[c] = df_mostrar[c].apply(lambda x: f"{int(float(x))}" if pd.notna(x) and str(x).strip() != "" and str(x).replace('.','',1).replace('-','',1).isdigit() else ("" if pd.isna(x) else str(x)))
+                
+                df_tabla_final = df_mostrar if etapa_seleccionada == "1. Control de Propagación" else df_mostrar.tail(15)
+                st.dataframe(df_tabla_final.style.apply(aplicar_semaforo_tabla, axis=1).format(precision=2, na_rep=""), use_container_width=True, height=450)
             
     else:
         st.warning("La base de datos se cargó pero está vacía o sin datos válidos.")
