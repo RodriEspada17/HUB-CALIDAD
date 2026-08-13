@@ -5,18 +5,18 @@ import plotly.express as px
 import plotly.graph_objects as go
 from utils.core import aplicar_estilo_neon, generar_url_csv, cargar_datos
 
-# Configuración inicial
-st.set_page_config(page_title="Microbiología SPC", layout="wide", initial_sidebar_state="collapsed")
+# Configuracion inicial
+st.set_page_config(page_title="Microbiologia SPC", layout="wide", initial_sidebar_state="collapsed")
 aplicar_estilo_neon()
 
-# --- CSS GLOBAL (INTER + NEÓN + SELECTBOX READONLY) ---
+# --- CSS GLOBAL (INTER + NEON + SELECTBOX READONLY + OPCIONES INHABILITADAS) ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
     html, body, [class*="css"], .stApp { font-family: 'Inter', sans-serif !important; background-color: #050505 !important; color: #e0e0e0 !important; }
     header[data-testid="stHeader"] { background-color: transparent !important; }
     
-    /* BOTÓN VOLVER PRINCIPAL */
+    /* BOTON VOLVER PRINCIPAL */
     div[data-testid="stButton"] > button { 
         background-color: transparent !important; border: 1px solid #1a1a1a !important; width: fit-content !important; 
         padding: 6px 16px !important; border-radius: 6px !important; transition: 0.3s !important; margin-bottom: 10px !important;
@@ -25,7 +25,7 @@ st.markdown("""
     div[data-testid="stButton"] > button:hover { border-color: #a3ff00 !important; background-color: rgba(163, 255, 0, 0.05) !important; }
     div[data-testid="stButton"] > button:hover p { color: #a3ff00 !important; }
         
-    /* ELIMINAR EL FOCO PERMANENTE DESPUÉS DEL CLIC */
+    /* ELIMINAR EL FOCO PERMANENTE DESPUES DEL CLIC */
     div[data-testid="stButton"] > button:focus { box-shadow: none !important; outline: none !important; border-color: #1a1a1a !important; }
     div[data-testid="stButton"] > button:focus p { color: #888888 !important; }
     div[data-testid="stButton"] > button:focus:not(:hover) { border-color: #1a1a1a !important; background-color: transparent !important; }
@@ -35,11 +35,20 @@ st.markdown("""
     div[data-baseweb="select"] input { width: 0px !important; opacity: 0 !important; position: absolute !important; pointer-events: none !important; }
     div[data-baseweb="select"], div[data-baseweb="select"] * { cursor: pointer !important; }
     
+    /* INHABILITAR Y PONER EN GRIS LAS OPCIONES EN CONSTRUCCION (Posiciones 3, 5 y 7) */
+    ul[data-baseweb="menu"] li:nth-child(3),
+    ul[data-baseweb="menu"] li:nth-child(5),
+    ul[data-baseweb="menu"] li:nth-child(7) {
+        color: #444444 !important;
+        pointer-events: none !important;
+        font-style: italic !important;
+    }
+    
     .stSelectbox label, .stRadio label { color: #888888 !important; font-weight: 600 !important; letter-spacing: 1px; font-size: 0.85rem !important; }
     </style>
 """, unsafe_allow_html=True)
 
-# --- ESTÁNDARES DE TEMPERATURA (SOLO PROPAGACIÓN) ---
+# --- ESTANDARES DE TEMPERATURA (SOLO PROPAGACION) ---
 SPECS_TEMP = {
     "Laboratorio": {"target": 25.0, "tol": 0.5, "min": 24.5, "max": 25.5, "color": "#60a5fa", "bg": "rgba(96, 165, 250, 0.06)", "symbol": "circle"},
     "Industrial 1": {"target": 18.0, "tol": 0.5, "min": 17.5, "max": 18.5, "color": "#a3ff00", "bg": "rgba(163, 255, 0, 0.06)", "symbol": "diamond"},
@@ -47,7 +56,7 @@ SPECS_TEMP = {
     "Industrial 3": {"target": 14.0, "tol": 0.5, "min": 13.5, "max": 14.5, "color": "#f97316", "bg": "rgba(249, 115, 22, 0.06)", "symbol": "triangle-up"}
 }
 
-# --- ESTÁNDARES SEGREGADOS POR ETAPA MAESTRA ---
+# --- ESTANDARES SEGREGADOS POR ETAPA MAESTRA ---
 SPECS_PARAMETROS = {
     "1. Control de Propagación": {
         "recuento": {"type": "min", "val": 80.0, "label": "> 80 mill. Cel/ml", "unit": "mill. Cel/ml"},
@@ -70,7 +79,7 @@ SPECS_PARAMETROS = {
     "6. Envasado": {
         "wld": {"type": "max", "val": 0.0, "label": "0 UFC/ml", "unit": "UFC/ml"},
         "aerobio": {"type": "max", "val": 0.0, "label": "0 UFC/ml", "unit": "UFC/ml"},
-        "aeróbio": {"type": "max", "val": 0.0, "label": "0 UFC/ml", "unit": "UFC/ml"}, # ATrapa con tilde
+        "aeróbio": {"type": "max", "val": 0.0, "label": "0 UFC/ml", "unit": "UFC/ml"},
         "salvaje": {"type": "max", "val": 0.0, "label": "0 UFC/ml", "unit": "UFC/ml"},
         "ym": {"type": "max", "val": 0.0, "label": "0 UFC/ml", "unit": "UFC/ml"},
         "anaerobio": {"type": "max", "val": 0.0, "label": "0 UFC/ml", "unit": "UFC/ml"},
@@ -172,24 +181,30 @@ with col_b1:
 with col_b2:
     if st.button("◀ VOLVER AL INICIO"): st.switch_page("app.py")
 
-st.markdown("<h1 style='color: #a3ff00; font-size: 2.2rem; font-weight: 800; letter-spacing: 2px; margin: 0;'>ANÁLISIS MICROBIOLÓGICOS <span style='color: #ffffff;'>(SPC)</span></h1>", unsafe_allow_html=True)
+st.markdown("<h1 style='color: #a3ff00; font-size: 2.2rem; font-weight: 800; letter-spacing: 2px; margin: 0;'>ANALISIS MICROBIOLOGICOS <span style='color: #ffffff;'>(SPC)</span></h1>", unsafe_allow_html=True)
 st.markdown("<p style='color: #888888; font-size: 0.95rem; margin-bottom: 2rem;'>Monitoreo estadístico de recuentos celulares y contaminación.</p>", unsafe_allow_html=True)
 
 URL_BASE = "https://docs.google.com/spreadsheets/d/1CHG6Ndce1Hon9nUFikJqY5YIezYHHC1z_GKnWBmBOFQ/edit?pli=1&gid="
 
+# Agregado de etiqueta (En construccion) en las claves
 GIDS = {
     "1. Control de Propagación": "2050551093",
     "2. Análisis de Levadura": "160101583", 
-    "3. Cocimiento": "1413638154",
+    "3. Cocimiento (En construccion)": "1413638154",
     "4. Fermentación": "1692699392",
-    "5. Filtración": "1258366654",
+    "5. Filtración (En construccion)": "1258366654",
     "6. Envasado": "1542069577",
-    "7. Agua y Materia Prima": "PONER_GID_AQUI"
+    "7. Agua y Materia Prima (En construccion)": "PONER_GID_AQUI"
 }
 
 col1, col2 = st.columns([1.2, 2.8])
 with col1:
     etapa_seleccionada = st.selectbox("SELECCIONA LA ETAPA A MONITOREAR:", list(GIDS.keys()))
+
+# BLOQUEO DE SEGURIDAD EN PYTHON
+if "(En construccion)" in etapa_seleccionada:
+    st.markdown("<h4 style='color: #555555; margin-top: 30px; font-weight: 500;'>Este modulo se encuentra en construccion. Por favor, selecciona una etapa habilitada.</h4>", unsafe_allow_html=True)
+    st.stop()
 
 st.markdown("<hr style='border: 1px solid #1a1a1a; margin-top: 5px; margin-bottom: 25px;'>", unsafe_allow_html=True)
 
@@ -220,13 +235,13 @@ def cargar_y_limpiar_microbiologia(gid):
 gid_actual = GIDS[etapa_seleccionada]
 
 if gid_actual == "PONER_GID_AQUI":
-    st.info(f"Falta configurar el GID para **{etapa_seleccionada}**. Agrégalo en el código.")
+    st.info(f"Falta configurar el GID para la etapa seleccionada. Agregalo en el codigo.")
 else:
     with st.spinner("Conectando con Google Sheets y estructurando datos..."):
         df_limpio = cargar_y_limpiar_microbiologia(gid_actual)
         
     if isinstance(df_limpio, str):
-        st.error(f"Error de conexión: {df_limpio}")
+        st.error(f"Error de conexion: {df_limpio}")
     elif df_limpio is not None and not df_limpio.empty:
         
         col_fecha_orig = next((c for c in df_limpio.columns if "fecha" in c.lower()), None)
@@ -247,7 +262,7 @@ else:
         if not col_lote_ref: col_lote_ref = next((c for c in df_limpio.columns if "lote" in c.lower()), None)
 
         # -------------------------------------------------------------------------
-        # LÓGICA EXCLUSIVA PARA FERMENTACIÓN (DISEÑO 48H vs 7 DÍAS)
+        # LÓGICA EXCLUSIVA PARA FERMENTACION (DISEÑO 48H vs 7 DIAS)
         # -------------------------------------------------------------------------
         if etapa_seleccionada == "4. Fermentación":
             df_limpio['Escala_Fase'] = "General"
@@ -268,18 +283,27 @@ else:
                 lista_fts = ["Todos los FT"] + fts_unicos
                 
                 c_filtro1, c_filtro2 = st.columns(2)
-                with c_filtro1: ft_sel = st.selectbox("FILTRAR POR FT:", lista_fts)
-                if ft_sel != "Todos los FT": df_limpio = df_limpio[df_limpio[col_ft] == ft_sel]
+                
+                with c_filtro1: 
+                    ft_sel = st.selectbox("FILTRAR POR FT:", lista_fts)
+                
+                if ft_sel != "Todos los FT":
+                    df_limpio = df_limpio[df_limpio[col_ft] == ft_sel]
 
                 if col_lote_ref:
                     df_valid_lotes = df_limpio[~df_limpio[col_lote_ref].isin(["", "NAN", "NONE", "N/A"])]
                     lotes_unicos = list(dict.fromkeys(df_valid_lotes[col_lote_ref].unique()))
                     lista_lotes = ["Todos los Lotes"] + lotes_unicos
-                    with c_filtro2: lote_sel = st.selectbox("FILTRAR POR LOTE:", lista_lotes)
-                    if lote_sel != "Todos los Lotes": df_limpio = df_limpio[df_limpio[col_lote_ref] == lote_sel]
+                    
+                    with c_filtro2:
+                        lote_sel = st.selectbox("FILTRAR POR LOTE:", lista_lotes)
+                    
+                    if lote_sel != "Todos los Lotes":
+                        df_limpio = df_limpio[df_limpio[col_lote_ref] == lote_sel]
             
             c_opt1, c_opt2 = st.columns(2)
-            with c_opt1: param_base = st.selectbox("PARÁMETRO BIOLÓGICO:", ["Aerobios WLD", "Levadura Salvaje YM"])
+            with c_opt1:
+                param_base = st.selectbox("PARAMETRO BIOLOGICO:", ["Aerobios WLD", "Levadura Salvaje YM"])
             with c_opt2:
                 st.markdown("<div style='margin-top: 5px;'></div>", unsafe_allow_html=True)
                 eje_x_sel = st.radio("ETIQUETAS DEL EJE X:", ["Solo FT", "FT + Lote"], horizontal=True)
@@ -295,25 +319,29 @@ else:
 
             def render_fermentacion_row(col_param, titulo_grafico, titulo_tabla, tipo_fase):
                 if not col_param or col_param not in df_limpio.columns:
-                    st.info(f"No hay registros de {titulo_grafico} para esta selección.")
+                    st.info(f"No hay registros de {titulo_grafico} para esta seleccion.")
                     return
+                
                 df_fase = df_limpio.dropna(subset=[col_param]).copy()
                 if df_fase.empty:
-                    st.info(f"Los registros de {titulo_grafico} están vacíos para este lote.")
+                    st.info(f"Los registros de {titulo_grafico} estan vacios para este lote.")
                     return
 
                 c_graf, c_tab = st.columns([2.5, 1.2])
+                
                 with c_graf:
                     st.markdown(f"<h3 style='color: #ffffff; font-size: 1.1rem; margin-bottom: 15px;'>■ {titulo_grafico}</h3>", unsafe_allow_html=True)
+                    
                     fig = go.Figure()
                     spec_gen = obtener_spec_parametro(col_param, etapa_seleccionada)
+                    
                     promedio = df_fase[col_param].mean()
                     desviacion = df_fase[col_param].std()
                     lcs = promedio + (3 * desviacion) if pd.notna(desviacion) and desviacion > 0 else promedio
 
                     if spec_gen:
-                        if spec_gen["type"] == "min": fig.add_hline(y=spec_gen["val"], line_dash="dash", line_color="#4ade80", annotation_text=f"Mín: {spec_gen['label']}", annotation_position="top left")
-                        elif spec_gen["type"] == "max": fig.add_hline(y=spec_gen["val"], line_dash="dash", line_color="#f87171", annotation_text=f"Máx: {spec_gen['label']}", annotation_position="top left", annotation_font_color="#f87171")
+                        if spec_gen["type"] == "min": fig.add_hline(y=spec_gen["val"], line_dash="dash", line_color="#4ade80", annotation_text=f"Min: {spec_gen['label']}", annotation_position="top left")
+                        elif spec_gen["type"] == "max": fig.add_hline(y=spec_gen["val"], line_dash="dash", line_color="#f87171", annotation_text=f"Max: {spec_gen['label']}", annotation_position="top left", annotation_font_color="#f87171")
                     else:
                         fig.add_hline(y=promedio, line_dash="dash", line_color="#888888", annotation_text=f"Prom: {promedio:.1f}")
                         if pd.notna(lcs) and lcs > promedio: fig.add_hline(y=lcs, line_dash="dot", line_color="#f87171", annotation_text=f"LCS: {lcs:.1f}", annotation_font_color="#f87171")
@@ -321,6 +349,7 @@ else:
                     fig.add_trace(go.Scatter(x=df_fase['FECHA_DT'], y=df_fase[col_param], mode='lines', line=dict(color='rgba(163, 255, 0, 0.35)', width=1.5, dash='dot'), showlegend=False, hoverinfo='none'))
 
                     colores_puntos, hover_text, tick_text = [], [], []
+                    
                     for idx, row in df_fase.iterrows():
                         val = row[col_param]
                         ft_val = row.get(col_ft, 'N/A') if col_ft else 'N/A'
@@ -339,10 +368,10 @@ else:
 
                         if cumple:
                             colores_puntos.append('#a3ff00')
-                            estado_txt = "<span style='color: #4ade80;'><b>✅ DENTRO DE STD</b></span>" if spec_gen else "<span style='color: #4ade80;'><b>✅ NORMAL</b></span>"
+                            estado_txt = "<span style='color: #4ade80;'><b>DENTRO DE STD</b></span>" if spec_gen else "<span style='color: #4ade80;'><b>NORMAL</b></span>"
                         else:
                             colores_puntos.append('#f87171')
-                            estado_txt = "<span style='color: #f87171;'><b>🚨 FUERA DE STD</b></span>"
+                            estado_txt = "<span style='color: #f87171;'><b>FUERA DE STD</b></span>"
                             
                         target_info = f"<br>{std_label_txt}<br>Estado: {estado_txt}" if std_label_txt else ""
                         fecha_val = row[col_fecha_orig] if col_fecha_orig in row else row['FECHA_DT'].strftime('%d-%b')
@@ -364,6 +393,7 @@ else:
                     
                 with c_tab:
                     st.markdown(f"<h3 style='color: #ffffff; font-size: 1.1rem; margin-bottom: 15px;'>■ TABLA {titulo_tabla}</h3>", unsafe_allow_html=True)
+                    
                     cols_to_show = []
                     for c in df_fase.columns:
                         cl = c.lower()
@@ -375,9 +405,12 @@ else:
                         if is_fecha:
                             if tipo_fase == "48" and "48" in cl: cols_to_show.append(c)
                             elif tipo_fase == "7" and ("7" in cl or "7mo" in cl): cols_to_show.append(c)
-                        elif is_contexto: cols_to_show.append(c)
+                        elif is_contexto:
+                            cols_to_show.append(c)
                             
-                    if col_param not in cols_to_show: cols_to_show.append(col_param)
+                    if col_param not in cols_to_show:
+                        cols_to_show.append(col_param)
+                        
                     df_tabla = df_fase[cols_to_show].copy()
                     
                     for c in df_tabla.columns:
@@ -387,12 +420,12 @@ else:
                     st.dataframe(df_tabla.style.apply(aplicar_semaforo_tabla, axis=1).format(precision=2, na_rep=""), use_container_width=True, height=350)
 
             st.markdown("<hr style='border: 1px solid #1a1a1a; margin-top: 10px; margin-bottom: 25px;'>", unsafe_allow_html=True)
-            render_fermentacion_row(col_48h, f"MEDICIÓN A LAS 48 HORAS", "48 HORAS", "48")
+            render_fermentacion_row(col_48h, f"MEDICION A LAS 48 HORAS", "48 HORAS", "48")
             st.markdown("<br><hr style='border: 1px solid #1a1a1a; margin-bottom: 25px;'>", unsafe_allow_html=True)
-            render_fermentacion_row(col_7d, f"LECTURA A LOS 7 DÍAS", "7 DÍAS", "7")
+            render_fermentacion_row(col_7d, f"LECTURA A LOS 7 DIAS", "7 DIAS", "7")
 
         # -------------------------------------------------------------------------
-        # LÓGICA ESTÁNDAR PARA PROPAGACIÓN Y DEMÁS ETAPAS (ENVASADO Y OTROS)
+        # LOGICA ESTANDAR PARA PROPAGACION Y DEMAS ETAPAS (ENVASADO Y OTROS)
         # -------------------------------------------------------------------------
         else:
             if etapa_seleccionada == "1. Control de Propagación":
@@ -401,7 +434,7 @@ else:
                 if 'Propagacion' in df_limpio.columns:
                     lista_lotes = ["Todas las Propagaciones"] + list(df_limpio['Propagacion'].unique())
                     c_lote, _ = st.columns([1.5, 2.5])
-                    with c_lote: lote_sel = st.selectbox("PROPAGACIÓN / LOTE SELECCIONADO:", lista_lotes)
+                    with c_lote: lote_sel = st.selectbox("PROPAGACION / LOTE SELECCIONADO:", lista_lotes)
                     if lote_sel != "Todas las Propagaciones":
                         df_limpio = df_limpio[df_limpio['Propagacion'] == lote_sel]
             
@@ -433,7 +466,6 @@ else:
                 cols_permitidas = []
                 for c in cols_graficables:
                     cl = c.lower().strip()
-                    # 🔥 ATRAPA CON O SIN TILDE ("aerob", "aerób") + NBB + SALVAJE
                     if "aerob" in cl or "aerób" in cl or "salvaje" in cl or "nbb" in cl or "anaerob" in cl:
                         cols_permitidas.append(c)
                 cols_graficables = cols_permitidas
@@ -446,11 +478,11 @@ else:
             col_grafico, col_tabla = st.columns([2.5, 1.2])
             
             with col_grafico:
-                st.markdown(f"<h3 style='color: #ffffff; font-size: 1.1rem; margin-bottom: 15px;'>■ GRÁFICO DE CONTROL (SPC) {'MULTI-ESCALA' if etapa_seleccionada == '1. Control de Propagación' else ''}</h3>", unsafe_allow_html=True)
+                st.markdown(f"<h3 style='color: #ffffff; font-size: 1.1rem; margin-bottom: 15px;'>■ GRAFICO DE CONTROL (SPC) {'MULTI-ESCALA' if etapa_seleccionada == '1. Control de Propagación' else ''}</h3>", unsafe_allow_html=True)
                 
                 if cols_graficables:
                     idx_default = next((i for i, c in enumerate(cols_graficables) if "temp" in c.lower()), 0)
-                    parametro_a_graficar = st.selectbox("Selecciona el parámetro a analizar:", cols_graficables, index=idx_default, label_visibility="collapsed")
+                    parametro_a_graficar = st.selectbox("Selecciona el parametro a analizar:", cols_graficables, index=idx_default, label_visibility="collapsed")
                     
                     col_fecha_label = col_fecha_orig if col_fecha_orig else "FECHA_DT"
                     es_temperatura = "temp" in parametro_a_graficar.lower()
@@ -463,8 +495,8 @@ else:
                     fig = go.Figure()
 
                     if spec_gen:
-                        if spec_gen["type"] == "min": fig.add_hline(y=spec_gen["val"], line_dash="dash", line_color="#4ade80", annotation_text=f"Mín STD: {spec_gen['label']}", annotation_position="top left")
-                        elif spec_gen["type"] == "max": fig.add_hline(y=spec_gen["val"], line_dash="dash", line_color="#f87171", annotation_text=f"Máx STD: {spec_gen['label']}", annotation_position="top left", annotation_font_color="#f87171")
+                        if spec_gen["type"] == "min": fig.add_hline(y=spec_gen["val"], line_dash="dash", line_color="#4ade80", annotation_text=f"Min STD: {spec_gen['label']}", annotation_position="top left")
+                        elif spec_gen["type"] == "max": fig.add_hline(y=spec_gen["val"], line_dash="dash", line_color="#f87171", annotation_text=f"Max STD: {spec_gen['label']}", annotation_position="top left", annotation_font_color="#f87171")
                         elif spec_gen["type"] == "range":
                             fig.add_hline(y=spec_gen["min"], line_dash="dash", line_color="#4ade80", annotation_text=f"LSL: {spec_gen['min']}")
                             fig.add_hline(y=spec_gen["max"], line_dash="dash", line_color="#4ade80", annotation_text=f"USL: {spec_gen['max']}")
@@ -519,10 +551,10 @@ else:
 
                             if cumple:
                                 colores_puntos.append(spec_t["color"])
-                                estado_txt = "<span style='color: #4ade80;'><b>✅ DENTRO DE STD</b></span>" if (spec_gen or es_temperatura) else "<span style='color: #4ade80;'><b>✅ NORMAL</b></span>"
+                                estado_txt = "<span style='color: #4ade80;'><b>DENTRO DE STD</b></span>" if (spec_gen or es_temperatura) else "<span style='color: #4ade80;'><b>NORMAL</b></span>"
                             else:
                                 colores_puntos.append('#f87171')
-                                estado_txt = "<span style='color: #f87171;'><b>🚨 FUERA DE STD</b></span>"
+                                estado_txt = "<span style='color: #f87171;'><b>FUERA DE STD</b></span>"
                                 
                             target_info = f"<br>{std_label_txt}<br>Estado: {estado_txt}" if std_label_txt else ""
                             
@@ -561,7 +593,7 @@ else:
                     )
                     st.plotly_chart(fig, use_container_width=True)
                 else:
-                    st.warning("No se encontraron columnas numéricas analizables en esta etapa.")
+                    st.warning("No se encontraron columnas numericas analizables en esta etapa.")
                     
             with col_tabla:
                 st.markdown("<h3 style='color: #ffffff; font-size: 1.1rem; margin-bottom: 15px;'>■ REGISTROS DE LA ETAPA</h3>", unsafe_allow_html=True)
@@ -575,7 +607,7 @@ else:
                     
                 cols_fijas = [c for c in df_limpio.columns if any(k in c.lower() for k in claves_fijas)]
                 
-                # 🔥 ELIMINAR CALIBRE EXPRESAMENTE PARA EVITAR FANTASMAS
+                # ELIMINAR CALIBRE EXPRESAMENTE PARA EVITAR FANTASMAS
                 cols_fijas = [c for c in cols_fijas if "calibre" not in c.lower()]
                 cols_fijas = [c for c in cols_fijas if c not in ['FECHA_DT', 'batch_id', 'fase_block', 'Escala_Fase', 'Propagacion']]
                 
@@ -592,4 +624,4 @@ else:
                 st.dataframe(df_tabla_final.style.apply(aplicar_semaforo_tabla, axis=1).format(precision=2, na_rep=""), use_container_width=True, height=450)
             
     else:
-        st.warning("La base de datos se cargó pero está vacía o sin datos válidos.")
+        st.warning("La base de datos se cargo pero esta vacia o sin datos validos.")
