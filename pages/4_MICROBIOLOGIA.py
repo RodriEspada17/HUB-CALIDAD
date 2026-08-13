@@ -66,6 +66,14 @@ SPECS_PARAMETROS = {
         "aerobio": {"type": "max", "val": 10.0, "label": "≤ 10 UFC/ml", "unit": "UFC/ml"},
         "salvaje": {"type": "max", "val": 0.0, "label": "0 UFC/ml", "unit": "UFC/ml"},
         "ym": {"type": "max", "val": 0.0, "label": "0 UFC/ml", "unit": "UFC/ml"}
+    },
+    "6. Envasado": {
+        "wld": {"type": "max", "val": 0.0, "label": "0 UFC/ml", "unit": "UFC/ml"},
+        "aerobio": {"type": "max", "val": 0.0, "label": "0 UFC/ml", "unit": "UFC/ml"},
+        "salvaje": {"type": "max", "val": 0.0, "label": "0 UFC/ml", "unit": "UFC/ml"},
+        "ym": {"type": "max", "val": 0.0, "label": "0 UFC/ml", "unit": "UFC/ml"},
+        "anaerobio": {"type": "max", "val": 0.0, "label": "0 UFC/ml", "unit": "UFC/ml"},
+        "nbb": {"type": "max", "val": 0.0, "label": "0 UFC/ml", "unit": "UFC/ml"}
     }
 }
 
@@ -200,7 +208,7 @@ def cargar_y_limpiar_microbiologia(gid):
         if len(columnas_fecha) > 0:
             df = df.dropna(subset=[columnas_fecha[0]])
             
-        columnas_excluidas = ['fecha', 'hora', 'semana', 'lote', 'escala', 'etapa', 'analista', 'producto', 'procedencia', 'tipo', 'generación', 'tanque', 'observaciones', 'ft', 'tp', 'muestra', 'sector', 'estado', 'calibre', 'propagacion', 'batch_id', 'fecha_dt', 'escala_fase']
+        columnas_excluidas = ['fecha', 'hora', 'semana', 'lote', 'escala', 'etapa', 'analista', 'producto', 'procedencia', 'tipo', 'generación', 'tanque', 'observaciones', 'ft', 'tp', 'muestra', 'sector', 'estado', 'calibre', 'propagacion', 'batch_id', 'fecha_dt', 'escala_fase', 'label_selector']
         for col in df.columns:
             if not any(excl in col.lower() for excl in columnas_excluidas):
                 df[col] = pd.to_numeric(df[col], errors='coerce')
@@ -243,7 +251,6 @@ else:
         if etapa_seleccionada == "4. Fermentación":
             df_limpio['Escala_Fase'] = "General"
             
-            # 🔥 LIMPIEZA DE COLUMNAS FT Y LOTE (A enteros limpios)
             if col_ft:
                 def limpiar_entero(val):
                     if pd.isna(val): return ""
@@ -252,11 +259,9 @@ else:
                     except: return raw.upper()
 
                 df_limpio[col_ft] = df_limpio[col_ft].apply(limpiar_entero)
-                
                 if col_lote_ref:
                     df_limpio[col_lote_ref] = df_limpio[col_lote_ref].astype(str).str.replace(r'\.0$', '', regex=True).str.replace('nan', '', case=False).str.replace('None', '', case=False)
 
-                # 🔥 1ER DESPLEGABLE: FILTRAR POR FT
                 df_valid_ft = df_limpio[~df_limpio[col_ft].isin(["", "NAN", "NONE", "N/A"])]
                 fts_unicos = list(dict.fromkeys(df_valid_ft[col_ft].unique()))
                 lista_fts = ["Todos los FT"] + fts_unicos
@@ -269,7 +274,6 @@ else:
                 if ft_sel != "Todos los FT":
                     df_limpio = df_limpio[df_limpio[col_ft] == ft_sel]
 
-                # 🔥 2DO DESPLEGABLE: FILTRAR POR LOTE (Depende del FT seleccionado)
                 if col_lote_ref:
                     df_valid_lotes = df_limpio[~df_limpio[col_lote_ref].isin(["", "NAN", "NONE", "N/A"])]
                     lotes_unicos = list(dict.fromkeys(df_valid_lotes[col_lote_ref].unique()))
@@ -281,7 +285,6 @@ else:
                     if lote_sel != "Todos los Lotes":
                         df_limpio = df_limpio[df_limpio[col_lote_ref] == lote_sel]
             
-            # Opciones de Parámetro y Agrupación Eje X
             c_opt1, c_opt2 = st.columns(2)
             with c_opt1:
                 param_base = st.selectbox("PARÁMETRO BIOLÓGICO:", ["Aerobios WLD", "Levadura Salvaje YM"])
@@ -291,7 +294,6 @@ else:
 
             cols_numericas = df_limpio.select_dtypes(include=[np.number]).columns.tolist()
             
-            # Asignación exacta de columnas 48h vs 7d
             if param_base == "Aerobios WLD":
                 col_48h = next((c for c in cols_numericas if "medici" in c.lower() and "wld" in c.lower()), None)
                 col_7d = next((c for c in cols_numericas if c.lower().strip() == "aerobio wld"), None)
@@ -299,7 +301,6 @@ else:
                 col_48h = next((c for c in cols_numericas if c.lower().strip() == "levadura salvaje ym"), None)
                 col_7d = next((c for c in cols_numericas if "lev. salvaje" in c.lower() or "lev salvaje" in c.lower()), None)
 
-            # --- MOTOR RENDERIZADOR DOBLE (Gráfico + Tabla) ---
             def render_fermentacion_row(col_param, titulo_grafico, titulo_tabla, tipo_fase):
                 if not col_param or col_param not in df_limpio.columns:
                     st.info(f"No hay registros de {titulo_grafico} para esta selección.")
@@ -329,10 +330,7 @@ else:
                         fig.add_hline(y=promedio, line_dash="dash", line_color="#888888", annotation_text=f"Prom: {promedio:.1f}")
                         if pd.notna(lcs) and lcs > promedio: fig.add_hline(y=lcs, line_dash="dot", line_color="#f87171", annotation_text=f"LCS: {lcs:.1f}", annotation_font_color="#f87171")
 
-                    fig.add_trace(go.Scatter(
-                        x=df_fase['FECHA_DT'], y=df_fase[col_param], mode='lines',
-                        line=dict(color='rgba(163, 255, 0, 0.35)', width=1.5, dash='dot'), showlegend=False, hoverinfo='none'
-                    ))
+                    fig.add_trace(go.Scatter(x=df_fase['FECHA_DT'], y=df_fase[col_param], mode='lines', line=dict(color='rgba(163, 255, 0, 0.35)', width=1.5, dash='dot'), showlegend=False, hoverinfo='none'))
 
                     colores_puntos, hover_text, tick_text = [], [], []
                     
@@ -383,7 +381,7 @@ else:
                     cols_to_show = []
                     for c in df_fase.columns:
                         cl = c.lower()
-                        if c in ['FECHA_DT', 'batch_id', 'fase_block', 'Escala_Fase', 'Propagacion']: continue
+                        if c in ['FECHA_DT', 'batch_id', 'fase_block', 'Escala_Fase', 'Propagacion', 'LABEL_SELECTOR']: continue
                         
                         is_fecha = "toma" in cl or "lectura" in cl or "fecha" in cl
                         is_contexto = (cl == "ft") or ("lote" in cl)
@@ -410,7 +408,6 @@ else:
             st.markdown("<br><hr style='border: 1px solid #1a1a1a; margin-bottom: 25px;'>", unsafe_allow_html=True)
             render_fermentacion_row(col_7d, f"LECTURA A LOS 7 DÍAS", "7 DÍAS", "7")
 
-
         # -------------------------------------------------------------------------
         # LÓGICA ESTÁNDAR PARA PROPAGACIÓN Y DEMÁS ETAPAS
         # -------------------------------------------------------------------------
@@ -430,6 +427,21 @@ else:
             cols_numericas = df_limpio.select_dtypes(include=[np.number]).columns.tolist()
             cols_prohibidas_graf = ['semana', 'lote', 'ft', 'batch_id', 'etapa', 'escala', 'escala_fase', 'hora', 'volumen', 'unnamed', 'procedencia', 'producto', 'analista', 'tipo', 'tanque', 'observaciones', 'tp', 'muestra', 'sector', 'estado']
             cols_graficables = [c for c in cols_numericas if not any(ex in c.lower() for ex in cols_prohibidas_graf)]
+            
+            # 🔥 LÓGICA EXCLUSIVA PARA ENVASADO (EJE X CATEGÓRICO POR LOTE + PURGA WLD/YM/NBB)
+            col_x_graf = 'FECHA_DT'
+            if etapa_seleccionada == "6. Envasado":
+                cols_permitidas = []
+                for c in cols_graficables:
+                    cl = c.lower().strip()
+                    if "aerobio" in cl or "salvaje" in cl or "nbb" in cl or "anaerobio" in cl:
+                        cols_permitidas.append(c)
+                cols_graficables = cols_permitidas
+                
+                col_lote_env = next((c for c in df_limpio.columns if "lote" in c.lower()), None)
+                if col_lote_env:
+                    df_limpio[col_lote_env] = df_limpio[col_lote_env].astype(str).str.replace(r'\.0$', '', regex=True).replace('nan', 'N/A', case=False)
+                    col_x_graf = col_lote_env
             
             col_grafico, col_tabla = st.columns([2.5, 1.2])
             
@@ -472,9 +484,9 @@ else:
                                 if es_temperatura and spec_info.get('min') is not None:
                                     fig.add_shape(type="rect", x0=x_min, x1=x_max, y0=spec_info['min'], y1=spec_info['max'], fillcolor="rgba(74, 222, 128, 0.12)", line=dict(color="rgba(74, 222, 128, 0.3)", width=1), layer="below")
                                     
-                        fig.add_trace(go.Scatter(x=df_limpio['FECHA_DT'], y=df_limpio[parametro_a_graficar], mode='lines', line=dict(color='rgba(255, 255, 255, 0.35)', width=1.5, dash='dot'), showlegend=False, hoverinfo='none'))
+                        fig.add_trace(go.Scatter(x=df_limpio[col_x_graf], y=df_limpio[parametro_a_graficar], mode='lines', line=dict(color='rgba(255, 255, 255, 0.35)', width=1.5, dash='dot'), showlegend=False, hoverinfo='none'))
                     else:
-                        fig.add_trace(go.Scatter(x=df_limpio['FECHA_DT'], y=df_limpio[parametro_a_graficar], mode='lines', line=dict(color='rgba(163, 255, 0, 0.35)', width=1.5, dash='dot'), showlegend=False, hoverinfo='none'))
+                        fig.add_trace(go.Scatter(x=df_limpio[col_x_graf], y=df_limpio[parametro_a_graficar], mode='lines', line=dict(color='rgba(163, 255, 0, 0.35)', width=1.5, dash='dot'), showlegend=False, hoverinfo='none'))
 
                     fases_presentes = ["Laboratorio", "Industrial 1", "Industrial 2", "Industrial 3"] if etapa_seleccionada == "1. Control de Propagación" else ["General"]
                     fases_presentes = [f for f in fases_presentes if f in df_limpio['Escala_Fase'].values]
@@ -513,29 +525,39 @@ else:
                                 estado_txt = "<span style='color: #f87171;'><b>🚨 FUERA DE STD</b></span>"
                                 
                             target_info = f"<br>{std_label_txt}<br>Estado: {estado_txt}" if std_label_txt else ""
-                            etapa_info = f"Etapa: <b>{fase_tipo}</b><br>" if "1. Control de Propagación" in etapa_seleccionada else ""
                             
-                            col_lote_ref_loc = next((c for c in row.index if "lote" in c.lower() and c.lower() != 'lote'), None)
-                            if not col_lote_ref_loc: col_lote_ref_loc = next((c for c in row.index if "lote" in c.lower()), None)
-                            col_ft_ref_loc = next((c for c in row.index if c.lower() == 'ft'), None)
-                            
-                            lote_str = row.get(col_lote_ref_loc, '') if col_lote_ref_loc else ''
-                            ft_str = row.get(col_ft_ref_loc, '') if col_ft_ref_loc else ''
-                            lote_txt = row.get('Propagacion', f"{lote_str} / FT {ft_str}".strip(' /'))
+                            if etapa_seleccionada == "6. Envasado":
+                                hover_text.append(f"Lote: {row[col_x_graf]}<br>Fecha: {fecha_val}<br>Valor: <b>{val} {spec_gen['unit'] if spec_gen else ''}</b>{target_info}")
+                            else:
+                                etapa_info = f"Etapa: <b>{fase_tipo}</b><br>" if "1. Control de Propagación" in etapa_seleccionada else ""
+                                col_lote_ref_loc = next((c for c in row.index if "lote" in c.lower() and c.lower() != 'lote'), None)
+                                if not col_lote_ref_loc: col_lote_ref_loc = next((c for c in row.index if "lote" in c.lower()), None)
+                                col_ft_ref_loc = next((c for c in row.index if c.lower() == 'ft'), None)
+                                
+                                lote_str = row.get(col_lote_ref_loc, '') if col_lote_ref_loc else ''
+                                ft_str = row.get(col_ft_ref_loc, '') if col_ft_ref_loc else ''
+                                lote_txt = row.get('Propagacion', f"{lote_str} / FT {ft_str}".strip(' /'))
 
-                            hover_text.append(f"Fecha: {fecha_val}{hora_txt}<br>Lote/FT: {lote_txt}<br>{etapa_info}Valor: <b>{val} {spec_gen['unit'] if spec_gen else ''}</b>{target_info}")
+                                hover_text.append(f"Fecha: {fecha_val}{hora_txt}<br>Lote/FT: {lote_txt}<br>{etapa_info}Valor: <b>{val} {spec_gen['unit'] if spec_gen else ''}</b>{target_info}")
 
                         fig.add_trace(go.Scatter(
-                            x=group['FECHA_DT'], y=group[parametro_a_graficar],
+                            x=group[col_x_graf], y=group[parametro_a_graficar],
                             mode='lines+markers', name=f"{fase_tipo} ({spec_t['target']}°C)" if (es_temperatura and spec_t['target'] and "1. Control de Propagación" in etapa_seleccionada) else (parametro_a_graficar if fase_tipo == "General" else fase_tipo),
                             hovertext=hover_text, hoverinfo="text", line=dict(color=spec_t["color"], width=2),
                             marker=dict(size=9, symbol=spec_t["symbol"], color=colores_puntos, line=dict(width=1, color='#050505'))
                         ))
 
                     unit_label = "Temperatura (°C)" if es_temperatura else (f"{parametro_a_graficar} ({spec_gen['unit']})" if spec_gen else "UFC / Medición")
+                    
+                    xaxis_config = dict(showgrid=True, gridcolor="#1a1a1a", title="")
+                    if col_x_graf == 'FECHA_DT':
+                        xaxis_config['tickformat'] = "%d-%b"
+                    else:
+                        xaxis_config['type'] = 'category' # Forza a Plotly a respetar los strings tipo Lote P202
+
                     fig.update_layout(
                         template="plotly_dark", plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)",
-                        xaxis=dict(showgrid=True, gridcolor="#1a1a1a", title="", tickformat="%d-%b"),
+                        xaxis=xaxis_config,
                         yaxis=dict(showgrid=True, gridcolor="#1a1a1a", title=unit_label), margin=dict(l=0, r=0, t=30, b=0),
                         showlegend=(etapa_seleccionada == "1. Control de Propagación"), legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
                     )
@@ -546,7 +568,11 @@ else:
             with col_tabla:
                 st.markdown("<h3 style='color: #ffffff; font-size: 1.1rem; margin-bottom: 15px;'>■ REGISTROS DE LA ETAPA</h3>", unsafe_allow_html=True)
                 
-                claves_fijas = ['fecha', 'hora', 'ft', 'escala', 'etapa', 'lote', 'procedencia', 'tipo', 'tanque']
+                if etapa_seleccionada == "6. Envasado":
+                    claves_fijas = ['lectura', 'calibre', 'envasado', 'lote']
+                else:
+                    claves_fijas = ['fecha', 'hora', 'ft', 'escala', 'etapa', 'lote', 'procedencia', 'tipo', 'tanque']
+                    
                 cols_fijas = [c for c in df_limpio.columns if any(k in c.lower() for k in claves_fijas)]
                 cols_fijas = [c for c in cols_fijas if c not in ['FECHA_DT', 'batch_id', 'fase_block', 'Escala_Fase', 'Propagacion']]
                 
@@ -556,7 +582,7 @@ else:
                     
                 df_mostrar = df_limpio[cols_mostrar].copy()
                 for c in df_mostrar.columns:
-                    if "etapa" in c.lower() or c.lower() == "ft" or "ft" in c.lower():
+                    if "etapa" in c.lower() or (c.lower() == "ft" and etapa_seleccionada != "6. Envasado") or ("ft" in c.lower() and etapa_seleccionada != "6. Envasado"):
                         df_mostrar[c] = df_mostrar[c].apply(lambda x: f"{int(float(x))}" if pd.notna(x) and str(x).strip() != "" and str(x).replace('.','',1).replace('-','',1).isdigit() else ("" if pd.isna(x) else str(x)))
                 
                 df_tabla_final = df_mostrar if etapa_seleccionada == "1. Control de Propagación" else df_mostrar.tail(15)
