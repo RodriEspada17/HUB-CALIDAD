@@ -147,8 +147,8 @@ col1, col2, col3 = st.columns(3)
 # 🔥 TEXTOS DE TARJETAS (Ahora incluyen la pastilla camuflada al final)
 txt_fq = "**///**\n\n**PARÁMETROS FISICOQUÍMICOS**\n\nAnálisis SPC, Cp/Cpk y resumen de producción mensual.\n\n`■ MÓDULO ACTIVO`"
 txt_est = "**///**\n\n**CONTROL DE TANQUES**\n\nMonitoreo logístico y alertas tempranas en tanques.\n\n`■ MÓDULO ACTIVO`"
-txt_mic = "**///**\n\n**ANÁLISIS MICROBIOLÓGICOS**\n\nSPC para recuento de levaduras, bacterias y aerobios totales.\n\n`■ NUEVO MÓDULO`"
-txt_ing = "**///**\n\n**INGRESO DE DATOS**\n\nCarga directa de variables desde el HUB sin usar Google Sheets.\n\n~~■ EN DESARROLLO~~"
+txt_mic = "**///**\n\n**ANÁLISIS MICROBIOLÓGICOS**\n\nSPC para recuento de levaduras, bacterias y aerobios totales.\n\n`■ MÓDULO ACTIVO`"
+txt_ing = "**///**\n\n**CONTROL DE AGUAS**\n\nGestión y SPC físico-químico del agua de planta.\n\n`■ MÓDULO ACTIVO`"
 txt_exp = "**///**\n\n**EXPORTAR REPORTES**\n\nBúsqueda rápida de lotes y envío automatizado vía WhatsApp.\n\n`■ MÓDULO ACTIVO`"
 
 # CÓDIGO PYTHON SÚPER LIMPIO
@@ -158,7 +158,7 @@ with col1:
 
 with col2:
     if st.button(txt_mic, use_container_width=True, key="btn_mic"): st.switch_page("pages/4_MICROBIOLOGIA.py") 
-    if st.button(txt_ing, use_container_width=True, key="btn_ing"): pass
+    if st.button(txt_ing, use_container_width=True, key="btn_ing"): st.switch_page("pages/5_CONTROL_AGUAS.py")
 
 with col3:
     if st.button(txt_exp, use_container_width=True, key="btn_exp"): st.switch_page("pages/2_EXPORTAR_DATOS.py") 
