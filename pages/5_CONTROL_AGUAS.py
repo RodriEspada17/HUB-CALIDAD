@@ -267,13 +267,12 @@ elif df_limpio is not None and not df_limpio.empty:
                         else: estilos[i] = 'background-color: #3b181a; color: #f87171;' # Rojo tenue
             return estilos
 
-        # Seleccionar columnas de contexto a mostrar (Fecha, Analista, y la Columna Real)
+        # Seleccionar columnas de contexto a mostrar (Fecha, Semana, y la Columna Real)
         cols_contexto = []
         for c in df_limpio.columns:
             cl = c.lower()
             if "fecha" in cl and c != "FECHA_DT": cols_contexto.append(c)
             elif "semana" in cl: cols_contexto.append(c)
-            elif "analista" in cl: cols_contexto.append(c)
 
         if col_real and col_real in df_limpio.columns:
             cols_contexto.append(col_real)
