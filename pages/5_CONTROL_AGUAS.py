@@ -2,11 +2,22 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
+import os
+from PIL import Image
 from utils.core import aplicar_estilo_neon
 
+# --- CONFIGURACIÓN DE FAVICON PRO ---
+ruta_logo = "LogoBBO2.png" 
+if os.path.exists(ruta_logo):
+    icono = Image.open(ruta_logo)
+else:
+    icono = "💧"
+
 # Configuración inicial
-st.set_page_config(page_title="Control de Aguas SPC", layout="wide", initial_sidebar_state="collapsed")
+st.set_page_config(page_title="Control de Aguas SPC", page_icon=icono, layout="wide", initial_sidebar_state="collapsed")
 aplicar_estilo_neon()
+
+# ... (sigue tu CSS y el resto del código) ...
 
 # --- CSS GLOBAL (INTER + NEÓN + DESPLEGABLES BLOQUEADOS + COMPRESIÓN VERTICAL) ---
 st.markdown("""

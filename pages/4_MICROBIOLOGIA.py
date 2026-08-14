@@ -3,11 +3,21 @@ import pandas as pd
 import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
+import os
+from PIL import Image
 from utils.core import aplicar_estilo_neon, generar_url_csv, cargar_datos
 
+# --- CONFIGURACIÓN DE FAVICON PRO ---
+ruta_logo = "LogoBBO2.png" 
+if os.path.exists(ruta_logo):
+    icono = Image.open(ruta_logo)
+else:
+    icono = "🔬"
+
 # Configuración inicial
-st.set_page_config(page_title="Microbiología SPC", layout="wide", initial_sidebar_state="collapsed")
+st.set_page_config(page_title="Microbiología SPC", page_icon=icono, layout="wide", initial_sidebar_state="collapsed")
 aplicar_estilo_neon()
+
 
 # --- CSS GLOBAL (INTER + NEÓN + DESPLEGABLES BLOQUEADOS + COMPRESIÓN VERTICAL) ---
 st.markdown("""
