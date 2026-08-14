@@ -101,18 +101,6 @@ producto_actual = "Todos"
 
 if df is not None and not df.empty:
 
-    # 🔥 VACUNA TRADUCTORA GLOBAL (Se aplica a cualquier columna que tenga "FECHA" en el nombre)
-    diccionario_meses = {
-        "ene": "jan", "abr": "apr", "ago": "aug", "dic": "dec",
-        "Ene": "Jan", "Abr": "Apr", "Ago": "Aug", "Dic": "Dec",
-        "ENE": "JAN", "ABR": "APR", "AGO": "AUG", "DIC": "DEC"
-    }
-    for col in df.columns:
-        if "FECHA" in str(col).upper():
-            df[col] = df[col].astype(str).replace(diccionario_meses, regex=True)
-
-    # --- 1. PURGA DE FILAS FANTASMA ---
-
     # --- 1. PURGA DE FILAS FANTASMA ---
     col_prod_temp = [c for c in df.columns if "PRODUCTO" in str(c).upper()]
     if col_prod_temp:
@@ -303,7 +291,8 @@ if df is not None and not df.empty:
                 df_trend.loc[df_trend[p_col].str.upper().isin(["MALTA REAL", "MALTA"]), p_col] = "Malta Real"
             
             if "FECHA" in eje_x.upper():
-                df_trend[eje_x] = pd.to_datetime(df_trend[eje_x], errors='coerce', dayfirst=True)
+                diccionario_meses = {"ene": "jan", "abr": "apr", "ago": "aug", "dic": "dec", "Ene": "Jan", "Abr": "Apr", "Ago": "Aug", "Dic": "Dec", "ENE": "JAN", "ABR": "APR", "AGO": "AUG", "DIC": "DEC"}
+                df_trend[eje_x] = pd.to_datetime(df_trend[eje_x].astype(str).replace(diccionario_meses, regex=True), errors='coerce', dayfirst=True)
                 df_trend = df_trend.dropna(subset=[eje_x])
                 df_trend = df_trend.sort_values(by=eje_x)
             else:
@@ -350,7 +339,8 @@ if df is not None and not df.empty:
 
             if col_fecha and (col_volumen or col_coc):
                 df_prod = df.copy()
-                df_prod['FECHA_PARSEADA'] = pd.to_datetime(df_prod[col_fecha], errors='coerce', dayfirst=True)
+                diccionario_meses = {"ene": "jan", "abr": "apr", "ago": "aug", "dic": "dec", "Ene": "Jan", "Abr": "Apr", "Ago": "Aug", "Dic": "Dec", "ENE": "JAN", "ABR": "APR", "AGO": "AUG", "DIC": "DEC"}
+                df_prod['FECHA_PARSEADA'] = pd.to_datetime(df_prod[col_fecha].astype(str).replace(diccionario_meses, regex=True), errors='coerce', dayfirst=True)
                 df_prod = df_prod.dropna(subset=['FECHA_PARSEADA'])
                 
                 if not df_prod.empty:

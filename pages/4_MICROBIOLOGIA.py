@@ -258,18 +258,20 @@ else:
         col_hora_str = next((c for c in df_limpio.columns if "hora" in c.lower()), None)
         
         if col_fecha_orig:
-            # 🔥 VACUNA TRADUCTORA ESPAÑOL -> INGLÉS
             diccionario_meses = {
                 "ene": "jan", "abr": "apr", "ago": "aug", "dic": "dec",
                 "Ene": "Jan", "Abr": "Apr", "Ago": "Aug", "Dic": "Dec",
                 "ENE": "JAN", "ABR": "APR", "AGO": "AUG", "DIC": "DEC"
             }
-            df_limpio[col_fecha_orig] = df_limpio[col_fecha_orig].astype(str).replace(diccionario_meses, regex=True)
+            
+            # 🔥 CREAMOS UNA VARIABLE INVISIBLE PARA EL CÁLCULO
+            fecha_traducida = df_limpio[col_fecha_orig].astype(str).replace(diccionario_meses, regex=True)
 
             if col_hora_str and col_hora_str in df_limpio.columns:
-                df_limpio['FECHA_DT'] = pd.to_datetime(df_limpio[col_fecha_orig].astype(str) + ' ' + df_limpio[col_hora_str].astype(str), errors='coerce', dayfirst=True)
+                df_limpio['FECHA_DT'] = pd.to_datetime(fecha_traducida + ' ' + df_limpio[col_hora_str].astype(str), errors='coerce', dayfirst=True)
             else:
-                df_limpio['FECHA_DT'] = pd.to_datetime(df_limpio[col_fecha_orig], errors='coerce', dayfirst=True)
+                df_limpio['FECHA_DT'] = pd.to_datetime(fecha_traducida, errors='coerce', dayfirst=True)
+                
             df_limpio = df_limpio.dropna(subset=['FECHA_DT']).sort_values('FECHA_DT').reset_index(drop=True)
         else:
             df_limpio['FECHA_DT'] = df_limpio.index

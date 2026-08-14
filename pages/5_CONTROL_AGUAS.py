@@ -143,15 +143,13 @@ def cargar_datos_aguas():
         # Buscar columna de fecha principal
         col_fecha = next((col for col in df.columns if "fecha" in col.lower()), None)
         if col_fecha:
-            # 🔥 TRADUCTOR ESPAÑOL -> INGLÉS PARA QUE PYTHON ENTIENDA LOS MESES
             diccionario_meses = {
                 "ene": "jan", "abr": "apr", "ago": "aug", "dic": "dec",
                 "Ene": "Jan", "Abr": "Apr", "Ago": "Aug", "Dic": "Dec",
                 "ENE": "JAN", "ABR": "APR", "AGO": "AUG", "DIC": "DEC"
             }
-            df[col_fecha] = df[col_fecha].astype(str).replace(diccionario_meses, regex=True)
-            
-            df['FECHA_DT'] = pd.to_datetime(df[col_fecha], errors='coerce', dayfirst=True)
+            # 🔥 TRADUCIMOS SOLO LA COLUMNA INTERNA (FECHA_DT), LA ORIGINAL QUEDA EN ESPAÑOL
+            df['FECHA_DT'] = pd.to_datetime(df[col_fecha].astype(str).replace(diccionario_meses, regex=True), errors='coerce', dayfirst=True)
             df = df.dropna(subset=['FECHA_DT']).sort_values('FECHA_DT').reset_index(drop=True)
         else:
             df['FECHA_DT'] = df.index
