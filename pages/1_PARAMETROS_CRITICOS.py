@@ -1,11 +1,22 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
+import os
+from PIL import Image
 from utils.core import aplicar_estilo_neon, obtener_limites, generar_url_csv, cargar_datos
 
+# --- CONFIGURACIÓN DE FAVICON PRO ---
+ruta_logo = "LogoBBO2.png" 
+if os.path.exists(ruta_logo):
+    icono = Image.open(ruta_logo)
+else:
+    icono = "⚙️"
+
 # Forzamos que la barra lateral empiece EXPANDIDA
-st.set_page_config(page_title="Parámetros Críticos", layout="wide", page_icon="▪️", initial_sidebar_state="expanded")
+st.set_page_config(page_title="Parámetros Críticos", page_icon=icono, layout="wide", initial_sidebar_state="expanded")
 aplicar_estilo_neon()
+
+# ... (sigue tu CSS y el resto del código) ...
 
 # --- CSS GLOBAL Y ESTILO NEÓN PARA SIDEBAR + COMPRESIÓN VERTICAL ---
 st.markdown("""
