@@ -13,23 +13,30 @@ st.markdown("""
         font-family: 'Inter', sans-serif !important; 
         background-color: #050505 !important; 
         color: #e0e0e0 !important; 
+        overflow-y: hidden !important; /* 🔥 BLOQUEA EL SCROLL VERTICAL */
     }
-    header[data-testid="stHeader"] { background-color: transparent !important; }
+    header[data-testid="stHeader"] { background-color: transparent !important; height: 0px !important; }
     [data-testid="stSidebarNav"] { display: none !important; }
     section[data-testid="stSidebar"] { background-color: #0a0a0a !important; border-right: 1px solid #1a1a1a !important; }
+    
+    /* COMPRESIÓN DE MÁRGENES PARA EVITAR SCROLL */
+    .block-container {
+        padding-top: 2rem !important;
+        padding-bottom: 0rem !important;
+    }
     
     /* BOTÓN VOLVER PRINCIPAL */
     div[data-testid="stButton"] > button { 
         background-color: transparent !important; 
         border: 1px solid #1a1a1a !important; 
         width: fit-content !important; 
-        padding: 6px 16px !important; 
+        padding: 4px 12px !important; 
         border-radius: 6px !important; 
         transition: 0.3s !important; 
-        margin-bottom: 10px !important;
+        margin-bottom: 0px !important;
     }
     div[data-testid="stButton"] > button p { 
-        color: #888888 !important; font-weight: 700 !important; font-size: 0.8rem !important; letter-spacing: 1px !important; 
+        color: #888888 !important; font-weight: 700 !important; font-size: 0.75rem !important; letter-spacing: 1px !important; 
     }
     div[data-testid="stButton"] > button:hover { 
         border-color: #a3ff00 !important; background-color: rgba(163, 255, 0, 0.05) !important; 
@@ -52,15 +59,15 @@ st.markdown("""
     }
     
     /* =======================================================
-       TARJETAS GIGANTES NATIVAS (CABALLO DE TROYA)
+       TARJETAS GIGANTES NATIVAS (COMPRIMIDAS)
        ======================================================= */
     div[data-testid="stColumn"] div[data-testid="stButton"] > button {
-        position: relative !important; /* El botón es el ancla ahora */
+        position: relative !important; 
         background-color: #0a0a0a !important;
         border: 1px solid #1a1a1a !important;
-        padding: 24px !important;
+        padding: 20px !important; /* Padding ligeramente menor */
         border-radius: 12px !important;
-        height: 270px !important;
+        height: 220px !important; /* 🔥 ALTURA REDUCIDA PARA QUE ENTREN LAS 2 FILAS */
         width: 100% !important;
         display: flex !important;
         flex-direction: column !important;
@@ -79,40 +86,23 @@ st.markdown("""
     
     /* Estilos del texto */
     div[data-testid="stColumn"] div[data-testid="stButton"] > button p {
-        color: #888888 !important; font-size: 0.9rem !important; line-height: 1.5 !important; font-family: 'Inter', sans-serif !important; white-space: pre-wrap !important; width: 100% !important;
+        color: #888888 !important; font-size: 0.85rem !important; line-height: 1.4 !important; font-family: 'Inter', sans-serif !important; white-space: pre-wrap !important; width: 100% !important;
     }
     div[data-testid="stColumn"] div[data-testid="stButton"] > button p strong:nth-of-type(1) {
-        color: #a3ff00 !important; font-size: 1.15rem !important; letter-spacing: 2px !important; margin-bottom: 5px !important; display: inline-block !important;
+        color: #a3ff00 !important; font-size: 1.05rem !important; letter-spacing: 2px !important; margin-bottom: 2px !important; display: inline-block !important;
     }
     div[data-testid="stColumn"] div[data-testid="stButton"] > button p strong:nth-of-type(2) {
-        color: #ffffff !important; font-size: 1.35rem !important; display: block !important; margin-top: 15px !important; margin-bottom: 10px !important; letter-spacing: -0.5px !important;
+        color: #ffffff !important; font-size: 1.25rem !important; display: block !important; margin-top: 10px !important; margin-bottom: 8px !important; letter-spacing: -0.5px !important;
     }
 
     /* 🔥 LA MAGIA: PASTILLA VERDE */
     div[data-testid="stColumn"] div[data-testid="stButton"] > button code {
         position: absolute !important;
-        bottom: 24px !important; 
-        left: 24px !important;   
+        bottom: 20px !important; 
+        left: 20px !important;   
         background-color: rgba(163, 255, 0, 0.1) !important;
         color: #a3ff00 !important;
         border: 1px solid rgba(163, 255, 0, 0.3) !important;
-        padding: 4px 10px !important;
-        border-radius: 4px !important;
-        font-size: 0.7rem !important;
-        font-weight: 700 !important;
-        letter-spacing: 1px !important;
-        font-family: 'Inter', sans-serif !important;
-    }
-
-    /* 🔥 LA MAGIA: PASTILLA AMARILLA */
-    div[data-testid="stColumn"] div[data-testid="stButton"] > button del {
-        position: absolute !important;
-        bottom: 24px !important; 
-        left: 24px !important;   
-        text-decoration: none !important; 
-        background-color: rgba(250, 204, 21, 0.1) !important;
-        color: #facc15 !important;
-        border: 1px solid rgba(250, 204, 21, 0.3) !important;
         padding: 4px 10px !important;
         border-radius: 4px !important;
         font-size: 0.7rem !important;
@@ -133,18 +123,17 @@ st.sidebar.markdown(f"""
     </div>
 """, unsafe_allow_html=True)
 
-st.markdown("<br>", unsafe_allow_html=True)
-
-# --- NUEVO BOTÓN DE VOLVER ---
+# --- BOTÓN DE VOLVER ---
 if st.button("◀ VOLVER AL INICIO"):
     st.switch_page("app.py")
 
-st.markdown("<h1 style='color: #ffffff; font-size: 2.2rem; font-weight: 800; letter-spacing: 2px; margin: 0;'>DEPARTAMENTO / <span style='color: #a3ff00;'>CONTROL DE CALIDAD</span></h1>", unsafe_allow_html=True)
-st.markdown("<p style='color: #888888; font-size: 0.95rem; margin-bottom: 3rem;'>Selecciona la herramienta o módulo que deseas operar:</p>", unsafe_allow_html=True)
+# TÍTULOS (Márgenes ajustados)
+st.markdown("<h1 style='color: #ffffff; font-size: 2rem; font-weight: 800; letter-spacing: 2px; margin: 0; margin-top: 10px;'>DEPARTAMENTO / <span style='color: #a3ff00;'>CONTROL DE CALIDAD</span></h1>", unsafe_allow_html=True)
+st.markdown("<p style='color: #888888; font-size: 0.95rem; margin-bottom: 1.5rem;'>Selecciona la herramienta o módulo que deseas operar:</p>", unsafe_allow_html=True)
 
 col1, col2, col3 = st.columns(3)
 
-# 🔥 TEXTOS DE TARJETAS (Ahora incluyen la pastilla camuflada al final)
+# 🔥 TEXTOS DE TARJETAS 
 txt_fq = "**///**\n\n**PARÁMETROS FISICOQUÍMICOS**\n\nAnálisis SPC, Cp/Cpk y resumen de producción mensual.\n\n`■ MÓDULO ACTIVO`"
 txt_est = "**///**\n\n**CONTROL DE TANQUES**\n\nMonitoreo logístico y alertas tempranas en tanques.\n\n`■ MÓDULO ACTIVO`"
 txt_mic = "**///**\n\n**ANÁLISIS MICROBIOLÓGICOS**\n\nSPC para recuento de levaduras, bacterias y aerobios totales.\n\n`■ MÓDULO ACTIVO`"
@@ -161,6 +150,4 @@ with col2:
     if st.button(txt_ing, use_container_width=True, key="btn_ing"): st.switch_page("pages/5_CONTROL_AGUAS.py")
 
 with col3:
-    if st.button(txt_exp, use_container_width=True, key="btn_exp"): st.switch_page("pages/2_EXPORTAR_DATOS.py") 
-    
-st.markdown("<br><br>", unsafe_allow_html=True)
+    if st.button(txt_exp, use_container_width=True, key="btn_exp"): st.switch_page("pages/2_EXPORTAR_DATOS.py")
