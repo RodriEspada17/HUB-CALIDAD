@@ -21,8 +21,8 @@ st.markdown("""
         padding: 6px 16px !important; border-radius: 6px !important; transition: 0.3s !important; margin-bottom: 10px !important;
     }
     div[data-testid="stButton"] > button p { color: #888888 !important; font-weight: 700 !important; font-size: 0.8rem !important; letter-spacing: 1px !important; }
-    div[data-testid="stButton"] > button:hover { border-color: #00e5ff !important; background-color: rgba(0, 229, 255, 0.05) !important; }
-    div[data-testid="stButton"] > button:hover p { color: #00e5ff !important; }
+    div[data-testid="stButton"] > button:hover { border-color: #a3ff00 !important; background-color: rgba(163, 255, 0, 0.05) !important; }
+    div[data-testid="stButton"] > button:hover p { color: #a3ff00 !important; }
         
     /* BLOQUEAR ESCRITURA EN DESPLEGABLES */
     div[data-baseweb="select"] input { width: 0px !important; opacity: 0 !important; position: absolute !important; pointer-events: none !important; }
@@ -40,13 +40,12 @@ with col_b2:
     if st.button("◀ VOLVER AL INICIO"): st.switch_page("app.py")
 
 # TÍTULO
-st.markdown("<h1 style='color: #00e5ff; font-size: 2.2rem; font-weight: 800; letter-spacing: 2px; margin: 0;'>CONTROL DE AGUAS <span style='color: #ffffff;'>(SPC)</span></h1>", unsafe_allow_html=True)
+st.markdown("<h1 style='color: #a3ff00; font-size: 2.2rem; font-weight: 800; letter-spacing: 2px; margin: 0;'>CONTROL DE AGUAS <span style='color: #ffffff;'>(SPC)</span></h1>", unsafe_allow_html=True)
 st.markdown("<p style='color: #888888; font-size: 0.95rem; margin-bottom: 2rem;'>Monitoreo estadístico de parámetros físico-químicos del agua.</p>", unsafe_allow_html=True)
 
 URL_CSV_AGUAS = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTfm3KfpLbZ6De9FzJE0rpGZbkB0soLJOCKFl1yjvQQMiMqef43JWcUL6s9OyIGP9hr1e067494EZOo/pub?output=csv&gid=1373914293"
 
 # --- MATRIZ DE TANQUES Y ESTÁNDARES ---
-# Define la estructura de menú, palabras clave para encontrar la columna y su STD
 TANQUES_AGUAS = {
     "POZO DE AGUA": {
         "Cloro": {"keys": ["cloro", "pozo"], "std": {"type": "range", "min": 0.1, "max": 0.5, "label": "0.1 - 0.5 ppm", "unit": "ppm"}},
@@ -130,7 +129,6 @@ def cargar_datos_aguas():
         cols_contexto = ['fecha', 'hora', 'semana', 'punto', 'sector', 'analista', 'observaciones', 'estado']
         for col in df.columns:
             if not any(excl in col.lower() for excl in cols_contexto) and col != 'FECHA_DT':
-                # Reemplazar comas por puntos antes de castear
                 df[col] = df[col].astype(str).str.replace(',', '.')
                 df[col] = pd.to_numeric(df[col], errors='coerce')
                 
@@ -198,10 +196,10 @@ elif df_limpio is not None and not df_limpio.empty:
                     fig.add_hline(y=spec["min"], line_dash="dash", line_color="#4ade80", annotation_text=f"LSL: {spec['min']}")
                     fig.add_hline(y=spec["max"], line_dash="dash", line_color="#4ade80", annotation_text=f"USL: {spec['max']}")
 
-                # Línea base continua
+                # Línea base continua (Verde opaco)
                 fig.add_trace(go.Scatter(
                     x=df_graf['FECHA_DT'], y=df_graf[col_real], mode='lines',
-                    line=dict(color='rgba(0, 229, 255, 0.35)', width=1.5, dash='dot'), showlegend=False, hoverinfo='none'
+                    line=dict(color='rgba(163, 255, 0, 0.35)', width=1.5, dash='dot'), showlegend=False, hoverinfo='none'
                 ))
 
                 # Puntos y Evaluación
@@ -221,7 +219,7 @@ elif df_limpio is not None and not df_limpio.empty:
                         elif spec["type"] == "range" and not (spec["min"] <= v <= spec["max"]): cumple = False
 
                     if cumple:
-                        colores_puntos.append('#00e5ff')
+                        colores_puntos.append('#a3ff00')
                         estado = "<span style='color: #4ade80;'><b>✅ DENTRO DE STD</b></span>"
                     else:
                         colores_puntos.append('#f87171')
@@ -230,8 +228,8 @@ elif df_limpio is not None and not df_limpio.empty:
                     hover_text.append(f"Fecha: {fecha_str}<br>Valor: <b>{val} {unit_label}</b><br>Estado: {estado}<br>STD: {spec['label']}")
 
                 fig.add_trace(go.Scatter(
-                    x=df_graf['FECHA_DT'], y=df_graf[col_real], mode='lines+markers',
-                    hovertext=hover_text, hoverinfo="text", line=dict(color="#00e5ff", width=2),
+                    x=df_graf['FECHA_DT'], y=df_graf[col_real], mode='lines+markers', name=param_sel,
+                    hovertext=hover_text, hoverinfo="text", line=dict(color="#a3ff00", width=2),
                     marker=dict(size=9, symbol="circle", color=colores_puntos, line=dict(width=1, color='#050505'))
                 ))
 
@@ -239,7 +237,7 @@ elif df_limpio is not None and not df_limpio.empty:
                     template="plotly_dark", plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)",
                     xaxis=dict(showgrid=True, gridcolor="#1a1a1a", title="", tickformat="%d-%b"),
                     yaxis=dict(showgrid=True, gridcolor="#1a1a1a", title=f"{param_sel} {f'({unit_label})' if unit_label else ''}"),
-                    margin=dict(l=0, r=0, t=30, b=0)
+                    margin=dict(l=0, r=0, t=30, b=0), showlegend=False
                 )
                 st.plotly_chart(fig, use_container_width=True)
             else:
@@ -265,7 +263,7 @@ elif df_limpio is not None and not df_limpio.empty:
                             elif spec["type"] == "range" and not (spec["min"] <= v <= spec["max"]): cumple = False
                         except: pass
                         
-                        if cumple: estilos[i] = 'background-color: #0b2b33; color: #00e5ff;' # Verde/Cyan tenue
+                        if cumple: estilos[i] = 'background-color: #143324; color: #4ade80;' # Verde tenue
                         else: estilos[i] = 'background-color: #3b181a; color: #f87171;' # Rojo tenue
             return estilos
 
