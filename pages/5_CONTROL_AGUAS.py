@@ -137,18 +137,26 @@ def cargar_datos_aguas():
     try:
         df = pd.read_csv(URL_CSV_AGUAS)
         
-        # Limpieza básica
+        # Limpieza básica y eliminación de "NSC" (No Se Controló)
         df = df.replace({"NA": np.nan, "N/A": np.nan, "n/a": np.nan, "-": np.nan, "": np.nan, "NSC": np.nan, "nsc": np.nan})
         
-        # Buscar columna de fecha
+        # Buscar columna de fecha principal
         col_fecha = next((col for col in df.columns if "fecha" in col.lower()), None)
         if col_fecha:
+            # 🔥 TRADUCTOR ESPAÑOL -> INGLÉS PARA QUE PYTHON ENTIENDA LOS MESES
+            diccionario_meses = {
+                "ene": "jan", "abr": "apr", "ago": "aug", "dic": "dec",
+                "Ene": "Jan", "Abr": "Apr", "Ago": "Aug", "Dic": "Dec",
+                "ENE": "JAN", "ABR": "APR", "AGO": "AUG", "DIC": "DEC"
+            }
+            df[col_fecha] = df[col_fecha].astype(str).replace(diccionario_meses, regex=True)
+            
             df['FECHA_DT'] = pd.to_datetime(df[col_fecha], errors='coerce', dayfirst=True)
             df = df.dropna(subset=['FECHA_DT']).sort_values('FECHA_DT').reset_index(drop=True)
         else:
             df['FECHA_DT'] = df.index
 
-        # Forzar numericas
+        # Forzar numéricas a columnas que no son de contexto
         cols_contexto = ['fecha', 'hora', 'semana', 'punto', 'sector', 'analista', 'observaciones', 'estado']
         for col in df.columns:
             if not any(excl in col.lower() for excl in cols_contexto) and col != 'FECHA_DT':
