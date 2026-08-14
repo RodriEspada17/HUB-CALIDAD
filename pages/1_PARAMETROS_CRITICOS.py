@@ -7,7 +7,7 @@ from utils.core import aplicar_estilo_neon, obtener_limites, generar_url_csv, ca
 st.set_page_config(page_title="Parámetros Críticos", layout="wide", page_icon="▪️", initial_sidebar_state="expanded")
 aplicar_estilo_neon()
 
-# --- CSS GLOBAL Y ESTILO NEÓN PARA SIDEBAR ---
+# --- CSS GLOBAL Y ESTILO NEÓN PARA SIDEBAR + COMPRESIÓN VERTICAL ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
@@ -16,8 +16,19 @@ st.markdown("""
         font-family: 'Inter', sans-serif !important; 
         background-color: #050505 !important; 
         color: #e0e0e0 !important; 
+        overflow-y: hidden !important; /* 🔥 BLOQUEA EL SCROLL VERTICAL */
     }
-    header[data-testid="stHeader"] { background-color: transparent !important; }
+    
+    header[data-testid="stHeader"] { 
+        background-color: transparent !important; 
+        height: 0px !important; 
+    }
+    
+    /* 🔥 COMPRESIÓN DE MÁRGENES PARA EVITAR SCROLL */
+    .block-container {
+        padding-top: 2rem !important;
+        padding-bottom: 0rem !important;
+    }
     
     /* BOTONES NEÓN EXCLUSIVOS PARA EL SIDEBAR */
     div[data-testid="stSidebar"] div[data-testid="stButton"] > button { 
@@ -71,7 +82,7 @@ etapa_seleccionada = st.sidebar.selectbox("Etapa del Proceso", list(PESTANAS.key
 gid_actual = PESTANAS[etapa_seleccionada]
 url_completa = URL_BASE + gid_actual
 
-st.markdown(f"<h2 style='text-transform: uppercase; font-size: 1.8rem;'>MÓDULO / PARÁMETROS CRÍTICOS / <span style='color: #a3ff00;'>{etapa_seleccionada}</span></h2>", unsafe_allow_html=True)
+st.markdown(f"<h2 style='text-transform: uppercase; font-size: 1.8rem; margin-top: 10px;'>MÓDULO / PARÁMETROS CRÍTICOS / <span style='color: #a3ff00;'>{etapa_seleccionada}</span></h2>", unsafe_allow_html=True)
 st.markdown("<br>", unsafe_allow_html=True)
 
 df, _ = cargar_datos(generar_url_csv(url_completa, gid_actual))
@@ -168,9 +179,10 @@ if df is not None and not df.empty:
         tab_datos, tab_spc, tab_tendencias = st.tabs(["DATOS", "ANÁLISIS SPC", "TENDENCIAS"])
 
     with tab_datos:
-        st.dataframe(df.style.apply(aplicar_semaforo, axis=1), use_container_width=True)
+        # Altura controlada para matar el scroll
+        st.dataframe(df.style.apply(aplicar_semaforo, axis=1), use_container_width=True, height=350)
         st.markdown("""
-            <p style='font-size: 0.85rem; color: #888888; font-family: "Space Grotesk", sans-serif;'>
+            <p style='font-size: 0.85rem; color: #888888; font-family: "Space Grotesk", sans-serif; margin-top: 10px;'>
                 <span style="color: #4ade80;">■</span> Estándar &nbsp;&nbsp;&nbsp; 
                 <span style="color: #facc15;">■</span> Tolerancia &nbsp;&nbsp;&nbsp; 
                 <span style="color: #f87171;">■</span> Fuera de Rango
@@ -244,6 +256,10 @@ if df is not None and not df.empty:
                     fig_hist.update_traces(marker=dict(line=dict(width=1, color='#4ade80')))
                     fig_hist.add_vline(x=lsl, line_dash="dash", line_color="#f87171", annotation_text="LSL")
                     fig_hist.add_vline(x=usl, line_dash="dash", line_color="#f87171", annotation_text="USL")
+                    
+                    # 🔥 LIMITAR ALTURA DEL GRÁFICO SPC
+                    fig_hist.update_layout(height=320, margin=dict(l=0, r=0, t=30, b=0))
+                    
                     st.plotly_chart(fig_hist, use_container_width=True)
         else:
             st.info("No hay métricas de calidad disponibles para análisis SPC con los filtros actuales.")
@@ -295,12 +311,15 @@ if df is not None and not df.empty:
                 
                 if "FECHA" in eje_x.upper():
                     fig_trend.update_xaxes(dtick="M1", tickformat="%b\n%Y")
-                    
+                
+                # 🔥 LIMITAR ALTURA DEL GRÁFICO TENDENCIAS
+                fig_trend.update_layout(height=350, margin=dict(l=0, r=0, t=30, b=0))
+                
                 st.plotly_chart(fig_trend, use_container_width=True)
 
     if etapa_seleccionada == "Cocimiento":
         with tab_prod:
-            st.markdown("<h3 style='color: #a3ff00; font-size: 1.2rem;'>RESUMEN DE PRODUCCIÓN MENSUAL</h3>", unsafe_allow_html=True)
+            st.markdown("<h3 style='color: #a3ff00; font-size: 1.2rem; margin-bottom: 5px;'>RESUMEN DE PRODUCCIÓN MENSUAL</h3>", unsafe_allow_html=True)
             
             col_fecha = next((c for c in df.columns if "FECHA" in str(c).upper()), None)
             col_volumen = next((c for c in df.columns if "VOLUMEN" in str(c).upper()), None)
@@ -335,12 +354,14 @@ if df is not None and not df.empty:
                         with col1:
                             fig_vol = px.bar(df_resumen, x='Mes', y=col_volumen, title=f"Total {col_volumen}", text_auto='.2s', template="plotly_dark", color_discrete_sequence=['#143324'])
                             fig_vol.update_traces(marker=dict(line=dict(width=1, color='#4ade80')))
+                            fig_vol.update_layout(height=320, margin=dict(l=0, r=0, t=40, b=0)) # 🔥 ALTURA CONTROLADA
                             st.plotly_chart(fig_vol, use_container_width=True)
                             
                     if col_coc:
                         with col2:
                             fig_coc = px.bar(df_resumen, x='Mes', y=col_coc, title=f"Total {col_coc}", text_auto=True, template="plotly_dark", color_discrete_sequence=['#3b181a'])
                             fig_coc.update_traces(marker=dict(line=dict(width=1, color='#f87171')))
+                            fig_coc.update_layout(height=320, margin=dict(l=0, r=0, t=40, b=0)) # 🔥 ALTURA CONTROLADA
                             st.plotly_chart(fig_coc, use_container_width=True)
                 else:
                     st.warning("⚠️ No se pudo procesar la fecha para hacer la agrupación mensual.")
