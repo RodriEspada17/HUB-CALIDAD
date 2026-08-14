@@ -1,7 +1,26 @@
 import streamlit as st
+import os
+from PIL import Image  # 🔥 NUEVO: Librería para procesar la imagen
 from utils.core import aplicar_estilo_neon
+# ... (aquí van tus otros imports como pandas, numpy, etc) ...
 
-st.set_page_config(page_title="Control de Calidad", layout="wide", initial_sidebar_state="expanded")
+# ==========================================
+# 🔥 CONFIGURACIÓN PRO DE LA PÁGINA Y FAVICON
+# ==========================================
+# Buscamos el logo. Si no existe, usamos un ícono por defecto para que no explote.
+ruta_logo = "LogoBBO.png" 
+if os.path.exists(ruta_logo):
+    icono = Image.open(ruta_logo)
+else:
+    icono = "⚙️" # Ícono de respaldo
+
+# Esto SIEMPRE debe ser el primer comando de Streamlit
+st.set_page_config(
+    page_title="Control de Calidad", # Cambia esto según la página (ej. "Control de Aguas")
+    page_icon=icono, 
+    layout="wide", 
+    initial_sidebar_state="expanded" # O "collapsed" según la página
+)
 
 # --- APLICAR CSS GLOBAL PRIMERO ---
 aplicar_estilo_neon()
