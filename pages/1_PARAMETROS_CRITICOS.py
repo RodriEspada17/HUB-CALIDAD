@@ -101,6 +101,18 @@ producto_actual = "Todos"
 
 if df is not None and not df.empty:
 
+    # 🔥 VACUNA TRADUCTORA GLOBAL (Se aplica a cualquier columna que tenga "FECHA" en el nombre)
+    diccionario_meses = {
+        "ene": "jan", "abr": "apr", "ago": "aug", "dic": "dec",
+        "Ene": "Jan", "Abr": "Apr", "Ago": "Aug", "Dic": "Dec",
+        "ENE": "JAN", "ABR": "APR", "AGO": "AUG", "DIC": "DEC"
+    }
+    for col in df.columns:
+        if "FECHA" in str(col).upper():
+            df[col] = df[col].astype(str).replace(diccionario_meses, regex=True)
+
+    # --- 1. PURGA DE FILAS FANTASMA ---
+
     # --- 1. PURGA DE FILAS FANTASMA ---
     col_prod_temp = [c for c in df.columns if "PRODUCTO" in str(c).upper()]
     if col_prod_temp:
