@@ -8,7 +8,7 @@ from utils.core import aplicar_estilo_neon
 # 🔥 CONFIGURACIÓN PRO DE LA PÁGINA Y FAVICON
 # ==========================================
 # Buscamos el logo. Si no existe, usamos un ícono por defecto para que no explote.
-ruta_logo = "LogoBBO.png" 
+ruta_logo = "LogoBBO2.png" 
 if os.path.exists(ruta_logo):
     icono = Image.open(ruta_logo)
 else:
